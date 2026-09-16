@@ -1,0 +1,17 @@
+{
+  "name": "Contentplane — Social Media Manager OS",
+  "short_name": "Contentplane",
+  "description": "The operating system for social media managers: manager workbook, client portal, and Notion-ready package.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7FAFB",
+  "theme_color": "#136A87",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
