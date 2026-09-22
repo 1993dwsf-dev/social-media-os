@@ -32,12 +32,172 @@ const schema = defineSchema(
       role: v.optional(roleValidator), // role of the user. do not remove
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
-    // add other tables here
+    // ---- Contentplane: manager workspace -----------------------------------
+    // Every row is scoped to the signed-in manager through `ownerId`.
 
-    // tableName: defineTable({
-    //   ...
-    //   // table fields
-    // }).index("by_field", ["field"])
+    clients: defineTable({
+      ownerId: v.id("users"),
+      name: v.string(),
+      contactName: v.string(),
+      email: v.string(),
+      phone: v.string(),
+      website: v.string(),
+      industry: v.string(),
+      packageName: v.string(),
+      monthlyFee: v.number(),
+      startDate: v.string(),
+      status: v.string(), // ClientStatus
+      socials: v.object({
+        instagram: v.optional(v.string()),
+        tiktok: v.optional(v.string()),
+        linkedin: v.optional(v.string()),
+        youtube: v.optional(v.string()),
+        facebook: v.optional(v.string()),
+        pinterest: v.optional(v.string()),
+        other: v.optional(v.string()),
+      }),
+      notes: v.string(),
+      onboarding: v.object({
+        company: v.optional(v.string()),
+        contact: v.optional(v.string()),
+        brand: v.optional(v.string()),
+        socialAccounts: v.optional(v.string()),
+        audience: v.optional(v.string()),
+        objectives: v.optional(v.string()),
+        competitors: v.optional(v.string()),
+        contentPreferences: v.optional(v.string()),
+        approvalPreferences: v.optional(v.string()),
+        importantDates: v.optional(v.string()),
+        brandAssets: v.optional(v.string()),
+        notes: v.optional(v.string()),
+      }),
+      strategy: v.array(
+        v.object({
+          key: v.string(),
+          title: v.string(),
+          items: v.array(v.string()),
+        }),
+      ),
+      kpis: v.array(
+        v.object({
+          name: v.string(),
+          baseline: v.string(),
+          target: v.string(),
+          actual: v.string(),
+          unit: v.string(),
+          deadline: v.string(),
+        }),
+      ),
+      createdAt: v.number(),
+    }).index("by_owner", ["ownerId"]),
+
+    content: defineTable({
+      ownerId: v.id("users"),
+      clientId: v.id("clients"),
+      date: v.string(),
+      platform: v.string(),
+      format: v.string(),
+      topic: v.string(),
+      caption: v.string(),
+      assetNote: v.string(),
+      status: v.string(), // ContentStatus
+      managerNotes: v.string(),
+      clientComments: v.string(),
+      pillar: v.string(),
+      owner: v.string(),
+    })
+      .index("by_owner", ["ownerId"])
+      .index("by_client", ["clientId"]),
+
+    tasks: defineTable({
+      ownerId: v.id("users"),
+      clientId: v.id("clients"),
+      title: v.string(),
+      project: v.string(),
+      category: v.string(),
+      priority: v.string(), // Priority
+      status: v.string(), // TaskStatus
+      startDate: v.string(),
+      dueDate: v.string(),
+      completedAt: v.string(),
+      dependsOn: v.string(),
+      notes: v.string(),
+    })
+      .index("by_owner", ["ownerId"])
+      .index("by_client", ["clientId"]),
+
+    requests: defineTable({
+      ownerId: v.id("users"),
+      clientId: v.id("clients"),
+      title: v.string(),
+      category: v.string(),
+      priority: v.string(),
+      dateSubmitted: v.string(),
+      status: v.string(), // RequestStatus
+      assignedTo: v.string(),
+      dueDate: v.string(),
+      comments: v.string(),
+    })
+      .index("by_owner", ["ownerId"])
+      .index("by_client", ["clientId"]),
+
+    meetings: defineTable({
+      ownerId: v.id("users"),
+      clientId: v.id("clients"),
+      title: v.string(),
+      date: v.string(),
+      time: v.string(),
+      agenda: v.string(),
+      participants: v.string(),
+      status: v.string(), // MeetingStatus
+      notes: v.string(),
+      actionItems: v.string(),
+    })
+      .index("by_owner", ["ownerId"])
+      .index("by_client", ["clientId"]),
+
+    deliverables: defineTable({
+      ownerId: v.id("users"),
+      clientId: v.id("clients"),
+      name: v.string(),
+      category: v.string(),
+      description: v.string(),
+      date: v.string(),
+      status: v.string(), // FileStatus
+      relatedContent: v.string(),
+      relatedProject: v.string(),
+    })
+      .index("by_owner", ["ownerId"])
+      .index("by_client", ["clientId"]),
+
+    finance: defineTable({
+      ownerId: v.id("users"),
+      clientId: v.optional(v.id("clients")),
+      date: v.string(),
+      type: v.string(), // FinanceType
+      amount: v.number(),
+      category: v.string(),
+      description: v.string(),
+      status: v.string(), // FinanceStatus
+      dueDate: v.string(),
+      paidDate: v.string(),
+    })
+      .index("by_owner", ["ownerId"])
+      .index("by_client", ["clientId"]),
+
+    workspaces: defineTable({
+      ownerId: v.id("users"),
+      managerName: v.string(),
+      agency: v.string(),
+      email: v.string(),
+      currency: v.string(),
+      weekStart: v.string(),
+      approvalTurnaroundDays: v.number(),
+      notifyEmail: v.boolean(),
+      notifyApprovals: v.boolean(),
+      notifyFinance: v.boolean(),
+      density: v.string(),
+    }).index("by_owner", ["ownerId"]),
   },
   {
     schemaValidation: false,

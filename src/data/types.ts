@@ -1,6 +1,11 @@
-// Shared data model for the Contentplane client portal.
-// All records use ISO date strings ("2026-09-08") and plain JSON values so the
-// same shape can be exported to JSON / Notion CSV without transformation.
+// Shared data model for the Contentplane manager workspace.
+//
+// This is a single-seat product: the social media manager signs in and manages
+// several clients. Every record belongs to a client and is stored per account
+// in Convex, so the shape here mirrors the Convex documents (id mapped from
+// _id, dates kept as ISO strings for easy export).
+
+export type Id = string;
 
 export type Platform =
   | "Instagram"
@@ -9,6 +14,8 @@ export type Platform =
   | "YouTube"
   | "Facebook"
   | "Pinterest";
+
+export type ClientStatus = "Active" | "Paused" | "Prospect" | "Archived";
 
 export type ContentStatus =
   | "Idea"
@@ -30,6 +37,8 @@ export type Priority = "Low" | "Medium" | "High";
 
 export type MeetingStatus = "Scheduled" | "Completed" | "Cancelled";
 
+export type FileStatus = "Shared" | "In progress" | "Archived";
+
 export type FileCategory =
   | "Brand assets"
   | "Graphics"
@@ -37,6 +46,12 @@ export type FileCategory =
   | "Reports"
   | "Documents"
   | "Final deliverables";
+
+export type TaskStatus = "Backlog" | "In Progress" | "Blocked" | "Done";
+
+export type FinanceType = "Income" | "Expense";
+
+export type FinanceStatus = "Paid" | "Pending" | "Overdue";
 
 export type OnboardingStep =
   | "Company"
@@ -67,28 +82,55 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   "Notes",
 ];
 
-export interface ClientProfile {
-  name: string;
-  tagline: string;
-  industry: string;
-  website: string;
-  email: string;
-  phone: string;
-  timezone: string;
-  socials: Partial<Record<Platform, string>> & { other?: string };
-  notes: string;
+export interface SocialLinks {
+  instagram?: string;
+  tiktok?: string;
+  linkedin?: string;
+  youtube?: string;
+  facebook?: string;
+  pinterest?: string;
+  other?: string;
 }
 
-export interface ManagerProfile {
+export interface StrategySection {
+  key: string;
+  title: string;
+  items: string[];
+}
+
+export interface KpiItem {
   name: string;
-  agency: string;
+  baseline: string;
+  target: string;
+  actual: string;
+  unit: string;
+  deadline: string;
+}
+
+export interface ClientRecord {
+  id: Id;
+  name: string;
+  contactName: string;
   email: string;
-  timezone: string;
+  phone: string;
+  website: string;
+  industry: string;
+  packageName: string;
+  monthlyFee: number;
+  startDate: string;
+  status: ClientStatus;
+  socials: SocialLinks;
+  notes: string;
+  onboarding: Partial<Record<OnboardingStep, string>>;
+  strategy: StrategySection[];
+  kpis: KpiItem[];
+  createdAt: number;
 }
 
 export interface ContentItem {
-  id: string;
-  date: string; // ISO yyyy-mm-dd
+  id: Id;
+  clientId: Id;
+  date: string;
   platform: Platform;
   format: string;
   topic: string;
@@ -101,8 +143,24 @@ export interface ContentItem {
   owner: string;
 }
 
+export interface TaskItem {
+  id: Id;
+  clientId: Id;
+  title: string;
+  project: string;
+  category: string;
+  priority: Priority;
+  status: TaskStatus;
+  startDate: string;
+  dueDate: string;
+  completedAt: string;
+  dependsOn: string;
+  notes: string;
+}
+
 export interface RequestItem {
-  id: string;
+  id: Id;
+  clientId: Id;
   title: string;
   category: string;
   priority: Priority;
@@ -114,7 +172,8 @@ export interface RequestItem {
 }
 
 export interface MeetingItem {
-  id: string;
+  id: Id;
+  clientId: Id;
   title: string;
   date: string;
   time: string;
@@ -126,89 +185,70 @@ export interface MeetingItem {
 }
 
 export interface DeliverableItem {
-  id: string;
+  id: Id;
+  clientId: Id;
   name: string;
   category: FileCategory;
   description: string;
   date: string;
-  status: "Shared" | "In progress" | "Archived";
+  status: FileStatus;
   relatedContent: string;
   relatedProject: string;
-  size: string;
 }
 
-export interface MetricsRecord {
-  id: string;
-  month: string; // ISO yyyy-mm
-  platform: Platform;
-  followers: number;
-  reach: number;
-  engagement: number;
-  clicks: number;
+export interface FinanceEntry {
+  id: Id;
+  /** Empty string when the entry is not tied to a specific client. */
+  clientId: Id | "";
+  date: string;
+  type: FinanceType;
+  amount: number;
+  category: string;
+  description: string;
+  status: FinanceStatus;
+  dueDate: string;
+  paidDate: string;
 }
 
-export interface StrategySection {
-  key: string;
-  title: string;
-  items: string[];
-}
-
-export interface KpiItem {
-  id: string;
-  name: string;
-  baseline: string;
-  target: string;
-  actual: string;
-  unit: string;
-  deadline: string;
-}
-
-export interface PortalSettings {
-  theme: "light" | "dark";
-  density: "comfortable" | "compact";
+export interface WorkspaceProfile {
+  managerName: string;
+  agency: string;
+  email: string;
+  currency: string;
+  weekStart: "Monday" | "Sunday";
+  approvalTurnaroundDays: number;
   notifyEmail: boolean;
   notifyApprovals: boolean;
-  notifyReports: boolean;
-}
-
-export interface PortalState {
-  version: number;
-  client: ClientProfile;
-  manager: ManagerProfile;
-  content: ContentItem[];
-  requests: RequestItem[];
-  meetings: MeetingItem[];
-  deliverables: DeliverableItem[];
-  metrics: MetricsRecord[];
-  onboarding: Record<OnboardingStep, string>;
-  strategy: StrategySection[];
-  kpis: KpiItem[];
-  settings: PortalSettings;
-  onboardedAt: string | null;
+  notifyFinance: boolean;
+  density: "comfortable" | "compact";
 }
 
 export type SectionId =
   | "dashboard"
-  | "onboarding"
-  | "strategy"
+  | "clients"
   | "calendar"
+  | "tasks"
   | "approvals"
-  | "files"
-  | "performance"
+  | "finance"
   | "requests"
   | "meetings"
+  | "files"
+  | "strategy"
+  | "onboarding"
   | "settings";
 
 export const SECTIONS = [
   "dashboard",
-  "onboarding",
-  "strategy",
+  "clients",
   "calendar",
+  "tasks",
   "approvals",
-  "files",
-  "performance",
+  "finance",
   "requests",
   "meetings",
+  "files",
+  "strategy",
+  "onboarding",
   "settings",
 ] as const satisfies readonly SectionId[];
 
@@ -228,6 +268,32 @@ export const REQUEST_STATUSES: RequestStatus[] = [
   "Waiting",
   "Completed",
   "Closed",
+];
+
+export const TASK_STATUSES: TaskStatus[] = ["Backlog", "In Progress", "Blocked", "Done"];
+
+export const CLIENT_STATUSES: ClientStatus[] = ["Active", "Paused", "Prospect", "Archived"];
+
+export const FINANCE_CATEGORIES = [
+  "Retainer",
+  "Project fee",
+  "Collab",
+  "Production",
+  "Software",
+  "Equipment",
+  "Contractor",
+  "Ads",
+  "Other",
+];
+
+export const TASK_CATEGORIES = [
+  "Content",
+  "Design",
+  "Production",
+  "Publishing",
+  "Strategy",
+  "Reporting",
+  "Admin",
 ];
 
 export const PLATFORMS: Platform[] = [

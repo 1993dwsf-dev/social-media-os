@@ -51,6 +51,26 @@ export const FILE_CHIP: Record<DeliverableItemStatus, ChipStyle> = {
 
 type DeliverableItemStatus = "Shared" | "In progress" | "Archived";
 
+export const TASK_CHIP: Record<string, ChipStyle> = {
+  Backlog: { className: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground/50" },
+  "In Progress": { className: "bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-200 dark:border-indigo-900", dot: "bg-indigo-500" },
+  Blocked: { className: "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-900", dot: "bg-rose-500" },
+  Done: { className: "bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-950/60 dark:text-teal-200 dark:border-teal-900", dot: "bg-teal-600" },
+};
+
+export const FINANCE_CHIP: Record<string, ChipStyle> = {
+  Paid: { className: "bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-950/60 dark:text-teal-200 dark:border-teal-900", dot: "bg-teal-600" },
+  Pending: { className: "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-900", dot: "bg-amber-500" },
+  Overdue: { className: "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/60 dark:text-rose-200 dark:border-rose-900", dot: "bg-rose-500" },
+};
+
+export const CLIENT_CHIP: Record<string, ChipStyle> = {
+  Active: { className: "bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-950/60 dark:text-teal-200 dark:border-teal-900", dot: "bg-teal-600" },
+  Paused: { className: "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-900", dot: "bg-amber-500" },
+  Prospect: { className: "bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/60 dark:text-sky-200 dark:border-sky-900", dot: "bg-sky-500" },
+  Archived: { className: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground/50" },
+};
+
 export const PLATFORM_META: Record<
   Platform,
   { short: string; className: string; chartColor: string }

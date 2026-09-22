@@ -1,190 +1,284 @@
+// Approvals: the manager records what the client decided about each piece of
+// content, so the pipeline always reflects reality.
+
 import { useMemo, useState } from "react";
-import { CheckCircle2, MessageSquare, Undo2, XCircle } from "lucide-react";
+import { Check, Clock, MessageSquare, Send, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
-import { PlatformChip, StatusChip, EmptyState } from "@/components/portal/Shared";
+import { RecordDialog } from "@/components/portal/RecordDialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import type { ContentItem, PortalState } from "@/data/types";
-import { formatDate } from "@/data/constants";
+import { ClientChip, EmptyState, PlatformChip, SectionHeader, StatusChip } from "@/components/portal/Shared";
+import { formatDate, todayISO } from "@/data/constants";
+import type { ContentItem, ContentStatus } from "@/data/types";
+import type { Workspace } from "@/data/workspace";
+import { cn } from "@/lib/utils";
 
-interface Props {
-  state: PortalState;
-  update: (fn: (prev: PortalState) => PortalState) => void;
-}
+const COLUMNS: { key: string; title: string; hint: string; statuses: ContentStatus[] }[] = [
+  {
+    key: "review",
+    title: "Waiting on the client",
+    hint: "Sent and awaiting a decision",
+    statuses: ["In Review"],
+  },
+  {
+    key: "changes",
+    title: "Changes requested",
+    hint: "Rework, then send it back",
+    statuses: ["Changes Requested"],
+  },
+  {
+    key: "ready",
+    title: "Approved & scheduled",
+    hint: "Cleared to publish",
+    statuses: ["Approved", "Scheduled"],
+  },
+];
 
-export function ApprovalsSection({ state, update }: Props) {
-  const [filter, setFilter] = useState<"action" | "all">("action");
-  const [commentDraft, setCommentDraft] = useState<Record<string, string>>({});
+export function ApprovalsSection({ ws }: { ws: Workspace }) {
+  const [clientFilter, setClientFilter] = useState("all");
+  const [editing, setEditing] = useState<ContentItem | null>(null);
+  const [showPublished, setShowPublished] = useState(false);
 
-  const items = useMemo(() => {
-    const needsAction = (c: ContentItem) =>
-      c.status === "In Review" || c.status === "Changes Requested";
-    return state.content
-      .filter((c) => filter === "all" || needsAction(c))
-      .filter((c) => c.status !== "Idea" && c.status !== "Drafting" && c.status !== "Published")
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [state.content, filter]);
-
-  const setStatus = (id: string, status: ContentItem["status"]) => {
-    update((prev) => ({
-      ...prev,
-      content: prev.content.map((c) =>
-        c.id === id
-          ? { ...c, status, clientComments: commentDraft[id]?.trim() || c.clientComments }
-          : c,
+  const scoped = useMemo(
+    () =>
+      ws.content.filter(
+        (item) => clientFilter === "all" || item.clientId === clientFilter,
       ),
-    }));
-    setCommentDraft((d) => ({ ...d, [id]: "" }));
+    [ws.content, clientFilter],
+  );
+
+  const published = scoped.filter((item) => item.status === "Published");
+
+  const setStatus = async (item: ContentItem, status: ContentStatus) => {
+    try {
+      await ws.saveContent({ ...item, status } as Omit<ContentItem, "id">, item.id);
+      toast.success(`“${item.topic}” marked ${status.toLowerCase()}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the item");
+    }
   };
 
-  const addComment = (id: string) => {
-    const text = commentDraft[id]?.trim();
-    if (!text) return;
-    update((prev) => ({
-      ...prev,
-      content: prev.content.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              clientComments: c.clientComments ? `${c.clientComments}\n— ${text}` : text,
-              status: c.status === "In Review" ? "Changes Requested" : c.status,
-            }
-          : c,
-      ),
-    }));
-    setCommentDraft((d) => ({ ...d, [id]: "" }));
-  };
-
-  const pendingCount = state.content.filter(
-    (c) => c.status === "In Review" || c.status === "Changes Requested",
-  ).length;
+  const waiting = COLUMNS.reduce(
+    (sum, column) => sum + scoped.filter((item) => column.statuses.includes(item.status)).length,
+    0,
+  );
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Approvals</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {pendingCount > 0
-              ? `${pendingCount} item${pendingCount === 1 ? "" : "s"} need${pendingCount === 1 ? "s" : ""} your attention.`
-              : "You're all caught up."}
-          </p>
-        </div>
-        <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
-          <Button
-            variant={filter === "action" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7"
-            onClick={() => setFilter("action")}
-          >
-            Needs action
-          </Button>
-          <Button
-            variant={filter === "all" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7"
-            onClick={() => setFilter("all")}
-          >
-            All pipeline
-          </Button>
-        </div>
-      </header>
+    <div>
+      <SectionHeader
+        title="Approvals"
+        description={`${waiting} piece${waiting === 1 ? "" : "s"} of content still moving through review. Record each client decision here and the calendar updates automatically.`}
+      >
+        <select
+          value={clientFilter}
+          onChange={(e) => setClientFilter(e.target.value)}
+          className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          aria-label="Filter by client"
+        >
+          <option value="all">All clients</option>
+          {ws.clients.map((client) => (
+            <option key={client.id} value={client.id}>
+              {client.name}
+            </option>
+          ))}
+        </select>
+      </SectionHeader>
 
-      <div className="space-y-4">
-        {items.map((c) => (
-          <article
-            key={c.id}
-            className="card-lift rounded-xl border border-border/70 bg-card p-5"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <PlatformChip platform={c.platform} />
-                  <span className="text-xs text-muted-foreground">{c.format}</span>
-                  <span className="text-xs text-muted-foreground">·</span>
-                  <span className="text-xs text-muted-foreground">{formatDate(c.date)}</span>
+      <div className="grid gap-4 lg:grid-cols-3">
+        {COLUMNS.map((column) => {
+          const items = scoped
+            .filter((item) => column.statuses.includes(item.status))
+            .sort((a, b) => a.date.localeCompare(b.date));
+          return (
+            <section key={column.key} className="rounded-xl border border-border/70 bg-card">
+              <header className="flex items-center justify-between gap-2 border-b border-border/70 px-3 py-2.5">
+                <div>
+                  <h2 className="text-sm font-semibold">{column.title}</h2>
+                  <p className="text-[11px] text-muted-foreground">{column.hint}</p>
                 </div>
-                <h2 className="mt-2 text-base font-semibold">{c.topic}</h2>
-                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{c.caption}</p>
-                {c.assetNote && (
-                  <p className="mt-1 text-xs text-muted-foreground">Asset: {c.assetNote}</p>
-                )}
-              </div>
-              <StatusChip status={c.status} />
-            </div>
-
-            {(c.managerNotes || c.clientComments) && (
-              <div className="mt-4 space-y-2 rounded-lg bg-muted/40 p-3 text-sm">
-                {c.managerNotes && (
-                  <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground">Manager note:</span>{" "}
-                    {c.managerNotes}
+                <Badge variant="outline" className="tabular">
+                  {items.length}
+                </Badge>
+              </header>
+              <div className="space-y-2 p-2.5">
+                {items.length === 0 ? (
+                  <p className="rounded-lg border border-dashed border-border/70 px-3 py-6 text-center text-xs text-muted-foreground">
+                    Nothing here.
                   </p>
+                ) : (
+                  items.map((item) => (
+                    <article
+                      key={item.id}
+                      className="card-lift rounded-lg border border-border/70 bg-background p-2.5"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <PlatformChip platform={item.platform} />
+                        <span className="text-[11px] text-muted-foreground">
+                          {formatDate(item.date)}
+                        </span>
+                        <span className="ml-auto">
+                          <StatusChip status={item.status} />
+                        </span>
+                      </div>
+                      <p className="mt-1.5 text-sm font-medium leading-snug">{item.topic}</p>
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <ClientChip name={ws.clientName(item.clientId)} />
+                        <span className="text-[11px] text-muted-foreground">{item.format}</span>
+                      </div>
+                      {item.clientComments ? (
+                        <p className="mt-2 rounded-md bg-amber-50 p-1.5 text-[11px] leading-relaxed text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                          {item.clientComments}
+                        </p>
+                      ) : null}
+                      {item.managerNotes ? (
+                        <p className="mt-1.5 text-[11px] text-muted-foreground">{item.managerNotes}</p>
+                      ) : null}
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {item.status === "In Review" || item.status === "Changes Requested" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 gap-1 px-2 text-[11px]"
+                            onClick={() => void setStatus(item, "Approved")}
+                          >
+                            <Check className="size-3" /> Approved
+                          </Button>
+                        ) : null}
+                        {(item.status === "In Review" || item.status === "Approved") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 gap-1 px-2 text-[11px]"
+                            onClick={() => void setStatus(item, "Changes Requested")}
+                          >
+                            <MessageSquare className="size-3" /> Changes
+                          </Button>
+                        )}
+                        {item.status === "Approved" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 gap-1 px-2 text-[11px]"
+                            onClick={() => void setStatus(item, "Scheduled")}
+                          >
+                            <Clock className="size-3" /> Scheduled
+                          </Button>
+                        ) : null}
+                        {item.status === "Approved" || item.status === "Scheduled" ? (
+                          <Button
+                            size="sm"
+                            className="h-7 gap-1 px-2 text-[11px]"
+                            onClick={() => void setStatus(item, "Published")}
+                          >
+                            <Send className="size-3" /> Published
+                          </Button>
+                        ) : null}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1 px-2 text-[11px] text-muted-foreground"
+                          onClick={() => setEditing(item)}
+                        >
+                          <Sparkles className="size-3" /> Feedback
+                        </Button>
+                      </div>
+                    </article>
+                  ))
                 )}
-                {c.clientComments && (
-                  <p className="whitespace-pre-line text-muted-foreground">
-                    <span className="font-medium text-foreground">Your feedback:</span>{" "}
-                    {c.clientComments}
-                  </p>
-                )}
               </div>
-            )}
-
-            {c.status !== "Approved" && c.status !== "Scheduled" && (
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-                <Input
-                  value={commentDraft[c.id] ?? ""}
-                  onChange={(e) =>
-                    setCommentDraft((d) => ({ ...d, [c.id]: e.target.value }))
-                  }
-                  placeholder="Leave a comment for the team…"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") addComment(c.id);
-                  }}
-                />
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={() => addComment(c.id)}>
-                    <MessageSquare className="mr-1 size-3.5" /> Comment
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-rose-700 hover:text-rose-800 dark:text-rose-400"
-                    onClick={() => setStatus(c.id, "Changes Requested")}
-                  >
-                    <XCircle className="mr-1 size-3.5" /> Request changes
-                  </Button>
-                  <Button size="sm" onClick={() => setStatus(c.id, "Approved")}>
-                    <CheckCircle2 className="mr-1 size-3.5" /> Approve
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {(c.status === "Approved" || c.status === "Scheduled") && (
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-xs text-muted-foreground">
-                  Approved {c.status === "Scheduled" && "and scheduled"} — no action needed.
-                </p>
-                <Button variant="ghost" size="sm" onClick={() => setStatus(c.id, "In Review")}>
-                  <Undo2 className="mr-1 size-3.5" /> Revoke
-                </Button>
-              </div>
-            )}
-          </article>
-        ))}
-        {items.length === 0 && (
-          <EmptyState
-            title="Nothing to approve right now"
-            hint="New items appear here when your manager submits content for review."
-          />
-        )}
+            </section>
+          );
+        })}
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        Workflow: Draft → In Review → <span className="font-medium">Approved</span> → Scheduled →
-        Published. Commenting on an item moves it back to “Changes Requested”.
-      </p>
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={() => setShowPublished((v) => !v)}
+          className={cn(
+            "flex w-full items-center justify-between rounded-xl border border-border/70 bg-card px-3 py-2.5 text-left",
+          )}
+        >
+          <span>
+            <span className="text-sm font-semibold">Published</span>
+            <span className="ml-2 text-xs text-muted-foreground">
+              {published.length} piece{published.length === 1 ? "" : "s"} live
+            </span>
+          </span>
+          <Badge variant="outline">{showPublished ? "Hide" : "Show"}</Badge>
+        </button>
+        {showPublished ? (
+          published.length === 0 ? (
+            <div className="mt-3">
+              <EmptyState title="Nothing published yet" hint="Mark items published as they go live." />
+            </div>
+          ) : (
+            <ul className="mt-3 space-y-1.5">
+              {published.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-card px-3 py-2 text-sm"
+                >
+                  <PlatformChip platform={item.platform} />
+                  <span className="min-w-0 flex-1 truncate">{item.topic}</span>
+                  <ClientChip name={ws.clientName(item.clientId)} />
+                  <span className="text-xs text-muted-foreground">{formatDate(item.date)}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-[11px]"
+                    onClick={() => void setStatus(item, "Approved")}
+                  >
+                    Reopen
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )
+        ) : null}
+      </div>
+
+      {editing ? (
+        <RecordDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditing(null);
+          }}
+          title="Client feedback"
+          description={`${editing.topic} · ${ws.clientName(editing.clientId)}`}
+          clients={ws.clients}
+          fields={[
+            { key: "status", label: "Approval status", type: "select", options: ["In Review", "Changes Requested", "Approved", "Scheduled", "Published"] },
+            { key: "clientComments", label: "What the client said", type: "textarea" },
+            { key: "managerNotes", label: "My notes", type: "textarea" },
+          ]}
+          initial={{
+            status: editing.status,
+            clientComments: editing.clientComments,
+            managerNotes: editing.managerNotes,
+          }}
+          submitLabel="Save feedback"
+          onSubmit={async (values) => {
+            try {
+              await ws.saveContent(
+                {
+                  ...editing,
+                  status: (values.status || editing.status) as ContentStatus,
+                  clientComments: values.clientComments,
+                  managerNotes: values.managerNotes,
+                  date: editing.date || todayISO(),
+                } as Omit<ContentItem, "id">,
+                editing.id,
+              );
+              toast.success("Feedback saved");
+              setEditing(null);
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Could not save the feedback");
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,319 +1,331 @@
+// Manager dashboard: the whole book of business at a glance — clients, work in
+// flight, money in and out, and what needs attention today.
+
 import { useMemo } from "react";
 import {
-  CalendarClock,
-  CheckCircle2,
-  Clock,
-  Eye,
-  FileCheck2,
+  AlertTriangle,
+  ArrowUpRight,
+  CalendarPlus,
+  CheckSquare,
+  ListChecks,
+  Plus,
   Users,
-  Boxes,
+  Wallet,
 } from "lucide-react";
 
-import { KpiCard, PlatformChip, StatusChip } from "@/components/portal/Shared";
-import { ProgressBar, Sparkline } from "@/components/portal/Charts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatNumber, formatDate, todayISO } from "@/data/constants";
-import type { PortalState, SectionId } from "@/data/types";
-import { exportNotionPackage } from "@/data/notion-export";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ClientChip, KpiCard, SectionHeader, StatusChip } from "@/components/portal/Shared";
+import { formatDate, todayISO } from "@/data/constants";
+import type { SectionId } from "@/data/types";
+import type { Workspace } from "@/data/workspace";
+import { cn } from "@/lib/utils";
+
+function addDays(iso: string, days: number): string {
+  const date = new Date(`${iso}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 
 export function DashboardSection({
-  state,
+  ws,
   navigate,
 }: {
-  state: PortalState;
+  ws: Workspace;
   navigate: (id: SectionId) => void;
 }) {
   const today = todayISO();
+  const month = today.slice(0, 7);
 
-  const stats = useMemo(() => {
-    const upcoming = state.content
-      .filter((c) => c.date >= today && c.status !== "Published")
-      .sort((a, b) => a.date.localeCompare(b.date));
-    const pendingApprovals = state.content.filter(
-      (c) => c.status === "In Review" || c.status === "Changes Requested",
+  const metrics = useMemo(() => {
+    const activeClients = ws.clients.filter((c) => c.status === "Active");
+    const monthContent = ws.content.filter((item) => item.date.startsWith(month));
+    const waiting = ws.content.filter(
+      (item) => item.status === "In Review" || item.status === "Changes Requested",
     );
-    const openRequests = state.requests.filter(
-      (r) => r.status !== "Completed" && r.status !== "Closed",
-    );
-    const upcomingMeetings = state.meetings
-      .filter((m) => m.status === "Scheduled" && m.date >= today)
-      .sort((a, b) => a.date.localeCompare(b.date));
-    const recentDeliverables = [...state.deliverables]
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(0, 3);
+    const openTasks = ws.tasks.filter((t) => t.status !== "Done");
+    const overdue = openTasks.filter((t) => t.dueDate && t.dueDate < today);
+    const income = ws.finance
+      .filter((f) => f.type === "Income" && f.date.startsWith(month))
+      .reduce((sum, f) => sum + f.amount, 0);
+    const expenses = ws.finance
+      .filter((f) => f.type === "Expense" && f.date.startsWith(month))
+      .reduce((sum, f) => sum + f.amount, 0);
+    const awaitingPayment = ws.finance
+      .filter((f) => f.type === "Income" && f.status !== "Paid")
+      .reduce((sum, f) => sum + f.amount, 0);
+    return { activeClients, monthContent, waiting, openTasks, overdue, income, expenses, awaitingPayment };
+  }, [ws.clients, ws.content, ws.tasks, ws.finance, month, today]);
 
-    const last6 = state.metrics.reduce<Map<string, { reach: number; engagement: number }>>(
-      (acc, m) => {
-        const cur = acc.get(m.month) ?? { reach: 0, engagement: 0 };
-        acc.set(m.month, {
-          reach: cur.reach + m.reach,
-          engagement: cur.engagement + m.engagement,
-        });
-        return acc;
-      },
-      new Map(),
-    );
-    const trend = [...last6.entries()].sort(([a], [b]) => a.localeCompare(b));
-    const reachTrend = trend.map(([, v]) => v.reach);
-    const lastMonth = trend[trend.length - 1]?.[0];
-    const prevMonth = trend[trend.length - 2]?.[0];
-    const totalFollowers = state.metrics
-      .filter((m) => m.month === lastMonth)
-      .reduce((s, m) => s + m.followers, 0);
-    const prevFollowers = state.metrics
-      .filter((m) => m.month === prevMonth)
-      .reduce((s, m) => s + m.followers, 0);
-    const followerDelta =
-      prevFollowers > 0
-        ? Math.round(((totalFollowers - prevFollowers) / prevFollowers) * 1000) / 10
-        : 0;
+  const agenda = useMemo(() => {
+    const horizon = addDays(today, 7);
+    const entries: { date: string; kind: string; title: string; clientId: string; extra?: string }[] = [];
+    for (const item of ws.content) {
+      if (item.date >= today && item.date <= horizon && item.status !== "Published") {
+        entries.push({ date: item.date, kind: "content", title: item.topic, clientId: item.clientId, extra: item.platform });
+      }
+    }
+    for (const task of ws.tasks) {
+      if (task.dueDate >= today && task.dueDate <= horizon && task.status !== "Done") {
+        entries.push({ date: task.dueDate, kind: "task", title: task.title, clientId: task.clientId, extra: task.priority });
+      }
+    }
+    for (const meeting of ws.meetings) {
+      if (meeting.date >= today && meeting.date <= horizon && meeting.status === "Scheduled") {
+        entries.push({ date: meeting.date, kind: "meeting", title: meeting.title, clientId: meeting.clientId, extra: meeting.time });
+      }
+    }
+    return entries.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 12);
+  }, [ws.content, ws.tasks, ws.meetings, today]);
 
-    return {
-      upcoming,
-      pendingApprovals,
-      openRequests,
-      upcomingMeetings,
-      recentDeliverables,
-      reachTrend,
-      totalFollowers,
-      followerDelta,
-      totalReach: trend.length > 0 ? trend[trend.length - 1][1].reach : 0,
-      totalEngagement: trend.length > 0 ? trend[trend.length - 1][1].engagement : 0,
-    };
-  }, [state, today]);
-
-  const monthName = new Date().toLocaleString("en-US", { month: "long", year: "numeric" });
+  const perClient = useMemo(
+    () =>
+      ws.clients.map((client) => {
+        const planned = ws.content.filter(
+          (item) => item.clientId === client.id && item.date.startsWith(month),
+        );
+        const published = planned.filter((item) => item.status === "Published").length;
+        const open = ws.tasks.filter((t) => t.clientId === client.id && t.status !== "Done");
+        const overdue = open.filter((t) => t.dueDate && t.dueDate < today).length;
+        const net = ws.finance
+          .filter((f) => f.clientId === client.id && f.date.startsWith(month))
+          .reduce((sum, f) => sum + (f.type === "Income" ? f.amount : -f.amount), 0);
+        return { client, planned: planned.length, published, open: open.length, overdue, net };
+      }),
+    [ws.clients, ws.content, ws.tasks, ws.finance, month, today],
+  );
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-sm text-muted-foreground">{monthName} · Client workspace</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-            Welcome back — here's {state.client.name.split(" ")[0]}'s month at a glance
-          </h1>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => exportNotionPackage(state)}
-          title="Download markdown pages + CSV databases for Notion"
-        >
-          <Boxes className="mr-1.5 size-3.5" /> Notion package
+    <div>
+      <SectionHeader
+        title={`Hello${ws.profile.managerName ? `, ${ws.profile.managerName.split(" ")[0]}` : ""}`}
+        description={`${metrics.activeClients.length} active client${metrics.activeClients.length === 1 ? "" : "s"} · ${metrics.monthContent.length} posts planned this month · ${metrics.openTasks.length} open tasks.`}
+      >
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("clients")}>
+          <Plus className="size-4" /> New client
         </Button>
-      </header>
+        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("tasks")}>
+          <ListChecks className="size-4" /> Add task
+        </Button>
+        <Button size="sm" className="gap-1.5" onClick={() => navigate("calendar")}>
+          <CalendarPlus className="size-4" /> Add content
+        </Button>
+      </SectionHeader>
 
-      {/* Notifications */}
-      {stats.pendingApprovals.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-900 dark:bg-amber-950/40">
-          <FileCheck2 className="size-4 shrink-0 text-amber-600" />
-          <span className="text-amber-900 dark:text-amber-100">
-            <strong>{stats.pendingApprovals.length} pieces of content</strong> are waiting for
-            your review.
-          </span>
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-auto h-7"
-            onClick={() => navigate("approvals")}
-          >
-            Review now
-          </Button>
-        </div>
-      )}
-
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Followers"
-          value={formatNumber(stats.totalFollowers)}
-          delta={stats.followerDelta >= 0 ? `+${stats.followerDelta}%` : `${stats.followerDelta}%`}
+          label="Active clients"
+          value={String(metrics.activeClients.length)}
+          delta={`${ws.clients.length} total`}
           icon={<Users className="size-4" />}
         />
         <KpiCard
-          label="Reach (last month)"
-          value={formatNumber(stats.totalReach)}
-          icon={<Eye className="size-4" />}
+          label="Awaiting approval"
+          value={String(metrics.waiting.length)}
+          icon={<CheckSquare className="size-4" />}
         />
         <KpiCard
-          label="Pending approvals"
-          value={String(stats.pendingApprovals.length)}
-          icon={<FileCheck2 className="size-4" />}
+          label="Open tasks"
+          value={String(metrics.openTasks.length)}
+          delta={metrics.overdue.length > 0 ? `-${metrics.overdue.length} overdue` : undefined}
+          icon={<ListChecks className="size-4" />}
         />
         <KpiCard
-          label="Open requests"
-          value={String(stats.openRequests.length)}
-          icon={<Clock className="size-4" />}
+          label="Income this month"
+          value={ws.money(metrics.income)}
+          delta={metrics.awaitingPayment > 0 ? `${ws.money(metrics.awaitingPayment)} to collect` : undefined}
+          icon={<ArrowUpRight className="size-4" />}
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Upcoming content */}
-        <section className="card-lift rounded-xl border border-border/70 bg-card lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
-            <h2 className="text-sm font-semibold">Upcoming content</h2>
-            <Button variant="ghost" size="sm" onClick={() => navigate("calendar")}>
-              View calendar
-            </Button>
-          </div>
-          <div className="divide-y divide-border/60">
-            {stats.upcoming.slice(0, 5).map((c) => (
-              <div key={c.id} className="flex items-center gap-3 px-5 py-3">
-                <div className="w-12 shrink-0 text-center">
-                  <p className="text-[10px] uppercase text-muted-foreground">
-                    {new Date(`${c.date}T00:00:00`).toLocaleDateString("en-US", { month: "short" })}
-                  </p>
-                  <p className="tabular text-lg font-semibold leading-none">
-                    {c.date.slice(8, 10)}
-                  </p>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{c.topic}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {c.format} · {c.pillar}
-                  </p>
-                </div>
-                <PlatformChip platform={c.platform} />
-                <StatusChip status={c.status} className="hidden sm:inline-flex" />
-              </div>
-            ))}
-            {stats.upcoming.length === 0 && (
-              <p className="px-5 py-8 text-center text-sm text-muted-foreground">
-                No upcoming content scheduled.
-              </p>
-            )}
-          </div>
-        </section>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiCard
+          label="Expenses this month"
+          value={ws.money(metrics.expenses)}
+          icon={<Wallet className="size-4" />}
+        />
+        <KpiCard
+          label="Net this month"
+          value={ws.money(metrics.income - metrics.expenses)}
+          icon={<Wallet className="size-4" />}
+        />
+        <KpiCard
+          label="Posts planned"
+          value={String(metrics.monthContent.length)}
+          delta={`${metrics.monthContent.filter((c) => c.status === "Published").length} published`}
+          icon={<CalendarPlus className="size-4" />}
+        />
+        <KpiCard
+          label="Overdue tasks"
+          value={String(metrics.overdue.length)}
+          icon={<AlertTriangle className="size-4" />}
+        />
+      </div>
 
-        {/* Right column */}
-        <div className="space-y-6">
-          {/* Performance snapshot */}
-          <section className="card-lift rounded-xl border border-border/70 bg-card p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Performance snapshot</h2>
-              <Button variant="ghost" size="sm" onClick={() => navigate("performance")}>
-                Details
-              </Button>
+      <div className="mt-6 grid gap-4 lg:grid-cols-[3fr_2fr]">
+        <section className="rounded-xl border border-border/70 bg-card">
+          <header className="flex items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
+            <div>
+              <h2 className="text-sm font-semibold">Next 7 days</h2>
+              <p className="text-[11px] text-muted-foreground">Content going out, tasks due and calls</p>
             </div>
-            <p className="mt-4 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Reach · last 6 months
+            <Badge variant="outline" className="tabular">
+              {agenda.length}
+            </Badge>
+          </header>
+          {agenda.length === 0 ? (
+            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Nothing due in the next week.
             </p>
-            <Sparkline values={stats.reachTrend.length >= 2 ? stats.reachTrend : [0, 0]} height={56} />
-            <div className="mt-3 space-y-2.5">
-              {state.kpis.slice(0, 3).map((k) => {
-                const pct = Math.min(
-                  100,
-                  Math.round((parseNum(k.actual) / Math.max(parseNum(k.target), 1)) * 100),
-                );
-                return (
-                  <div key={k.id}>
-                    <div className="flex items-baseline justify-between text-xs">
-                      <span className="truncate text-muted-foreground">{k.name}</span>
-                      <span className="tabular font-medium">{pct}%</span>
-                    </div>
-                    <ProgressBar value={pct} className="mt-1" />
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* Meetings */}
-          <section className="card-lift rounded-xl border border-border/70 bg-card">
-            <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
-              <h2 className="text-sm font-semibold">Upcoming meetings</h2>
-              <Button variant="ghost" size="sm" onClick={() => navigate("meetings")}>
-                All
-              </Button>
-            </div>
-            <div className="divide-y divide-border/60">
-              {stats.upcomingMeetings.slice(0, 3).map((m) => (
-                <div key={m.id} className="flex items-center gap-3 px-5 py-3">
-                  <CalendarClock className="size-4 shrink-0 text-primary" />
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {agenda.map((entry, index) => (
+                <li key={`${entry.kind}-${index}`} className="flex items-center gap-2.5 px-4 py-2.5">
+                  <span
+                    className={cn(
+                      "size-1.5 shrink-0 rounded-full",
+                      entry.kind === "content"
+                        ? "bg-primary"
+                        : entry.kind === "task"
+                          ? "bg-amber-500"
+                          : "bg-sky-500",
+                    )}
+                  />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{m.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(m.date)} · {m.time}
+                    <p className="truncate text-sm">{entry.title}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {entry.kind === "content" ? "Content" : entry.kind === "task" ? "Task" : "Meeting"}
+                      {entry.extra ? ` · ${entry.extra}` : ""}
                     </p>
                   </div>
-                </div>
+                  <ClientChip name={ws.clientName(entry.clientId)} />
+                  <span className="tabular w-20 text-right text-xs text-muted-foreground">
+                    {formatDate(entry.date)}
+                  </span>
+                </li>
               ))}
-              {stats.upcomingMeetings.length === 0 && (
-                <p className="px-5 py-6 text-center text-sm text-muted-foreground">
-                  Nothing scheduled.
-                </p>
-              )}
-            </div>
-          </section>
-        </div>
-      </div>
-
-      {/* Bottom row */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Requests */}
-        <section className="card-lift rounded-xl border border-border/70 bg-card">
-          <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
-            <h2 className="text-sm font-semibold">Open requests</h2>
-            <Button variant="ghost" size="sm" onClick={() => navigate("requests")}>
-              All requests
-            </Button>
-          </div>
-          <div className="divide-y divide-border/60">
-            {stats.openRequests.slice(0, 4).map((r) => (
-              <div key={r.id} className="flex items-center gap-3 px-5 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{r.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Due {formatDate(r.dueDate)} · {r.assignedTo}
-                  </p>
-                </div>
-                <StatusChip status={r.priority} />
-              </div>
-            ))}
-            {stats.openRequests.length === 0 && (
-              <p className="px-5 py-6 text-center text-sm text-muted-foreground">
-                No open requests.
-              </p>
-            )}
-          </div>
+            </ul>
+          )}
         </section>
 
-        {/* Recent deliverables */}
-        <section className="card-lift rounded-xl border border-border/70 bg-card">
-          <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
-            <h2 className="text-sm font-semibold">Recent deliverables</h2>
-            <Button variant="ghost" size="sm" onClick={() => navigate("files")}>
-              Files
-            </Button>
-          </div>
-          <div className="divide-y divide-border/60">
-            {stats.recentDeliverables.map((d) => (
-              <div key={d.id} className="flex items-center gap-3 px-5 py-3">
-                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{d.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(d.date)} · {d.size}
-                  </p>
-                </div>
-                <Badge variant="outline" className="shrink-0">
-                  {d.category}
-                </Badge>
-              </div>
-            ))}
-            {stats.recentDeliverables.length === 0 && (
-              <p className="px-5 py-6 text-center text-sm text-muted-foreground">
-                No deliverables yet.
-              </p>
+        <section className="rounded-xl border border-border/70 bg-card">
+          <header className="border-b border-border/70 px-4 py-3">
+            <h2 className="text-sm font-semibold">Needs attention</h2>
+            <p className="text-[11px] text-muted-foreground">Overdue work and money to collect</p>
+          </header>
+          <div className="space-y-3 p-4">
+            {metrics.overdue.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No overdue tasks. Nice.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {metrics.overdue.slice(0, 6).map((task) => (
+                  <li key={task.id} className="flex items-center gap-2 text-sm">
+                    <AlertTriangle className="size-3.5 shrink-0 text-rose-500" />
+                    <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                    <ClientChip name={ws.clientName(task.clientId)} />
+                    <span className="tabular text-[11px] text-rose-600 dark:text-rose-400">
+                      {formatDate(task.dueDate)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
+            {metrics.awaitingPayment > 0 ? (
+              <p className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                {ws.money(metrics.awaitingPayment)} in income is still marked unpaid.{" "}
+                <button
+                  type="button"
+                  className="font-medium underline"
+                  onClick={() => navigate("finance")}
+                >
+                  Review finance
+                </button>
+              </p>
+            ) : null}
           </div>
         </section>
       </div>
+
+      <section className="mt-6 rounded-xl border border-border/70 bg-card">
+        <header className="flex items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
+          <div>
+            <h2 className="text-sm font-semibold">Clients this month</h2>
+            <p className="text-[11px] text-muted-foreground">
+              Planned posts, open work and net result per client
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => navigate("clients")}>
+            Manage clients <ArrowUpRight className="size-3.5" />
+          </Button>
+        </header>
+        {perClient.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+            Add your first client to see this table.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Planned</TableHead>
+                  <TableHead className="text-right">Published</TableHead>
+                  <TableHead className="text-right">Open tasks</TableHead>
+                  <TableHead className="text-right">Overdue</TableHead>
+                  <TableHead className="text-right">Net this month</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {perClient.map((row) => (
+                  <TableRow key={row.client.id}>
+                    <TableCell className="font-medium">
+                      <span className="block">{row.client.name}</span>
+                      <span className="text-[11px] font-normal text-muted-foreground">
+                        {row.client.packageName || "No package"}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <StatusChip status={row.client.status} />
+                    </TableCell>
+                    <TableCell className="tabular text-right">{row.planned}</TableCell>
+                    <TableCell className="tabular text-right">{row.published}</TableCell>
+                    <TableCell className="tabular text-right">{row.open}</TableCell>
+                    <TableCell
+                      className={cn(
+                        "tabular text-right",
+                        row.overdue > 0 && "font-medium text-rose-600 dark:text-rose-400",
+                      )}
+                    >
+                      {row.overdue}
+                    </TableCell>
+                    <TableCell
+                      className={cn(
+                        "tabular text-right",
+                        row.net > 0
+                          ? "text-teal-700 dark:text-teal-400"
+                          : row.net < 0
+                            ? "text-rose-600 dark:text-rose-400"
+                            : "",
+                      )}
+                    >
+                      {ws.money(row.net)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
     </div>
   );
-}
-
-function parseNum(s: string): number {
-  return Number(s.replace(/[^0-9.]/g, "")) || 0;
 }

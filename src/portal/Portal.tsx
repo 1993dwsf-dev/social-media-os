@@ -1,19 +1,21 @@
 import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import {
+  Building2,
   CalendarDays,
   CheckSquare,
+  ClipboardCheck,
   FileText,
+  FolderOpen,
   LayoutDashboard,
   ListChecks,
   LogOut,
   Menu,
+  Settings as SettingsIcon,
   Sparkles,
   Table2,
-  TrendingUp,
-  Users,
   Video,
-  Settings as SettingsIcon,
+  Wallet,
   X,
 } from "lucide-react";
 
@@ -22,19 +24,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
-import { usePortalStore } from "@/data/store";
+import { todayISO } from "@/data/constants";
 import type { SectionId } from "@/data/types";
+import { SECTIONS } from "@/data/types";
+import { useWorkspace } from "@/data/workspace";
 import { cn } from "@/lib/utils";
 
 import { DashboardSection } from "./sections/DashboardSection";
-import { OnboardingSection } from "./sections/OnboardingSection";
+import { ClientsSection } from "./sections/ClientsSection";
 import { StrategySection } from "./sections/StrategySection";
+import { OnboardingSection } from "./sections/OnboardingSection";
 import { CalendarSection } from "./sections/CalendarSection";
+import { TasksSection } from "./sections/TasksSection";
 import { ApprovalsSection } from "./sections/ApprovalsSection";
-import { FilesSection } from "./sections/FilesSection";
-import { PerformanceSection } from "./sections/PerformanceSection";
 import { RequestsSection } from "./sections/RequestsSection";
+import { FinanceSection } from "./sections/FinanceSection";
 import { MeetingsSection } from "./sections/MeetingsSection";
+import { FilesSection } from "./sections/FilesSection";
 import { SettingsSection } from "./sections/SettingsSection";
 
 const NAV: {
@@ -44,58 +50,67 @@ const NAV: {
   group: string;
 }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, group: "Overview" },
-  { id: "onboarding", label: "Onboarding", icon: ListChecks, group: "Overview" },
+  { id: "clients", label: "Clients", icon: Building2, group: "Overview" },
   { id: "strategy", label: "Strategy", icon: Sparkles, group: "Overview" },
-  { id: "calendar", label: "Content Calendar", icon: CalendarDays, group: "Collaboration" },
-  { id: "approvals", label: "Approvals", icon: CheckSquare, group: "Collaboration" },
-  { id: "requests", label: "Requests", icon: FileText, group: "Collaboration" },
-  { id: "meetings", label: "Meetings", icon: Video, group: "Collaboration" },
-  { id: "files", label: "Files & Deliverables", icon: Users, group: "Collaboration" },
-  { id: "performance", label: "Performance", icon: TrendingUp, group: "Insights" },
-  { id: "settings", label: "Settings", icon: SettingsIcon, group: "Insights" },
+  { id: "onboarding", label: "Onboarding", icon: ListChecks, group: "Overview" },
+  { id: "calendar", label: "Content calendar", icon: CalendarDays, group: "Production" },
+  { id: "tasks", label: "Tasks", icon: CheckSquare, group: "Production" },
+  { id: "approvals", label: "Approvals", icon: ClipboardCheck, group: "Production" },
+  { id: "requests", label: "Requests", icon: FileText, group: "Production" },
+  { id: "finance", label: "Finance", icon: Wallet, group: "Business" },
+  { id: "meetings", label: "Meetings", icon: Video, group: "Business" },
+  { id: "files", label: "Files & deliverables", icon: FolderOpen, group: "Business" },
+  { id: "settings", label: "Settings", icon: SettingsIcon, group: "Business" },
 ];
 
-const GROUPS = ["Overview", "Collaboration", "Insights"];
+const GROUPS = ["Overview", "Production", "Business"];
 
 export default function Portal() {
   const { section } = useParams<{ section: string }>();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const store = usePortalStore();
+  const ws = useWorkspace();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const active = (NAV.find((n) => n.id === section)?.id ?? "dashboard") as SectionId;
-  const state = store.state;
+  const active = (SECTIONS.find((id) => id === section) ?? "dashboard") as SectionId;
 
-  const pendingApprovals = state.content.filter(
-    (c) => c.status === "In Review" || c.status === "Changes Requested",
+  const pendingApprovals = ws.content.filter(
+    (item) => item.status === "In Review" || item.status === "Changes Requested",
   ).length;
+  const overdueTasks = ws.tasks.filter(
+    (task) => task.status !== "Done" && task.dueDate && task.dueDate < todayISO(),
+  ).length;
+  const unpaid = ws.finance.filter((entry) => entry.status === "Overdue").length;
 
   const go = (id: SectionId) => {
     navigate(`/app/${id}`);
     setMobileOpen(false);
   };
 
-  const badgeFor = (id: SectionId) =>
-    id === "approvals" && pendingApprovals > 0 ? String(pendingApprovals) : undefined;
+  const badgeFor = (id: SectionId) => {
+    if (id === "approvals" && pendingApprovals > 0) return String(pendingApprovals);
+    if (id === "tasks" && overdueTasks > 0) return String(overdueTasks);
+    if (id === "finance" && unpaid > 0) return String(unpaid);
+    return undefined;
+  };
 
   const navList = (
-    <nav className="flex flex-1 flex-col gap-6 px-3 py-4">
+    <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-3 py-4">
       {GROUPS.map((group) => (
         <div key={group}>
           <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
             {group}
           </p>
           <ul className="space-y-0.5">
-            {NAV.filter((n) => n.group === group).map((n) => {
-              const Icon = n.icon;
-              const isActive = n.id === active;
-              const badge = badgeFor(n.id);
+            {NAV.filter((item) => item.group === group).map((item) => {
+              const Icon = item.icon;
+              const isActive = item.id === active;
+              const badge = badgeFor(item.id);
               return (
-                <li key={n.id}>
+                <li key={item.id}>
                   <button
                     type="button"
-                    onClick={() => go(n.id)}
+                    onClick={() => go(item.id)}
                     className={cn(
                       "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors",
                       isActive
@@ -104,7 +119,7 @@ export default function Portal() {
                     )}
                   >
                     <Icon className="size-4 shrink-0" />
-                    <span className="flex-1 text-left">{n.label}</span>
+                    <span className="flex-1 text-left">{item.label}</span>
                     {badge ? (
                       <Badge className="h-5 min-w-5 justify-center rounded-full px-1.5 text-[10px]">
                         {badge}
@@ -125,7 +140,9 @@ export default function Portal() {
       <img src={logo} alt="" className="size-8 rounded-lg" />
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold tracking-tight">Contentplane</p>
-        <p className="truncate text-[11px] text-muted-foreground">{state.client.name}</p>
+        <p className="truncate text-[11px] text-muted-foreground">
+          {ws.profile.agency || ws.profile.managerName || "Manager workspace"}
+        </p>
       </div>
     </div>
   );
@@ -133,36 +150,31 @@ export default function Portal() {
   const renderSection = () => {
     switch (active) {
       case "dashboard":
-        return <DashboardSection state={state} navigate={go} />;
-      case "onboarding":
-        return <OnboardingSection state={state} update={store.update} />;
+        return <DashboardSection ws={ws} navigate={go} />;
+      case "clients":
+        return <ClientsSection ws={ws} navigate={go} />;
       case "strategy":
-        return <StrategySection state={state} update={store.update} />;
+        return <StrategySection ws={ws} />;
+      case "onboarding":
+        return <OnboardingSection ws={ws} />;
       case "calendar":
-        return <CalendarSection state={state} update={store.update} />;
+        return <CalendarSection ws={ws} />;
+      case "tasks":
+        return <TasksSection ws={ws} />;
       case "approvals":
-        return <ApprovalsSection state={state} update={store.update} />;
-      case "files":
-        return <FilesSection state={state} update={store.update} />;
-      case "performance":
-        return <PerformanceSection state={state} />;
+        return <ApprovalsSection ws={ws} />;
       case "requests":
-        return <RequestsSection state={state} update={store.update} />;
+        return <RequestsSection ws={ws} />;
+      case "finance":
+        return <FinanceSection ws={ws} />;
       case "meetings":
-        return <MeetingsSection state={state} update={store.update} />;
+        return <MeetingsSection ws={ws} />;
+      case "files":
+        return <FilesSection ws={ws} />;
       case "settings":
-        return (
-          <SettingsSection
-            state={state}
-            update={store.update}
-            loadDemo={store.loadDemo}
-            resetPortal={store.resetPortal}
-            exportJSON={store.exportJSON}
-            importJSONFile={store.importJSONFile}
-          />
-        );
+        return <SettingsSection ws={ws} />;
       default:
-        return <DashboardSection state={state} navigate={go} />;
+        return <DashboardSection ws={ws} navigate={go} />;
     }
   };
 
@@ -174,15 +186,14 @@ export default function Portal() {
         {navList}
         <div className="border-t border-border/70 p-3">
           <Button
-            asChild
             variant="outline"
             size="sm"
             className="w-full justify-start gap-2"
             onClick={() => navigate("/workbook")}
           >
-            <div>
+            <div className="flex items-center gap-2">
               <Table2 className="size-4" />
-              Manager Workbook
+              Manager workbook
             </div>
           </Button>
         </div>
@@ -214,14 +225,12 @@ export default function Portal() {
             <img src={logo} alt="" className="size-6 rounded-md" />
           </div>
           <p className="hidden text-sm font-medium sm:block">
-            {NAV.find((n) => n.id === active)?.label}
+            {NAV.find((item) => item.id === active)?.label}
           </p>
           <div className="ml-auto flex items-center gap-2">
-            {store.usingDemo ? (
-              <Badge variant="outline" className="hidden sm:inline-flex">
-                Demo data
-              </Badge>
-            ) : null}
+            <Badge variant="outline" className="hidden sm:inline-flex">
+              {ws.clients.length} client{ws.clients.length === 1 ? "" : "s"}
+            </Badge>
             <Button
               variant="ghost"
               size="sm"
@@ -232,17 +241,26 @@ export default function Portal() {
               }}
             >
               <LogOut className="size-3.5" />
-              <span className="hidden sm:inline">
-                {user?.name ? "Sign out" : "Sign out"}
-              </span>
+              <span className="hidden sm:inline">{user?.name || "Sign out"}</span>
+              <X className="size-3.5 sm:hidden" />
             </Button>
           </div>
         </header>
 
         <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-          {renderSection()}
+          {ws.ready ? (
+            renderSection()
+          ) : (
+            <div className="flex min-h-64 items-center justify-center">
+              <p className="animate-pulse text-sm text-muted-foreground">Loading your workspace…</p>
+            </div>
+          )}
         </main>
       </div>
     </div>
   );
+}
+
+export function RedirectToDashboard() {
+  return <Navigate to="/app/dashboard" replace />;
 }

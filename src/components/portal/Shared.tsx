@@ -1,11 +1,14 @@
 import { cn } from "@/lib/utils";
 import {
+  CLIENT_CHIP,
   FILE_CHIP,
+  FINANCE_CHIP,
   MEETING_CHIP,
   PLATFORM_META,
   PRIORITY_CHIP,
   REQUEST_CHIP,
   STATUS_CHIP,
+  TASK_CHIP,
   type ChipStyle,
 } from "@/data/constants";
 import type {
@@ -23,14 +26,23 @@ type ChipKind =
   | Priority
   | "Shared"
   | "In progress"
-  | "Archived";
+  | "Archived"
+  | (string & {});
+
+const NEUTRAL_CHIP: ChipStyle = {
+  className: "bg-muted text-muted-foreground border-border",
+  dot: "bg-muted-foreground/50",
+};
 
 function styleFor(kind: ChipKind): ChipStyle {
   if (kind in STATUS_CHIP) return STATUS_CHIP[kind as ContentStatus];
   if (kind in REQUEST_CHIP) return REQUEST_CHIP[kind as RequestStatus];
   if (kind in MEETING_CHIP) return MEETING_CHIP[kind as MeetingStatus];
   if (kind in PRIORITY_CHIP) return PRIORITY_CHIP[kind as Priority];
-  return FILE_CHIP[kind as "Shared" | "In progress" | "Archived"];
+  if (kind in TASK_CHIP) return TASK_CHIP[kind];
+  if (kind in FINANCE_CHIP) return FINANCE_CHIP[kind];
+  if (kind in CLIENT_CHIP) return CLIENT_CHIP[kind];
+  return FILE_CHIP[kind as "Shared" | "In progress" | "Archived"] ?? NEUTRAL_CHIP;
 }
 
 export function StatusChip({
@@ -112,6 +124,41 @@ export function KpiCard({
         ) : null}
       </div>
     </div>
+  );
+}
+
+export function SectionHeader({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        {description ? (
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      {children ? <div className="flex flex-wrap items-center gap-2">{children}</div> : null}
+    </div>
+  );
+}
+
+export function ClientChip({ name, className }: { name: string; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md border border-border/70 bg-muted/50 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground whitespace-nowrap",
+        className,
+      )}
+    >
+      {name}
+    </span>
   );
 }
 

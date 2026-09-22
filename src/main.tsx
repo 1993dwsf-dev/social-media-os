@@ -108,14 +108,16 @@ function RouteSyncer() {
 
 const SECTIONS = [
   "dashboard",
-  "onboarding",
-  "strategy",
+  "clients",
   "calendar",
+  "tasks",
   "approvals",
-  "files",
-  "performance",
+  "finance",
   "requests",
   "meetings",
+  "files",
+  "strategy",
+  "onboarding",
   "settings",
 ];
 

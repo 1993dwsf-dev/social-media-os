@@ -1,302 +1,297 @@
-import { useRef, useState } from "react";
-import { Download, Upload } from "lucide-react";
+// Workspace settings: who the manager is, how the workspace behaves, and the
+// data tools (backup, demo data, Notion export, reset).
+
+import { useEffect, useRef, useState } from "react";
+import {
+  Download,
+  FileJson,
+  Sparkles,
+  Trash2,
+  Upload,
+  UserRound,
+} from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import type { PortalState } from "@/data/types";
+import { SectionHeader } from "@/components/portal/Shared";
+import { exportNotionPackage } from "@/data/notion-export";
+import type { WorkspaceProfile } from "@/data/types";
+import type { Workspace } from "@/data/workspace";
+import { cn } from "@/lib/utils";
 
-interface Props {
-  state: PortalState;
-  update: (fn: (prev: PortalState) => PortalState) => void;
-  loadDemo: () => void;
-  resetPortal: () => void;
-  exportJSON: () => void;
-  importJSONFile: (file: File) => Promise<void>;
-}
+const SELECT_CLASS =
+  "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
-export function SettingsSection({
-  state,
-  update,
-  loadDemo,
-  resetPortal,
-  exportJSON,
-  importJSONFile,
-}: Props) {
+export function SettingsSection({ ws }: { ws: Workspace }) {
+  const [form, setForm] = useState<WorkspaceProfile>(ws.profile);
+  const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const setClient = (field: keyof PortalState["client"], value: string) =>
-    update((prev) => ({ ...prev, client: { ...prev.client, [field]: value } }));
+  useEffect(() => {
+    setForm(ws.profile);
+    setDirty(false);
+  }, [ws.profile]);
 
-  const setSetting = <K extends keyof PortalState["settings"]>(
-    key: K,
-    value: PortalState["settings"][K],
-  ) => update((prev) => ({ ...prev, settings: { ...prev.settings, [key]: value } }));
+  const patch = (values: Partial<WorkspaceProfile>) => {
+    setForm((prev) => ({ ...prev, ...values }));
+    setDirty(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await ws.saveProfile(form);
+      setDirty(false);
+      toast.success("Settings saved");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save the settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const notion = () => {
+    exportNotionPackage({
+      profile: ws.profile,
+      clients: ws.clients,
+      content: ws.content,
+      tasks: ws.tasks,
+      requests: ws.requests,
+      meetings: ws.meetings,
+      deliverables: ws.deliverables,
+      finance: ws.finance,
+    });
+    toast.success("Notion package downloading", {
+      description: "Markdown pages and CSV databases — check your downloads.",
+    });
+  };
 
   return (
-    <div className="space-y-5 max-w-3xl">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Client profile, preferences, and data management.
-        </p>
-      </header>
+    <div>
+      <SectionHeader
+        title="Settings"
+        description="Your profile, workspace preferences and data tools. Everything is stored in your account, so it follows you between devices."
+      >
+        <Button size="sm" className="gap-1.5" disabled={!dirty || saving} onClick={() => void save()}>
+          {saving ? "Saving…" : dirty ? "Save settings" : "Saved"}
+        </Button>
+      </SectionHeader>
 
-      {/* Client profile */}
-      <section className="card-lift rounded-xl border border-border/70 bg-card">
-        <div className="border-b border-border/70 px-5 py-4">
-          <h2 className="text-sm font-semibold">Client profile</h2>
-        </div>
-        <div className="grid gap-4 px-5 py-5 sm:grid-cols-2">
-          <div className="grid gap-2">
-            <Label htmlFor="c-name">Client / brand name</Label>
-            <Input
-              id="c-name"
-              value={state.client.name}
-              onChange={(e) => setClient("name", e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="c-tag">Tagline</Label>
-            <Input
-              id="c-tag"
-              value={state.client.tagline}
-              onChange={(e) => setClient("tagline", e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="c-ind">Industry</Label>
-            <Input
-              id="c-ind"
-              value={state.client.industry}
-              onChange={(e) => setClient("industry", e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="c-web">Website</Label>
-            <Input
-              id="c-web"
-              value={state.client.website}
-              onChange={(e) => setClient("website", e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="c-email">Email</Label>
-            <Input
-              id="c-email"
-              type="email"
-              value={state.client.email}
-              onChange={(e) => setClient("email", e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="c-tz">Time zone</Label>
-            <Input
-              id="c-tz"
-              value={state.client.timezone}
-              onChange={(e) => setClient("timezone", e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2 sm:col-span-2">
-            <Label htmlFor="c-notes">Notes</Label>
-            <Textarea
-              id="c-notes"
-              rows={2}
-              value={state.client.notes}
-              onChange={(e) => setClient("notes", e.target.value)}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Preferences */}
-      <section className="card-lift rounded-xl border border-border/70 bg-card">
-        <div className="border-b border-border/70 px-5 py-4">
-          <h2 className="text-sm font-semibold">Preferences</h2>
-        </div>
-        <div className="divide-y divide-border/60">
-          <div className="flex items-center justify-between gap-4 px-5 py-4">
-            <div>
-              <p className="text-sm font-medium">Theme</p>
-              <p className="text-xs text-muted-foreground">Light or dark portal appearance</p>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <section className="rounded-xl border border-border/70 bg-card p-4">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <UserRound className="size-4" /> Manager profile
+          </h2>
+          <div className="mt-3 grid gap-3">
+            <div className="grid gap-1.5">
+              <Label htmlFor="manager-name">Your name</Label>
+              <Input
+                id="manager-name"
+                value={form.managerName}
+                onChange={(e) => patch({ managerName: e.target.value })}
+                placeholder="Alex Moreno"
+              />
             </div>
-            <Select
-              value={state.settings.theme}
-              onValueChange={(v) => setSetting("theme", v as "light" | "dark")}
-            >
-              <SelectTrigger className="w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">Light</SelectItem>
-                <SelectItem value="dark">Dark</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid gap-1.5">
+              <Label htmlFor="manager-agency">Business / agency name</Label>
+              <Input
+                id="manager-agency"
+                value={form.agency}
+                onChange={(e) => patch({ agency: e.target.value })}
+                placeholder="Marrow Social"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="manager-email">Contact email</Label>
+              <Input
+                id="manager-email"
+                type="email"
+                value={form.email}
+                onChange={(e) => patch({ email: e.target.value })}
+                placeholder="you@studio.com"
+              />
+            </div>
           </div>
-          <ToggleRow
-            label="Approval notifications"
-            hint="Email me when content needs review"
-            checked={state.settings.notifyApprovals}
-            onChange={(v) => setSetting("notifyApprovals", v)}
-          />
-          <ToggleRow
-            label="Report notifications"
-            hint="Email me when monthly reports are ready"
-            checked={state.settings.notifyReports}
-            onChange={(v) => setSetting("notifyReports", v)}
-          />
-          <ToggleRow
-            label="General updates"
-            hint="Occasional emails about your account"
-            checked={state.settings.notifyEmail}
-            onChange={(v) => setSetting("notifyEmail", v)}
-          />
-        </div>
-      </section>
+        </section>
 
-      {/* Data */}
-      <section className="card-lift rounded-xl border border-border/70 bg-card">
-        <div className="border-b border-border/70 px-5 py-4">
-          <h2 className="text-sm font-semibold">Data</h2>
-          <p className="text-xs text-muted-foreground">
-            Everything is stored in this browser. Export regularly to keep a backup.
+        <section className="rounded-xl border border-border/70 bg-card p-4">
+          <h2 className="text-sm font-semibold">Preferences</h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor="currency">Currency symbol</Label>
+              <Input
+                id="currency"
+                value={form.currency}
+                onChange={(e) => patch({ currency: e.target.value.slice(0, 3) })}
+                placeholder="$"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="week-start">Week starts on</Label>
+              <select
+                id="week-start"
+                value={form.weekStart}
+                onChange={(e) => patch({ weekStart: e.target.value as WorkspaceProfile["weekStart"] })}
+                className={SELECT_CLASS}
+              >
+                <option value="Monday">Monday</option>
+                <option value="Sunday">Sunday</option>
+              </select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="turnaround">Approval turnaround (days)</Label>
+              <Input
+                id="turnaround"
+                type="number"
+                min={1}
+                value={form.approvalTurnaroundDays}
+                onChange={(e) => patch({ approvalTurnaroundDays: Number(e.target.value || 1) })}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="density">Table density</Label>
+              <select
+                id="density"
+                value={form.density}
+                onChange={(e) => patch({ density: e.target.value as WorkspaceProfile["density"] })}
+                className={SELECT_CLASS}
+              >
+                <option value="comfortable">Comfortable</option>
+                <option value="compact">Compact</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-3 border-t border-border/60 pt-4">
+            {[
+              { key: "notifyEmail" as const, label: "Email notifications" },
+              { key: "notifyApprovals" as const, label: "Remind me about pending approvals" },
+              { key: "notifyFinance" as const, label: "Track unpaid invoices and expenses" },
+            ].map((row) => (
+              <div key={row.key} className="flex items-center justify-between gap-3">
+                <span className="text-sm">{row.label}</span>
+                <Switch
+                  checked={boolean(form[row.key])}
+                  onCheckedChange={(checked) => patch({ [row.key]: checked })}
+                />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-border/70 bg-card p-4">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <FileJson className="size-4" /> Backup & data
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Your workspace lives in your account. Export a JSON backup any time, or import one to
+            move everything into another account.
           </p>
-        </div>
-        <div className="divide-y divide-border/60">
-          <ActionRow
-            title="Export data (JSON)"
-            hint="Download a full backup of this workspace"
-            action={
-              <Button variant="outline" size="sm" onClick={exportJSON}>
-                <Download className="mr-1.5 size-3.5" /> Export
-              </Button>
-            }
-          />
-          <ActionRow
-            title="Import backup"
-            hint="Restore a previously exported JSON file"
-            action={
-              <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-                <Upload className="mr-1.5 size-3.5" /> Import
-              </Button>
-            }
-          />
-          <ActionRow
-            title="Load demo data"
-            hint="Replace current data with the Northwind Coffee example"
-            action={
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={ws.exportJSON}>
+              <Download className="size-4" /> Export JSON
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="size-4" /> Import backup
+            </Button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                try {
+                  await ws.importJSON(file);
+                  toast.success("Backup imported");
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Import failed");
+                } finally {
+                  event.target.value = "";
+                }
+              }}
+            />
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={notion}>
+              <Sparkles className="size-4" /> Notion package
+            </Button>
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-border/70 bg-card p-4">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <Sparkles className="size-4" /> Demo data & reset
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            The demo loads four fictional clients with content, tasks, meetings and finances so you
+            can explore the workspace. Loading it replaces what is here now.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={async () => {
+                try {
+                  await ws.seedDemo();
+                  toast.success("Demo workspace loaded");
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Could not load the demo");
+                }
+              }}
+            >
+              <Sparkles className="size-4" /> Load demo data
+            </Button>
+            {confirmReset ? (
+              <span className="inline-flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={async () => {
+                    try {
+                      await ws.clearWorkspace();
+                      toast.success("Workspace cleared");
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : "Could not clear");
+                    } finally {
+                      setConfirmReset(false);
+                    }
+                  }}
+                >
+                  <Trash2 className="size-4" /> Yes, delete everything
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmReset(false)}>
+                  Cancel
+                </Button>
+              </span>
+            ) : (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  loadDemo();
-                  toast.success("Demo data loaded", {
-                    description: "The Northwind Coffee Roasters workspace is ready.",
-                  });
-                }}
+                className={cn("gap-1.5 text-muted-foreground hover:text-destructive")}
+                onClick={() => setConfirmReset(true)}
               >
-                Load demo
+                <Trash2 className="size-4" /> Clear workspace
               </Button>
-            }
-          />
-          <ActionRow
-            title="Reset portal"
-            hint="Start fresh with empty lists and a blank profile"
-            action={
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={() => {
-                  resetPortal();
-                  toast.success("Portal reset", { description: "All data cleared." });
-                }}
-              >
-                Reset
-              </Button>
-            }
-          />
-        </div>
-      </section>
-
-      <input
-        ref={fileRef}
-        type="file"
-        accept="application/json"
-        className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          try {
-            await importJSONFile(file);
-            toast.success("Backup restored", { description: "Your data has been imported." });
-          } catch (err) {
-            toast.error("Import failed", {
-              description: err instanceof Error ? err.message : "Unknown error",
-            });
-          }
-          e.target.value = "";
-        }}
-      />
-
-      <Separator className="opacity-0" />
-      <p className="text-xs text-muted-foreground">
-        Contentplane · client portal v1.0 — companion to the Manager Workbook and the Notion
-        package.
-      </p>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
 
-function ToggleRow({
-  label,
-  hint,
-  checked,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 px-5 py-4">
-      <div>
-        <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
-    </div>
-  );
-}
-
-function ActionRow({
-  title,
-  hint,
-  action,
-}: {
-  title: string;
-  hint: string;
-  action: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 px-5 py-4">
-      <div>
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </div>
-      {action}
-    </div>
-  );
+function boolean(value: unknown): boolean {
+  return value === true;
 }
