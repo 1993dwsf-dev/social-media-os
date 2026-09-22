@@ -7,6 +7,7 @@ import { SectionHeader } from "@/components/portal/Shared";
 import { todayISO } from "@/data/constants";
 import type { MeetingItem } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
+import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
   { key: "title", label: "Meeting", required: true, placeholder: "Monthly planning call" },
@@ -20,7 +21,7 @@ const FIELDS: FieldSpec[] = [
   { key: "actionItems", label: "Action items", type: "textarea", compact: true },
 ];
 
-export function MeetingsSection({ ws }: { ws: Workspace }) {
+export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
   const next = ws.meetings
     .filter((m) => m.status === "Scheduled" && m.date >= todayISO())
     .slice(0, 1)[0];
@@ -48,13 +49,14 @@ export function MeetingsSection({ ws }: { ws: Workspace }) {
         addLabel="New meeting"
         entityName="Meetings"
         statusKey="status"
+        focusClientId={focus.clientId}
         emptyTitle="No meetings yet"
         emptyHint="Schedule a call and keep the agenda, notes and follow-ups in one place."
         defaults={{
           status: "Scheduled",
           date: todayISO(),
           time: "10:00",
-          clientId: ws.clients[0]?.id ?? "",
+          clientId: focus.defaultClientId || ws.clients[0]?.id || "",
         }}
         onSave={async (values, id) => {
           try {

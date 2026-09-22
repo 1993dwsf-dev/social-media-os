@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { EmptyState, SectionHeader } from "@/components/portal/Shared";
 import type { ClientRecord, KpiItem, StrategySection as StrategyBlock } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
+import type { ClientFocus } from "../useClientFocus";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_SECTIONS: { key: string; title: string }[] = [
@@ -31,9 +32,10 @@ function normalize(client: ClientRecord): StrategyBlock[] {
   });
 }
 
-export function StrategySection({ ws }: { ws: Workspace }) {
-  const [clientId, setClientId] = useState<string>(ws.clients[0]?.id ?? "");
-  const client = ws.clientOf(clientId) ?? ws.clients[0];
+export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
+  // The section follows the workspace-wide focus; when no client is focused,
+  // fall back to the first client so the editor still has a target.
+  const client = ws.clientOf(focus.clientId) ?? ws.clients[0];
 
   const [blocks, setBlocks] = useState<StrategyBlock[]>([]);
   const [kpis, setKpis] = useState<KpiItem[]>([]);
@@ -97,8 +99,8 @@ export function StrategySection({ ws }: { ws: Workspace }) {
         description="Objectives, audience, pillars and KPIs per client — the reference you can pull up before writing a single caption."
       >
         <select
-          value={client.id}
-          onChange={(e) => setClientId(e.target.value)}
+          value={focus.clientId || client.id}
+          onChange={(e) => focus.setFocus(e.target.value)}
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           aria-label="Client"
         >

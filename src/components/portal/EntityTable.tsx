@@ -2,7 +2,7 @@
 // Field specs drive both the table columns and the add/edit dialog, so each
 // section only describes its own data.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +58,8 @@ interface EntityTableProps<T extends { id: string }> {
   emptyHint?: string;
   statusKey?: string;
   defaults?: Record<string, string>;
+  /** Workspace-wide client focus (topbar); "" means all clients. */
+  focusClientId?: string;
 }
 
 const SELECT_CLASS =
@@ -112,9 +114,10 @@ export function EntityTable<T extends { id: string }>({
   emptyHint,
   statusKey = "status",
   defaults = {},
+  focusClientId = "",
 }: EntityTableProps<T>) {
   const [query, setQuery] = useState("");
-  const [clientFilter, setClientFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState(focusClientId || "all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [editing, setEditing] = useState<T | null>(null);
   const [creating, setCreating] = useState(false);
@@ -124,6 +127,11 @@ export function EntityTable<T extends { id: string }>({
   const clientSelectField = fields.find((f) => f.type === "client");
   const statusField = fields.find((f) => f.key === statusKey);
   const statusOptions = statusField?.options ?? [];
+
+  // Follow the workspace-wide client focus from the topbar.
+  useEffect(() => {
+    setClientFilter(focusClientId || "all");
+  }, [focusClientId]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();

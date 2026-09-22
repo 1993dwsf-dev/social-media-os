@@ -8,6 +8,7 @@ import { todayISO } from "@/data/constants";
 import { FILE_CATEGORIES } from "@/data/constants";
 import type { DeliverableItem } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
+import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
   { key: "name", label: "File name", required: true, placeholder: "Brand guidelines v2.pdf" },
@@ -20,9 +21,12 @@ const FIELDS: FieldSpec[] = [
   { key: "relatedContent", label: "Related content", compact: true },
 ];
 
-export function FilesSection({ ws }: { ws: Workspace }) {
-  const inProgress = ws.deliverables.filter((d) => d.status === "In progress").length;
-  const shared = ws.deliverables.filter((d) => d.status === "Shared").length;
+export function FilesSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
+  const scoped = focus.clientId
+    ? ws.deliverables.filter((d) => d.clientId === focus.clientId)
+    : ws.deliverables;
+  const inProgress = scoped.filter((d) => d.status === "In progress").length;
+  const shared = scoped.filter((d) => d.status === "Shared").length;
 
   return (
     <div>
@@ -45,13 +49,14 @@ export function FilesSection({ ws }: { ws: Workspace }) {
         addLabel="New file"
         entityName="Files"
         statusKey="status"
+        focusClientId={focus.clientId}
         emptyTitle="No files logged"
         emptyHint="Track each deliverable so you always know what was sent and when."
         defaults={{
           status: "In progress",
           category: "Graphics",
           date: todayISO(),
-          clientId: ws.clients[0]?.id ?? "",
+          clientId: focus.defaultClientId || ws.clients[0]?.id || "",
         }}
         onSave={async (values, id) => {
           try {

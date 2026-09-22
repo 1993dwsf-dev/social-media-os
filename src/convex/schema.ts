@@ -181,6 +181,8 @@ const schema = defineSchema(
       status: v.string(), // FinanceStatus
       dueDate: v.string(),
       paidDate: v.string(),
+      // "invoice" marks entries generated from a client's recurring monthly fee.
+      kind: v.optional(v.string()),
     })
       .index("by_owner", ["ownerId"])
       .index("by_client", ["clientId"]),

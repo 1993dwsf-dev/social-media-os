@@ -9,6 +9,7 @@ import { REQUEST_CATEGORIES } from "@/data/constants";
 import { REQUEST_STATUSES } from "@/data/types";
 import type { RequestItem } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
+import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
   { key: "title", label: "Request", required: true, placeholder: "Add a second Reel this week" },
@@ -22,7 +23,7 @@ const FIELDS: FieldSpec[] = [
   { key: "comments", label: "Comments", type: "textarea", compact: true },
 ];
 
-export function RequestsSection({ ws }: { ws: Workspace }) {
+export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
   const open = ws.requests.filter((r) => r.status !== "Completed" && r.status !== "Closed").length;
 
   return (
@@ -44,6 +45,7 @@ export function RequestsSection({ ws }: { ws: Workspace }) {
         addLabel="New request"
         entityName="Requests"
         statusKey="status"
+        focusClientId={focus.clientId}
         emptyTitle="No requests logged"
         emptyHint="Log what the client asks for so nothing slips between calls."
         defaults={{
@@ -51,7 +53,7 @@ export function RequestsSection({ ws }: { ws: Workspace }) {
           priority: "Medium",
           dateSubmitted: todayISO(),
           category: "Content",
-          clientId: ws.clients[0]?.id ?? "",
+          clientId: focus.defaultClientId || ws.clients[0]?.id || "",
         }}
         onSave={async (values, id) => {
           try {

@@ -240,6 +240,89 @@ export const createFinance = finance.create;
 export const updateFinance = finance.update;
 export const removeFinance = finance.remove;
 
+// ---- recurring invoices ---------------------------------------------------
+
+/** First day of the month `offset` months from now (ISO yyyy-mm-dd). */
+function monthStart(offset: number): string {
+  const d = new Date();
+  d.setHours(12, 0, 0, 0);
+  d.setDate(1);
+  d.setMonth(d.getMonth() + offset);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Generate Income entries from each active client's monthly fee.
+ *
+ * For every active client (monthlyFee > 0) it creates one "invoice" entry per
+ * month in the window, unless that client already has an invoice entry for the
+ * month — so it is safe to press repeatedly. Each invoice is due on the 10th.
+ */
+export const generateInvoices = mutation({
+  args: {
+    /** How many months to invoice: 1 = current month only, 2 = current + next. */
+    months: v.optional(v.number()),
+    /** Restrict generation to a single client (defaults to all active clients). */
+    clientId: v.optional(v.string()),
+  },
+  handler: async (ctx, { months = 1, clientId }) => {
+    const ownerId = await requireOwner(ctx);
+    const clients = (await listOwned(ctx, ownerId, "clients")) as any[];
+    const count = Math.max(1, Math.min(12, Math.floor(months)));
+
+    let created = 0;
+    for (const client of clients) {
+      if (clientId && client._id !== clientId) continue;
+      if (client.status !== "Active") continue;
+      const fee = Number(client.monthlyFee ?? 0);
+      if (!(fee > 0)) continue;
+
+      for (let m = 0; m < count; m++) {
+        const month = monthStart(m);
+        const existing = (await db(ctx)
+          .query("finance")
+          .withIndex("by_owner", (q: any) => q.eq("ownerId", ownerId))
+          .collect()) as any[];
+        const already = existing.some(
+          (row) =>
+            row.clientId === client._id &&
+            row.kind === "invoice" &&
+            typeof row.date === "string" &&
+            row.date.slice(0, 7) === month.slice(0, 7),
+        );
+        if (already) continue;
+
+        await db(ctx).insert("finance", {
+          ownerId,
+          clientId: client._id,
+          date: month,
+          type: "Income",
+          amount: fee,
+          category: "Retainer",
+          description: `Monthly retainer — ${client.name}`,
+          status: "Pending",
+          dueDate: `${month.slice(0, 7)}-10`,
+          paidDate: "",
+          kind: "invoice",
+        });
+        created += 1;
+      }
+    }
+    return { created };
+  },
+});
+
+/** Mark an income entry as paid today. */
+export const markFinancePaid = mutation({
+  args: { id: v.string() },
+  handler: async (ctx, { id }) => {
+    const ownerId = await requireOwner(ctx);
+    const doc = await getOwned(ctx, ownerId, id);
+    if (!doc) throw new Error("Record not found in this workspace");
+    await ctx.db.patch(doc._id, { status: "Paid", paidDate: new Date().toISOString().slice(0, 10) });
+  },
+});
+
 // ---- destructive ----------------------------------------------------------
 
 export const clearWorkspace = mutation({

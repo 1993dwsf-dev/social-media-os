@@ -13,11 +13,12 @@ import { formatDate } from "@/data/constants";
 import { ONBOARDING_STEPS } from "@/data/types";
 import type { OnboardingStep } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
+import type { ClientFocus } from "../useClientFocus";
 import { cn } from "@/lib/utils";
 
-export function OnboardingSection({ ws }: { ws: Workspace }) {
-  const [clientId, setClientId] = useState<string>(ws.clients[0]?.id ?? "");
-  const client = ws.clientOf(clientId) ?? ws.clients[0];
+export function OnboardingSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
+  // Follows the workspace-wide focus; falls back to the first client.
+  const client = ws.clientOf(focus.clientId) ?? ws.clients[0];
 
   const [answers, setAnswers] = useState<Partial<Record<OnboardingStep, string>>>({});
   const [dirty, setDirty] = useState(false);
@@ -67,8 +68,8 @@ export function OnboardingSection({ ws }: { ws: Workspace }) {
         description="Everything you need from a new client, in one place — so nothing gets asked twice."
       >
         <select
-          value={client.id}
-          onChange={(e) => setClientId(e.target.value)}
+          value={focus.clientId || client.id}
+          onChange={(e) => focus.setFocus(e.target.value)}
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           aria-label="Client"
         >

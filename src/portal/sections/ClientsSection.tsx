@@ -37,6 +37,7 @@ import { formatDate, todayISO } from "@/data/constants";
 import { CLIENT_STATUSES, PLATFORMS } from "@/data/types";
 import type { ClientRecord, Platform, SectionId } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
+import type { ClientFocus } from "../useClientFocus";
 import { cn } from "@/lib/utils";
 
 const SELECT_CLASS =
@@ -94,9 +95,11 @@ function formFrom(client: ClientRecord): FormState {
 export function ClientsSection({
   ws,
   navigate,
+  focus,
 }: {
   ws: Workspace;
   navigate: (id: SectionId) => void;
+  focus: ClientFocus;
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -406,7 +409,10 @@ export function ClientsSection({
                         variant="ghost"
                         size="sm"
                         className="ml-auto h-7 gap-1 px-2 text-xs text-primary"
-                        onClick={() => navigate("strategy")}
+                        onClick={() => {
+                          focus.setFocus(client.id);
+                          navigate("strategy");
+                        }}
                       >
                         Open <ArrowRight className="size-3.5" />
                       </Button>

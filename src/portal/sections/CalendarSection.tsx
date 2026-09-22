@@ -1,7 +1,7 @@
 // The operational heart of the workspace: one calendar holding planned content
 // and tasks for every client, with client/platform/status filters.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronLeft,
@@ -22,6 +22,7 @@ import { CONTENT_FORMATS } from "@/data/constants";
 import { PILLARS, PLATFORMS, TASK_CATEGORIES, TASK_STATUSES, WORKFLOW_STATUSES } from "@/data/types";
 import type { ContentItem, TaskItem } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
+import type { ClientFocus } from "../useClientFocus";
 import { cn } from "@/lib/utils";
 
 const SELECT_CLASS =
@@ -59,9 +60,15 @@ function iso(date: Date): string {
   ).padStart(2, "0")}`;
 }
 
-export function CalendarSection({ ws }: { ws: Workspace }) {
+export function CalendarSection({
+  ws,
+  focus,
+}: {
+  ws: Workspace;
+  focus: ClientFocus;
+}) {
   const [cursor, setCursor] = useState(() => new Date());
-  const [clientFilter, setClientFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState(focus.clientId || "all");
   const [platformFilter, setPlatformFilter] = useState("all");
   const [showContent, setShowContent] = useState(true);
   const [showTasks, setShowTasks] = useState(true);
@@ -77,6 +84,11 @@ export function CalendarSection({ ws }: { ws: Workspace }) {
     () => (clientId: string) => clientFilter === "all" || clientId === clientFilter,
     [clientFilter],
   );
+
+  // Follow the workspace-wide client focus from the topbar.
+  useEffect(() => {
+    setClientFilter(focus.clientId || "all");
+  }, [focus.clientId]);
 
   const monthContent = useMemo(
     () =>

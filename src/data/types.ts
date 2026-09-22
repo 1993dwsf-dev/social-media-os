@@ -208,6 +208,8 @@ export interface FinanceEntry {
   status: FinanceStatus;
   dueDate: string;
   paidDate: string;
+  /** "invoice" for entries generated from a client's recurring monthly fee. */
+  kind?: "invoice";
 }
 
 export interface WorkspaceProfile {

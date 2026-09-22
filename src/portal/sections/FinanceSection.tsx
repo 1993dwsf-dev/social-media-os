@@ -1,16 +1,29 @@
 // Money in and money out: retainers, project fees, tools and contractors.
-// The manager keeps this up to date by hand — no bank or invoice integration.
+// Retainers can be billed in one click from each client's monthly fee; the
+// manager keeps everything else up to date by hand — no bank integration.
 
 import { useMemo, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, PiggyBank, Wallet } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  CheckCheck,
+  FileSpreadsheet,
+  PiggyBank,
+  Repeat,
+  Wallet,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { EntityTable, type FieldSpec } from "@/components/portal/EntityTable";
+import { Button } from "@/components/ui/button";
 import { KpiCard, SectionHeader } from "@/components/portal/Shared";
 import { formatDate, todayISO } from "@/data/constants";
 import { FINANCE_CATEGORIES } from "@/data/types";
 import type { FinanceEntry } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
+import type { ClientFocus } from "../useClientFocus";
+import { api } from "@/convex/_generated/api";
+import { useMutation } from "convex/react";
 import { cn } from "@/lib/utils";
 
 const FIELDS: FieldSpec[] = [
@@ -29,9 +42,10 @@ function monthKey(iso: string): string {
   return iso.slice(0, 7);
 }
 
-export function FinanceSection({ ws }: { ws: Workspace }) {
+export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
   const thisMonth = monthKey(todayISO());
   const [month, setMonth] = useState(thisMonth);
+  const [billing, setBilling] = useState(false);
 
   const months = useMemo(() => {
     const keys = new Set<string>([thisMonth]);
@@ -55,6 +69,40 @@ export function FinanceSection({ ws }: { ws: Workspace }) {
       .reduce((s, f) => s + f.amount, 0);
     return { income, expense, net: income - expense, pending, unpaid };
   }, [scoped]);
+
+  // Recurring billing summary, computed from the client roster.
+  const billingSummary = useMemo(() => {
+    const active = ws.clients.filter((c) => c.status === "Active" && c.monthlyFee > 0);
+    const mrr = active.reduce((s, c) => s + c.monthlyFee, 0);
+    const billedThisMonth = ws.finance.filter(
+      (f) => f.kind === "invoice" && f.date.startsWith(thisMonth),
+    ).length;
+    return { activeCount: active.length, mrr, billedThisMonth };
+  }, [ws.clients, ws.finance, thisMonth]);
+
+  const generateInvoices = useMutation(api.portal.generateInvoices);
+  const markPaid = useMutation(api.portal.markFinancePaid);
+
+  const billMonth = async (months: number) => {
+    setBilling(true);
+    try {
+      const result = await generateInvoices({ months });
+      toast.success(
+        result.created === 0
+          ? "Everything already billed"
+          : `${result.created} invoice${result.created === 1 ? "" : "s"} created`,
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not generate the invoices");
+    } finally {
+      setBilling(false);
+    }
+  };
+
+  const pendingInvoices = useMemo(
+    () => scoped.filter((f) => f.kind === "invoice" && f.type === "Income" && f.status !== "Paid"),
+    [scoped],
+  );
 
   const perClient = useMemo(() => {
     const rows = ws.clients.map((client) => {
@@ -103,7 +151,65 @@ export function FinanceSection({ ws }: { ws: Workspace }) {
             </option>
           ))}
         </select>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          disabled={billing || billingSummary.activeCount === 0}
+          title="Create this month's retainer invoices from each active client's fee"
+          onClick={() => void billMonth(1)}
+        >
+          <FileSpreadsheet className="size-4" />
+          Bill this month
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          disabled={billing || billingSummary.activeCount === 0}
+          title="Bill the current and next month"
+          onClick={() => void billMonth(2)}
+        >
+          <Repeat className="size-4" />
+          Bill 2 months
+        </Button>
       </SectionHeader>
+
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-border/70 bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <Repeat className="size-3.5 text-primary" />
+          <strong className="font-semibold text-foreground">
+            {billingSummary.activeCount}
+          </strong>{" "}
+          client{billingSummary.activeCount === 1 ? "" : "s"} on retainer
+        </span>
+        <span>
+          Recurring revenue: <strong className="font-semibold text-foreground">{ws.money(billingSummary.mrr)}/mo</strong>
+        </span>
+        <span>
+          Billed this month: <strong className="font-semibold text-foreground">{billingSummary.billedThisMonth}</strong> of {billingSummary.activeCount}
+        </span>
+        {pendingInvoices.length > 0 ? (
+          <span className="ml-auto inline-flex items-center gap-2">
+            {pendingInvoices.length} invoice{pendingInvoices.length === 1 ? "" : "s"} awaiting payment
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs"
+              onClick={async () => {
+                try {
+                  await Promise.all(pendingInvoices.map((f) => markPaid({ id: f.id })));
+                  toast.success("Invoices marked as paid");
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Could not update the invoices");
+                }
+              }}
+            >
+              <CheckCheck className="size-3.5" /> Mark all paid
+            </Button>
+          </span>
+        ) : null}
+      </div>
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
@@ -125,6 +231,12 @@ export function FinanceSection({ ws }: { ws: Workspace }) {
           label="Awaiting payment"
           value={ws.money(totals.pending)}
           icon={<Wallet className="size-4" />}
+        />
+        <KpiCard
+          label="Recurring revenue"
+          value={`${ws.money(billingSummary.mrr)}/mo`}
+          delta={`${billingSummary.activeCount} active retainer${billingSummary.activeCount === 1 ? "" : "s"}`}
+          icon={<Repeat className="size-4" />}
         />
       </div>
 
@@ -223,7 +335,7 @@ export function FinanceSection({ ws }: { ws: Workspace }) {
           type: "Income",
           status: "Pending",
           category: "Retainer",
-          clientId: ws.clients[0]?.id ?? "",
+          clientId: focus.defaultClientId || ws.clients[0]?.id || "",
         }}
         onSave={async (values, id) => {
           try {

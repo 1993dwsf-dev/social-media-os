@@ -11,6 +11,7 @@ import { todayISO } from "@/data/constants";
 import { TASK_CATEGORIES, TASK_STATUSES } from "@/data/types";
 import type { TaskItem } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
+import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
   { key: "title", label: "Task", required: true, placeholder: "Shoot batch: 10 assets" },
@@ -26,15 +27,18 @@ const FIELDS: FieldSpec[] = [
   { key: "notes", label: "Notes", type: "textarea", compact: true },
 ];
 
-export function TasksSection({ ws }: { ws: Workspace }) {
+export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
   const today = todayISO();
   const summary = useMemo(() => {
-    const open = ws.tasks.filter((t) => t.status !== "Done");
+    const scoped = focus.clientId
+      ? ws.tasks.filter((t) => t.clientId === focus.clientId)
+      : ws.tasks;
+    const open = scoped.filter((t) => t.status !== "Done");
     const week = open.filter((t) => t.dueDate && t.dueDate <= addDays(today, 7));
     const overdue = open.filter((t) => t.dueDate && t.dueDate < today);
-    const done = ws.tasks.filter((t) => t.status === "Done");
+    const done = scoped.filter((t) => t.status === "Done");
     return { open, week, overdue, done };
-  }, [ws.tasks, today]);
+  }, [ws.tasks, today, focus.clientId]);
 
   return (
     <div>
@@ -78,6 +82,7 @@ export function TasksSection({ ws }: { ws: Workspace }) {
         addLabel="New task"
         entityName="Tasks"
         statusKey="status"
+        focusClientId={focus.clientId}
         emptyTitle="No tasks yet"
         emptyHint="Add a task to keep the work for each client moving."
         defaults={{
@@ -85,7 +90,7 @@ export function TasksSection({ ws }: { ws: Workspace }) {
           priority: "Medium",
           startDate: today,
           dueDate: today,
-          clientId: ws.clients[0]?.id ?? "",
+          clientId: focus.defaultClientId || ws.clients[0]?.id || "",
         }}
         onSave={async (values, id) => {
           try {

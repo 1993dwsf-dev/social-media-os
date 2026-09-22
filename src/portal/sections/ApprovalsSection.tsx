@@ -1,7 +1,7 @@
 // Approvals: the manager records what the client decided about each piece of
 // content, so the pipeline always reflects reality.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, Clock, MessageSquare, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,6 +12,7 @@ import { ClientChip, EmptyState, PlatformChip, SectionHeader, StatusChip } from 
 import { formatDate, todayISO } from "@/data/constants";
 import type { ContentItem, ContentStatus } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
+import type { ClientFocus } from "../useClientFocus";
 import { cn } from "@/lib/utils";
 
 const COLUMNS: { key: string; title: string; hint: string; statuses: ContentStatus[] }[] = [
@@ -35,10 +36,21 @@ const COLUMNS: { key: string; title: string; hint: string; statuses: ContentStat
   },
 ];
 
-export function ApprovalsSection({ ws }: { ws: Workspace }) {
-  const [clientFilter, setClientFilter] = useState("all");
+export function ApprovalsSection({
+  ws,
+  focus,
+}: {
+  ws: Workspace;
+  focus: ClientFocus;
+}) {
+  const [clientFilter, setClientFilter] = useState(focus.clientId || "all");
   const [editing, setEditing] = useState<ContentItem | null>(null);
   const [showPublished, setShowPublished] = useState(false);
+
+  // Follow the workspace-wide client focus from the topbar.
+  useEffect(() => {
+    setClientFilter(focus.clientId || "all");
+  }, [focus.clientId]);
 
   const scoped = useMemo(
     () =>

@@ -28,6 +28,7 @@ import { todayISO } from "@/data/constants";
 import type { SectionId } from "@/data/types";
 import { SECTIONS } from "@/data/types";
 import { useWorkspace } from "@/data/workspace";
+import { useClientFocus } from "./useClientFocus";
 import { cn } from "@/lib/utils";
 
 import { DashboardSection } from "./sections/DashboardSection";
@@ -70,6 +71,7 @@ export default function Portal() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const ws = useWorkspace();
+  const focus = useClientFocus(ws.clients, ws.ready);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const active = (SECTIONS.find((id) => id === section) ?? "dashboard") as SectionId;
@@ -152,25 +154,25 @@ export default function Portal() {
       case "dashboard":
         return <DashboardSection ws={ws} navigate={go} />;
       case "clients":
-        return <ClientsSection ws={ws} navigate={go} />;
+        return <ClientsSection ws={ws} navigate={go} focus={focus} />;
       case "strategy":
-        return <StrategySection ws={ws} />;
+        return <StrategySection ws={ws} focus={focus} />;
       case "onboarding":
-        return <OnboardingSection ws={ws} />;
+        return <OnboardingSection ws={ws} focus={focus} />;
       case "calendar":
-        return <CalendarSection ws={ws} />;
+        return <CalendarSection ws={ws} focus={focus} />;
       case "tasks":
-        return <TasksSection ws={ws} />;
+        return <TasksSection ws={ws} focus={focus} />;
       case "approvals":
-        return <ApprovalsSection ws={ws} />;
+        return <ApprovalsSection ws={ws} focus={focus} />;
       case "requests":
-        return <RequestsSection ws={ws} />;
+        return <RequestsSection ws={ws} focus={focus} />;
       case "finance":
-        return <FinanceSection ws={ws} />;
+        return <FinanceSection ws={ws} focus={focus} />;
       case "meetings":
-        return <MeetingsSection ws={ws} />;
+        return <MeetingsSection ws={ws} focus={focus} />;
       case "files":
-        return <FilesSection ws={ws} />;
+        return <FilesSection ws={ws} focus={focus} />;
       case "settings":
         return <SettingsSection ws={ws} />;
       default:
@@ -228,9 +230,21 @@ export default function Portal() {
             {NAV.find((item) => item.id === active)?.label}
           </p>
           <div className="ml-auto flex items-center gap-2">
-            <Badge variant="outline" className="hidden sm:inline-flex">
-              {ws.clients.length} client{ws.clients.length === 1 ? "" : "s"}
-            </Badge>
+            {ws.ready && ws.clients.length > 0 ? (
+              <select
+                value={focus.clientId}
+                onChange={(e) => focus.setFocus(e.target.value)}
+                className="h-8 w-auto max-w-44 min-w-36 rounded-md border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                aria-label="Focused client"
+              >
+                <option value="">All clients ({ws.clients.length})</option>
+                {ws.clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
             <Button
               variant="ghost"
               size="sm"
