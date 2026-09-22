@@ -104,12 +104,12 @@ const EMPTY_DOCS: Doc[] = [];
 
 export function useWorkspace(): Workspace {
   const clientsRaw = useQuery(api.portal.listClients);
-  const contentRaw = useQuery(api.portal.contentApi.list);
-  const tasksRaw = useQuery(api.portal.tasksApi.list);
-  const requestsRaw = useQuery(api.portal.requestsApi.list);
-  const meetingsRaw = useQuery(api.portal.meetingsApi.list);
-  const deliverablesRaw = useQuery(api.portal.deliverablesApi.list);
-  const financeRaw = useQuery(api.portal.financeApi.list);
+  const contentRaw = useQuery(api.portal.listContent);
+  const tasksRaw = useQuery(api.portal.listTasks);
+  const requestsRaw = useQuery(api.portal.listRequests);
+  const meetingsRaw = useQuery(api.portal.listMeetings);
+  const deliverablesRaw = useQuery(api.portal.listDeliverables);
+  const financeRaw = useQuery(api.portal.listFinance);
   const workspaceRaw = useQuery(api.portal.getWorkspace);
 
   const createClient = useMutation(api.portal.createClient);
@@ -120,34 +120,34 @@ export function useWorkspace(): Workspace {
   const clearMutation = useMutation(api.portal.clearWorkspace);
 
   const contentApi = {
-    create: useMutation(api.portal.contentApi.create),
-    update: useMutation(api.portal.contentApi.update),
-    remove: useMutation(api.portal.contentApi.remove),
+    create: useMutation(api.portal.createContent),
+    update: useMutation(api.portal.updateContent),
+    remove: useMutation(api.portal.removeContent),
   };
   const tasksApi = {
-    create: useMutation(api.portal.tasksApi.create),
-    update: useMutation(api.portal.tasksApi.update),
-    remove: useMutation(api.portal.tasksApi.remove),
+    create: useMutation(api.portal.createTask),
+    update: useMutation(api.portal.updateTask),
+    remove: useMutation(api.portal.removeTask),
   };
   const requestsApi = {
-    create: useMutation(api.portal.requestsApi.create),
-    update: useMutation(api.portal.requestsApi.update),
-    remove: useMutation(api.portal.requestsApi.remove),
+    create: useMutation(api.portal.createRequest),
+    update: useMutation(api.portal.updateRequest),
+    remove: useMutation(api.portal.removeRequest),
   };
   const meetingsApi = {
-    create: useMutation(api.portal.meetingsApi.create),
-    update: useMutation(api.portal.meetingsApi.update),
-    remove: useMutation(api.portal.meetingsApi.remove),
+    create: useMutation(api.portal.createMeeting),
+    update: useMutation(api.portal.updateMeeting),
+    remove: useMutation(api.portal.removeMeeting),
   };
   const deliverablesApi = {
-    create: useMutation(api.portal.deliverablesApi.create),
-    update: useMutation(api.portal.deliverablesApi.update),
-    remove: useMutation(api.portal.deliverablesApi.remove),
+    create: useMutation(api.portal.createDeliverable),
+    update: useMutation(api.portal.updateDeliverable),
+    remove: useMutation(api.portal.removeDeliverable),
   };
   const financeApi = {
-    create: useMutation(api.portal.financeApi.create),
-    update: useMutation(api.portal.financeApi.update),
-    remove: useMutation(api.portal.financeApi.remove),
+    create: useMutation(api.portal.createFinance),
+    update: useMutation(api.portal.updateFinance),
+    remove: useMutation(api.portal.removeFinance),
   };
 
   const clients = useMemo(
@@ -282,8 +282,8 @@ export function useWorkspace(): Workspace {
         const created = await createClient({ data: rest });
         idMap.set(String(id), String(created));
       }
-      const remap = (rows: unknown[] | undefined) =>
-        (rows ?? []).map((row) => {
+      const remap = (rows: unknown) =>
+        ((rows as unknown[]) ?? []).map((row) => {
           const { id: _id, clientId, ...rest } = row as Record<string, unknown>;
           return { ...rest, clientId: idMap.get(String(clientId)) };
         });

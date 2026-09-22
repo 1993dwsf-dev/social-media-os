@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { EntityTable, type FieldSpec } from "@/components/portal/EntityTable";
 import { SectionHeader } from "@/components/portal/Shared";
 import { todayISO } from "@/data/constants";
-import { FILE_CATEGORIES } from "@/data/types";
+import { FILE_CATEGORIES } from "@/data/constants";
 import type { DeliverableItem } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
 

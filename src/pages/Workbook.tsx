@@ -140,7 +140,7 @@ export default function Workbook() {
               Contentplane Manager Workbook
             </p>
             <p className="text-[11px] leading-tight text-muted-foreground">
-              28 worksheets · {sheets.length} loaded · formulas, dropdowns & status formats
+              {sheets.length} worksheets · formulas, dropdowns & status formats
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">

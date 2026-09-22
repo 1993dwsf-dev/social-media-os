@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { EntityTable, type FieldSpec } from "@/components/portal/EntityTable";
 import { SectionHeader } from "@/components/portal/Shared";
 import { todayISO } from "@/data/constants";
-import { REQUEST_CATEGORIES, REQUEST_STATUSES } from "@/data/types";
+import { REQUEST_CATEGORIES } from "@/data/constants";
+import { REQUEST_STATUSES } from "@/data/types";
 import type { RequestItem } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
 

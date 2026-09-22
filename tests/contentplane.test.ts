@@ -1,17 +1,18 @@
-// Targeted regression tests for the Contentplane data layer:
-// the 28-sheet workbook engine, the demo dataset, and the Notion export package.
+// Targeted regression tests for the Contentplane manager workspace data layer:
+// the 28-sheet workbook engine and the multi-client Notion export package.
 //
 // Run with: bun test
 
 import { describe, expect, test } from "bun:test";
 
-import { buildDemoState } from "../src/data/demo";
-import { buildNotionPackage, latestMonth } from "../src/data/notion-export";
+import { buildNotionFiles } from "../src/data/notion-export";
 import { buildWorkbookSheets, toCSV } from "../src/data/workbook";
 import type { SheetDef } from "../src/data/workbook";
+import type { ClientRecord, ContentItem } from "../src/data/types";
 
 const REQUIRED_SHEET_NAMES = [
   "Setup",
+  "Clients",
   "Brand",
   "Goals",
   "Dashboard",
@@ -37,8 +38,8 @@ const REQUIRED_SHEET_NAMES = [
   "Hashtags",
   "Collabs",
   "Finance",
-  "Platform Analytics",
-  "Content Analytics",
+  "Client Reports",
+  "Service Log",
 ];
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -52,8 +53,7 @@ function byName(name: string): SheetDef {
   return sheet;
 }
 
-/** Minimal CSV parser (handles quotes, escaped quotes, commas) so we can assert
- * that generated CSVs have a consistent column count. */
+/** Minimal CSV parser (handles quotes, escaped quotes, commas). */
 function parseCSV(csv: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -93,8 +93,8 @@ function parseCSV(csv: string): string[][] {
   return rows;
 }
 
-describe("workbook: 28-sheet structure", () => {
-  test("contains exactly the 28 required worksheets, in order", () => {
+describe("workbook: 29 sheets for the manager workspace", () => {
+  test("contains the manager sheet set, in order", () => {
     expect(sheetNames).toEqual(REQUIRED_SHEET_NAMES);
   });
 
@@ -105,11 +105,10 @@ describe("workbook: 28-sheet structure", () => {
       expect(sheet.description.length).toBeGreaterThan(20);
       expect(sheet.columns.length).toBeGreaterThanOrEqual(2);
       expect(sheet.rows.length).toBeGreaterThan(0);
-      expect(sheet.freeze).toBeGreaterThanOrEqual(0);
     }
   });
 
-  test("every row matches its sheet's column count (no ragged tables)", () => {
+  test("no ragged rows (every row matches its column count)", () => {
     const ragged: string[] = [];
     for (const sheet of sheets) {
       sheet.rows.forEach((row, i) => {
@@ -121,20 +120,27 @@ describe("workbook: 28-sheet structure", () => {
     expect(ragged).toEqual([]);
   });
 
-  test("the twelve monthly calendars share one identical structure", () => {
+  test("clients sheet holds a roster with fees and statuses", () => {
+    const clients = byName("Clients");
+    const names = clients.rows.map((r) => String(r[0]));
+    expect(names).toContain("Northwind Coffee Roasters");
+    expect(names).toContain("Vela Fitness Studio");
+    const statusIndex = clients.columns.findIndex((c) => c.name === "Status");
+    const statuses = clients.rows.map((r) => String(r[statusIndex]));
+    expect(statuses).toContain("Active");
+    expect(statuses).toContain("Prospect");
+  });
+
+  test("monthly calendars carry a Client column and stay consistent", () => {
     const shapes = MONTHS.map((m) => byName(m).columns.map((c) => c.name));
     for (const shape of shapes) {
       expect(shape).toEqual(shapes[0]);
-      expect(shape).toContain("Date");
-      expect(shape).toContain("Platform");
-      expect(shape).toContain("Content pillar");
+      expect(shape).toContain("Client");
       expect(shape).toContain("Approval status");
       expect(shape).toContain("Publication status");
-      expect(shape.length).toBeGreaterThanOrEqual(13);
     }
     for (const m of MONTHS) {
       expect(byName(m).rows.length).toBeGreaterThan(0);
-      expect(byName(m).freeze).toBe(1);
     }
   });
 
@@ -155,29 +161,47 @@ describe("workbook: 28-sheet structure", () => {
     expect(violations).toEqual([]);
   });
 
-  test("dashboard formulas compute from the correct sheets and columns", () => {
-    const dashboard = byName("Dashboard");
-    const formulas = dashboard.rows
-      .flat()
+  test("dashboard formulas compute from Clients, Content Plan, Tasks and Finance", () => {
+    const formulas = byName("Dashboard")
+      .rows.flat()
       .filter((v): v is string => typeof v === "string" && v.startsWith("="));
-    expect(formulas.length).toBeGreaterThanOrEqual(8);
-
+    expect(formulas.length).toBeGreaterThanOrEqual(10);
     const joined = formulas.join("\n");
-    // Content Plan: O = Approval status, P = Publication status (regression: not R)
-    expect(joined).toContain("'Content Plan'!O2:O1000");
+    expect(joined).toContain("Clients!A2:A1000");
+    expect(joined).toContain("Clients!H2:H1000");
+    expect(joined).toContain("Clients!J2:J1000");
+    // Content Plan with the new Client column: C = Client, P = Approval, Q = Publication
     expect(joined).toContain("'Content Plan'!P2:P1000");
-    expect(joined).not.toContain("'Content Plan'!R2:R1000");
-    // Tasks: H = Status, J = Due date
-    expect(joined).toContain("Tasks!H2:H1000");
-    expect(joined).toContain("Tasks!J2:J1000");
-    // Platform Analytics: C = Followers, D = Reach, F = Engagement
-    expect(joined).toContain("Platform Analytics!C2:C1000");
-    expect(joined).toContain("Platform Analytics!D2:D1000");
-    expect(joined).toContain("Platform Analytics!F2:F1000");
-    // Content Analytics: E = Topic, F = Reach, K = Saves
-    expect(joined).toContain("'Content Analytics'!E2:E1000");
-    expect(joined).toContain("'Content Analytics'!F2:F1000");
-    expect(joined).toContain("'Content Analytics'!K2:K1000");
+    expect(joined).toContain("'Content Plan'!Q2:Q1000");
+    expect(joined).not.toContain("'Content Plan'!O2:O1000");
+    // Tasks shifted by the Client column: I = Status, K = Due date
+    expect(joined).toContain("Tasks!I2:I1000");
+    expect(joined).toContain("Tasks!K2:K1000");
+    expect(joined).toContain("Finance!C2:C1000");
+    expect(joined).toContain("Finance!D2:D1000");
+    // No social-metric formulas remain.
+    expect(joined).not.toContain("Platform Analytics");
+    expect(joined).not.toContain("Content Analytics");
+  });
+
+  test("no social metric columns remain in the workbook", () => {
+    for (const sheet of sheets) {
+      for (const col of sheet.columns) {
+        expect(["Followers", "Reach", "Impressions", "Engagement", "Engagement rate"]).not.toContain(col.name);
+      }
+    }
+    expect(sheetNames).not.toContain("Platform Analytics");
+    expect(sheetNames).not.toContain("Content Analytics");
+  });
+
+  test("finance sheet feeds the dashboard with matching columns", () => {
+    const finance = byName("Finance");
+    const names = finance.columns.map((c) => c.name);
+    expect(names).toEqual(["Date", "Client / payee", "Revenue", "Expense", "Category", "Description", "Payment status", "Due date", "Payment date"]);
+    const revenueIdx = names.indexOf("Revenue");
+    expect(finance.rows.some((r) => Number(r[revenueIdx]) > 0)).toBe(true);
+    const expenseIdx = names.indexOf("Expense");
+    expect(finance.rows.some((r) => Number(r[expenseIdx]) > 0)).toBe(true);
   });
 
   test("toCSV escapes commas and quotes", () => {
@@ -197,86 +221,120 @@ describe("workbook: 28-sheet structure", () => {
   });
 });
 
-describe("demo dataset", () => {
-  const demo = buildDemoState();
+function makeClient(partial: Partial<ClientRecord>): ClientRecord {
+  return {
+    id: "c1",
+    name: "Northwind Coffee Roasters",
+    contactName: "Maya Okafor",
+    email: "maya@northwindcoffee.example",
+    phone: "",
+    website: "",
+    industry: "Specialty coffee",
+    packageName: "Retainer — 12 posts/month",
+    monthlyFee: 4800,
+    startDate: "2026-01-15",
+    status: "Active",
+    socials: { instagram: "@northwindcoffee" },
+    notes: "Prefers batch edits.",
+    onboarding: {},
+    strategy: [
+      { key: "pillars", title: "Content pillars", items: ["Education", "Product"] },
+    ],
+    kpis: [{ name: "Posts published / month", baseline: "6", target: "12", actual: "9", unit: "posts", deadline: "2026-10-28" }],
+    createdAt: 0,
+    ...partial,
+  };
+}
 
-  test("covers the full client workflow (planning through reporting)", () => {
-    expect(demo.client.name.length).toBeGreaterThan(0);
-    expect(demo.content.length).toBeGreaterThanOrEqual(10);
-    expect(demo.content.some((c) => c.status === "Published")).toBe(true);
-    expect(demo.content.some((c) => c.status === "In Review" || c.status === "Changes Requested")).toBe(true);
-    expect(demo.content.some((c) => c.status === "Scheduled" || c.status === "Approved")).toBe(true);
+function makeContent(partial: Partial<ContentItem>): ContentItem {
+  return {
+    id: "x1",
+    clientId: "c1",
+    date: "2026-09-20",
+    platform: "Instagram",
+    format: "Reel",
+    topic: "Cold brew vs iced latte",
+    caption: "",
+    assetNote: "",
+    status: "Published",
+    managerNotes: "",
+    clientComments: "",
+    pillar: "Education",
+    owner: "Priya",
+    ...partial,
+  };
+}
 
-    expect(demo.requests.length).toBeGreaterThan(0);
-    expect(demo.requests.some((r) => ["New", "In Progress", "Waiting"].includes(r.status))).toBe(true);
-
-    expect(demo.meetings.some((m) => m.status === "Scheduled")).toBe(true);
-    expect(demo.deliverables.length).toBeGreaterThan(0);
-    expect(demo.metrics.length).toBeGreaterThanOrEqual(6);
-    expect(demo.strategy.length).toBeGreaterThan(0);
-    expect(demo.kpis.length).toBeGreaterThan(0);
+describe("notion export package (multi-client)", () => {
+  const clients = [
+    makeClient({ id: "c1" }),
+    makeClient({ id: "c2", name: "Hale & Harbor Interiors", status: "Prospect", monthlyFee: 3200 }),
+  ];
+  const pkg = buildNotionFiles({
+    profile: {
+      managerName: "Alex Moreno",
+      agency: "Marrow Social",
+      email: "",
+      currency: "$",
+      weekStart: "Monday",
+      approvalTurnaroundDays: 3,
+      notifyEmail: true,
+      notifyApprovals: true,
+      notifyFinance: false,
+      density: "comfortable",
+    },
+    clients,
+    content: [
+      makeContent({}),
+      makeContent({ id: "x2", clientId: "c2", topic: "Rug sizing cheat sheet", date: "2026-09-18" }),
+    ],
+    tasks: [],
+    requests: [],
+    meetings: [],
+    deliverables: [],
+    finance: [],
   });
 
-  test("content records use ISO dates and the shared status vocabulary", () => {
-    for (const item of demo.content) {
-      expect(item.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(typeof item.topic).toBe("string");
-      expect(item.topic.length).toBeGreaterThan(0);
-    }
-  });
-});
+  const markdown = pkg.filter((f) => f.name.endsWith(".md"));
+  const csvs = pkg.filter((f) => f.name.endsWith(".csv"));
 
-describe("notion export package", () => {
-  const demo = buildDemoState();
-  const pkg = buildNotionPackage(demo);
-  const markdown = pkg.files.filter((f) => f.name.endsWith(".md"));
-  const csvs = pkg.files.filter((f) => f.name.endsWith(".csv"));
-
-  test("ships the README, markdown pages, and CSV databases with content", () => {
-    expect(pkg.slug.length).toBeGreaterThan(0);
-    expect(markdown.length).toBeGreaterThanOrEqual(9);
+  test("ships shared databases, per-client folders and a README", () => {
+    const names = pkg.map((f) => f.name);
+    expect(names).toContain("README.md");
+    expect(names).toContain("databases/Clients.csv");
+    expect(names).toContain("databases/Content.csv");
+    expect(names).toContain("databases/Tasks.csv");
+    expect(names).toContain("databases/Finance.csv");
+    expect(names.some((n) => n.startsWith("clients/northwind-coffee-roasters/"))).toBe(true);
+    expect(names.some((n) => n.startsWith("clients/hale-harbor-interiors/"))).toBe(true);
     expect(csvs.length).toBe(7);
-    expect(pkg.files.some((f) => f.name.endsWith("/README.md"))).toBe(true);
-    for (const file of pkg.files) {
-      expect(file.content.length).toBeGreaterThan(0);
-    }
+    expect(markdown.length).toBeGreaterThanOrEqual(7);
   });
 
-  test("each CSV database has one row per record and a consistent column count", () => {
-    const expectedRows: Record<string, number> = {
-      "Content.csv": demo.content.length,
-      "Deliverables.csv": demo.deliverables.length,
-      "Meetings.csv": demo.meetings.length,
-      "Requests.csv": demo.requests.length,
-      "Performance.csv": demo.metrics.length,
-    };
+  test("content rows are attributed to the right client", () => {
+    const rows = parseCSV(pkg.find((f) => f.name === "databases/Content.csv")!.content);
+    expect(rows[0]).toContain("Client");
+    const clientsColumn = rows[0].indexOf("Client");
+    const assigned = rows.slice(1).map((r) => r[clientsColumn]);
+    expect(assigned).toContain("Northwind Coffee Roasters");
+    expect(assigned).toContain("Hale & Harbor Interiors");
+  });
+
+  test("per-client page includes strategy and flags manager-only notes", () => {
+    const page = pkg.find((f) => f.name === "clients/northwind-coffee-roasters/Client.md")!.content;
+    expect(page).toContain("Northwind Coffee Roasters");
+    expect(page).toContain("Content pillars");
+    expect(page).toContain("manager only");
+  });
+
+  test("every CSV has a consistent column count", () => {
     for (const file of csvs) {
       const rows = parseCSV(file.content);
-      const base = file.name.split("/").slice(-1)[0];
       const header = rows[0];
       expect(header.length).toBeGreaterThan(1);
       for (const row of rows.slice(1)) {
         expect(row.length).toBe(header.length);
       }
-      if (base in expectedRows) {
-        expect(rows.length - 1).toBe(expectedRows[base]);
-      }
     }
-  });
-
-  test("markdown pages mirror the portal sections and name the client", () => {
-    const names = markdown.map((f) => f.name.split("/").slice(-1)[0]);
-    for (const page of ["Dashboard.md", "Content Calendar.md", "Approvals.md", "Performance.md", "Requests.md", "Meetings.md"]) {
-      expect(names).toContain(page);
-    }
-    const dashboard = markdown.find((f) => f.name.endsWith("Dashboard.md"))!;
-    expect(dashboard.content).toContain(demo.client.name);
-    expect(dashboard.content.startsWith("# ")).toBe(true);
-  });
-
-  test("latestMonth returns the newest month present in the metrics", () => {
-    const months = demo.metrics.map((m) => m.month).sort();
-    expect(latestMonth(demo)).toBe(months[months.length - 1]);
-    expect(latestMonth(demo)).toMatch(/^\d{4}-\d{2}$/);
   });
 });

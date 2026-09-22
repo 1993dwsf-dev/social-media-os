@@ -99,6 +99,7 @@ function calendarColumns(): SheetColumn[] {
   return [
     { name: "Date", width: 92, type: "date" },
     { name: "Day", width: 52 },
+    { name: "Client", width: 150 },
     { name: "Platform", width: 100, type: "select", options: PLATFORMS },
     { name: "Content type", width: 104, type: "select", options: CONTENT_TYPES },
     { name: "Content pillar", width: 130, type: "select", options: PILLARS },
@@ -136,6 +137,7 @@ function monthSheet(idx: number, name: string, monthOffset: number): SheetDef {
       rows.push([
         dateStr,
         weekday(dateStr),
+        "Northwind Coffee Roasters",
         platform,
         type,
         pillar,
@@ -149,7 +151,7 @@ function monthSheet(idx: number, name: string, monthOffset: number): SheetDef {
         "",
       ]);
     } else {
-      rows.push([dateStr, weekday(dateStr), "", "", "", "", "", "", "", "", "", "", ""]);
+      rows.push([dateStr, weekday(dateStr), "", "", "", "", "", "", "", "", "", "", "", ""]);
     }
   }
   return {
@@ -164,23 +166,31 @@ function monthSheet(idx: number, name: string, monthOffset: number): SheetDef {
 }
 
 const SETUP_ROWS: (string | number)[][] = [
-  ["Business / client name", "Northwind Coffee Roasters"],
-  ["Manager name", "Maya Okafor — Fieldnote Studio"],
-  ["Primary contact", "Ava Torres (Founder & Brand Director)"],
-  ["Email", "ava@northwindroasters.example"],
-  ["Website", "northwindroasters.example"],
-  ["Main social platforms", PLATFORMS.join(", ")],
+  ["Manager name", "Alex Moreno"],
+  ["Business / agency", "Marrow Social"],
+  ["Contact email", "alex@marrowsocial.example"],
   ["Time zone", "America/Los_Angeles (PT)"],
-  ["Industry / niche", "Specialty coffee — DTC + wholesale"],
-  ["Start date", iso(-150)],
-  ["Service period", "12-month retainer, renews each January"],
-  ["Current plan / package", "Growth — 20 posts/mo, 1 shoot day, reporting"],
-  ["Primary monthly objective", "Grow DTC subscription waitlist via education-first content"],
-  ["Notes", "Async-first communication. Approvals by email unless urgent."],
+  ["Team / collaborators", "Priya Raman · Jonas Feld"],
+  ["Services offered", "Strategy, content production, publishing, reporting"],
+  ["Currency", "USD ($)"],
+  ["Default approval turnaround", "3 working days"],
+  ["Active clients", "=COUNTIF(Clients!J2:J1000,\"Active\")"],
+  ["Total clients", "=COUNTA(Clients!A2:A1000)"],
+  ["Monthly recurring revenue", "=SUMIF(Clients!J2:J1000,\"Active\",Clients!H2:H1000)"],
+  ["Notes", "One row per client lives in the Clients sheet. Duplicate the Brand and Goals sheets per client when you need a private reference for each account."],
+];
+
+// Client roster — the manager's book of business. Status and fee columns feed
+// the Dashboard and Setup formulas (J = Status, H = Monthly fee).
+const CLIENTS_ROWS: (string | number)[][] = [
+  ["Northwind Coffee Roasters", "Maya Okafor", "maya@northwindcoffee.example", "+1 (503) 555-0142", "northwindcoffee.example", "Specialty coffee roastery", "Retainer — 12 posts/month", 4800, iso(-240), "Active", "@northwindcoffee", "@northwindroasts", "", "Prefers edits in batches. Never posts pricing."],
+  ["Hale & Harbor Interiors", "Dana Whitfield", "dana@haleharbor.example", "+1 (617) 555-0198", "haleharbor.example", "Residential interior design", "Retainer — 8 posts/month", 3200, iso(-120), "Active", "@haleandharbor", "", "hale-harbor", "Approvals come from Dana only; photographer must be tagged."],
+  ["Bloomly Skincare", "Renata Silva", "renata@bloomly.example", "+1 (512) 555-0177", "bloomly.example", "DTC skincare", "Retainer — 16 posts/month + ads", 6500, iso(-75), "Active", "@bloomlyskin", "@bloomly", "", "Claims must match the approved copy deck; legal adds 2 days."],
+  ["Vela Fitness Studio", "Tom Beck", "tom@velafitness.example", "+1 (305) 555-0110", "velafitness.example", "Boutique fitness studio", "Proposal — 8 posts/month", 2200, iso(0), "Prospect", "@velafitness", "", "", "Waiting on the signed proposal; 30-day relaunch sprint first."],
 ];
 
 const BRAND_ROWS: (string | number)[][] = [
-  ["Brand name", "Northwind Coffee roasters"],
+  ["Brand name", "Northwind Coffee Roasters — duplicate this sheet per client"],
   ["Tagline", "Know your farmer, know your roast, know your ratio."],
   ["Mission", "Make specialty coffee approachable without dumbing it down."],
   ["Vision", "A coffee culture where every bag shows its math — cost, origin, score."],
@@ -236,23 +246,24 @@ function makeGoalsSheet(): SheetDef {
 function makeDashboardSheet(): SheetDef {
   const monthName = new Date().toLocaleString("en-US", { month: "long" });
   const rows: (string | number)[][] = [
+    ["Business snapshot (from Clients)", "", "", ""],
+    ["Total clients", "=COUNTA(Clients!A2:A1000)", "Active clients", "=COUNTIF(Clients!J2:J1000,\"Active\")"],
+    ["Monthly recurring revenue", "=SUMIF(Clients!J2:J1000,\"Active\",Clients!H2:H1000)", "Prospects", "=COUNTIF(Clients!J2:J1000,\"Prospect\")"],
+    ["", "", "", ""],
     ["Content pipeline (from Content Plan)", "", "", ""],
-    ["Planned posts", "=COUNTA('Content Plan'!A2:A1000)", "Published", "=COUNTIF('Content Plan'!P2:P1000,\"Published\")"],
-    ["Awaiting approval", "=COUNTIF('Content Plan'!O2:O1000,\"Pending\")", "Scheduled", "=COUNTIF('Content Plan'!P2:P1000,\"Scheduled\")"],
-    ["Tasks due this week", "=COUNTIFS(Tasks!J2:J1000,\"<=\"&TEXT(TODAY()+7,\"YYYY-MM-DD\"),Tasks!H2:H1000,\"<>Done\")", "Tasks done", "=COUNTIF(Tasks!H2:H1000,\"Done\")"],
+    ["Planned posts", "=COUNTA('Content Plan'!C2:C1000)", "Published", "=COUNTIF('Content Plan'!Q2:Q1000,\"Published\")"],
+    ["Awaiting approval", "=COUNTIF('Content Plan'!P2:P1000,\"Pending\")", "Scheduled", "=COUNTIF('Content Plan'!Q2:Q1000,\"Scheduled\")"],
+    ["Tasks due this week", "=COUNTIFS(Tasks!K2:K1000,\"<=\"&TEXT(TODAY()+7,\"YYYY-MM-DD\"),Tasks!I2:I1000,\"<>Done\")", "Tasks done", "=COUNTIF(Tasks!I2:I1000,\"Done\")"],
     ["", "", "", ""],
-    ["Audience & engagement (from Platform Analytics)", "", "", ""],
-    ["Total followers", "=SUM(Platform Analytics!C2:C1000)", "Avg reach", "=ROUND(AVERAGE(Platform Analytics!D2:D1000),0)"],
-    ["Total engagement", "=SUM(Platform Analytics!F2:F1000)", "Engagement rate", "=ROUND(SUM(Platform Analytics!F2:F1000)/SUM(Platform Analytics!D2:D1000)*100,1)&\"%\""],
-    ["", "", "", ""],
-    ["Top content (from Content Analytics)", "", "", ""],
-    ["Best reach", "=INDEX('Content Analytics'!E2:E1000,MATCH(MAX('Content Analytics'!F2:F1000),'Content Analytics'!F2:F1000,0))", "Most saves", "=MAX('Content Analytics'!K2:K1000)"],
+    ["Money (from Finance)", "", "", ""],
+    ["Revenue this month", "=SUMIF(Finance!A2:A1000,\">=\"&TEXT(EOMONTH(TODAY(),-1)+1,\"YYYY-MM-DD\"),Finance!C2:C1000)", "Expenses this month", "=SUMIF(Finance!A2:A1000,\">=\"&TEXT(EOMONTH(TODAY(),-1)+1,\"YYYY-MM-DD\"),Finance!D2:D1000)"],
+    ["Unpaid / pending income", "=SUMIF(Finance!H2:H1000,\"<>Paid\",Finance!C2:C1000)", "Overdue payments", "=COUNTIF(Finance!H2:H1000,\"Overdue\")"],
   ];
   return {
     id: "dashboard",
     name: "Dashboard",
     group: "Setup & Brand",
-    description: `Management dashboard for ${monthName} — every metric computes live from Content Plan, Tasks, and Analytics sheets.`,
+    description: "Management dashboard for ${monthName} — every metric computes live from the Clients, Content Plan, Tasks and Finance sheets.",
     columns: [
       { name: "Metric", width: 260 },
       { name: "Value", width: 240 },
@@ -326,7 +337,7 @@ function makeWeeklySheet(): SheetDef {
   const rows: (string | number)[][] = [];
   days.forEach((day, di) => {
     (plan[day] || []).forEach((it, i) => {
-      rows.push([i === 0 ? day : "", it[0], it[1], it[2], it[3], "", iso(di + 1)]);
+      rows.push([i === 0 ? day : "", "Northwind Coffee Roasters", it[0], it[1], it[2], it[3], "", iso(di + 1)]);
     });
   });
   return {
@@ -336,11 +347,12 @@ function makeWeeklySheet(): SheetDef {
     description: "Week-at-a-glance operational plan — content and tasks per weekday with deadlines and owners.",
     columns: [
       { name: "Day", width: 100 },
-      { name: "Content / task", width: 260 },
+      { name: "Client", width: 160 },
+      { name: "Content / task", width: 240 },
       { name: "Platform / project", width: 150 },
       { name: "Responsible", width: 110 },
       { name: "Status", width: 110, type: "select", options: TASK_STATUS_OPTIONS },
-      { name: "Notes", width: 200 },
+      { name: "Notes", width: 180 },
       { name: "Deadline", width: 100, type: "date" },
     ],
     rows,
@@ -383,16 +395,16 @@ function makeBrainDumpSheet(): SheetDef {
 
 function makeContentPlanSheet(): SheetDef {
   const rows: (string | number)[][] = [
-    ["CP-001", iso(2), "Instagram", "Reel", "Education", "Cold brew vs iced latte", "Awareness", "Same beans, two very different drinks.", "Which team are you? ☕", "Save this guide", "Vertical video 20s, kitchen b-roll + overlays", "Video edit", "Maya Okafor", "In Review", "Pending", "Draft", "", "First render v2 due"],
-    ["CP-002", iso(4), "TikTok", "Short", "Behind the scenes", "Roastery tour: cherry to cup", "Awareness", "Ever wondered what happens between cherry and cup?", "Full walkthrough in captions", "Follow the series", "45s gimbal walkthrough", "Raw edit", "Maya Okafor", "Approved", "Approved", "Scheduled", "", "Batch scheduled"],
-    ["CP-003", iso(6), "Instagram", "Story", "Promotion", "Fall menu teaser", "Interest", "Countdown + poll frames", "Pumpkin spice: yes or no?", "Vote in poll", "3 story frames + poll", "Design", "Priya Raman", "In Review", "Pending", "Draft", "", "Waiting on product photos"],
-    ["CP-004", iso(9), "Instagram", "Post", "Product", "Guatemala Huixpac reveal", "Interest", "Cacao, red apple, brown sugar.", "Landing next week — 200 bags only", "Join waitlist", "Studio shot 1080×1350", "Retouch", "Maya Okafor", "Approved", "Approved", "Scheduled", "", "Hold until landing page live"],
-    ["CP-005", iso(12), "YouTube", "Video", "Education", "Cupping session with head roaster", "Interest", "Sit in on a live cupping.", "What we taste for, how we score", "Subscribe", "16:9 8-min edit + captions", "Color + audio", "Jonas Feld", "Drafting", "—", "Draft", "", "Rough cut in edit"],
-    ["CP-006", iso(-6), "LinkedIn", "Article", "Community", "Why we publish green-coffee costs", "Consideration", "Transparency report: what your bag costs.", "Show the math, earn the trust", "Read + share", "Article + hero graphic", "Copy edit", "Jonas Feld", "Published", "—", "Published", "linkedin.com/…/costs", "Strong pickup in comments"],
-    ["CP-007", iso(-6), "Instagram", "Carousel", "Education", "5 brewing mistakes", "Awareness", "Save this for Sunday morning.", "Five mistakes, ten-second fixes", "Save this guide", "6-slide carousel 1080×1350", "Design", "Maya Okafor", "Published", "—", "Published", "instagram.com/…/p/xyz", "Top saver rate this month"],
-    ["CP-008", iso(18), "Pinterest", "Pin", "Education", "Cold brew ratios cheat sheet", "Awareness", "Brew stronger, dilute later.", "Save the ratio card", "Save this pin", "1000×1500 infographic", "Design", "Priya Raman", "Approved", "Approved", "Scheduled", "", "Batch of 5 pins"],
-    ["CP-009", iso(21), "Instagram", "Carousel", "Behind the scenes", "Meet the team: roastery edition", "Interest", "The people behind your coffee.", "Series kickoff", "Follow the series", "5-slide portraits", "Photography", "Priya Raman", "Idea", "—", "Draft", "", "Need photographer availability"],
-    ["CP-010", iso(-9), "Instagram", "Reel", "Product", "How we choose origins", "Awareness", "Three questions before buying a harvest.", "Relationships over brokers", "Save this guide", "Vertical video 35s", "Edit", "Maya Okafor", "Published", "—", "Published", "instagram.com/…/p/abc", "Best CTR to waitlist"],
+    ["CP-001", iso(2), "Northwind Coffee Roasters", "Instagram", "Reel", "Education", "Cold brew vs iced latte", "Awareness", "Same beans, two very different drinks.", "Which team are you? ☕", "Save this guide", "Vertical video 20s, kitchen b-roll + overlays", "Video edit", "Maya Okafor", "In Review", "Pending", "Draft", "", "First render v2 due"],
+    ["CP-002", iso(4), "Northwind Coffee Roasters", "TikTok", "Short", "Behind the scenes", "Roastery tour: cherry to cup", "Awareness", "Ever wondered what happens between cherry and cup?", "Full walkthrough in captions", "Follow the series", "45s gimbal walkthrough", "Raw edit", "Maya Okafor", "Approved", "Approved", "Scheduled", "", "Batch scheduled"],
+    ["CP-003", iso(6), "Northwind Coffee Roasters", "Instagram", "Story", "Promotion", "Fall menu teaser", "Interest", "Countdown + poll frames", "Pumpkin spice: yes or no?", "Vote in poll", "3 story frames + poll", "Design", "Priya Raman", "In Review", "Pending", "Draft", "", "Waiting on product photos"],
+    ["CP-004", iso(9), "Northwind Coffee Roasters", "Instagram", "Post", "Product", "Guatemala Huixpac reveal", "Interest", "Cacao, red apple, brown sugar.", "Landing next week — 200 bags only", "Join waitlist", "Studio shot 1080×1350", "Retouch", "Maya Okafor", "Approved", "Approved", "Scheduled", "", "Hold until landing page live"],
+    ["CP-005", iso(12), "Northwind Coffee Roasters", "YouTube", "Video", "Education", "Cupping session with head roaster", "Interest", "Sit in on a live cupping.", "What we taste for, how we score", "Subscribe", "16:9 8-min edit + captions", "Color + audio", "Jonas Feld", "Drafting", "—", "Draft", "", "Rough cut in edit"],
+    ["CP-006", iso(-6), "Northwind Coffee Roasters", "LinkedIn", "Article", "Community", "Why we publish green-coffee costs", "Consideration", "Transparency report: what your bag costs.", "Show the math, earn the trust", "Read + share", "Article + hero graphic", "Copy edit", "Jonas Feld", "Published", "—", "Published", "linkedin.com/…/costs", "Strong pickup in comments"],
+    ["CP-007", iso(-6), "Northwind Coffee Roasters", "Instagram", "Carousel", "Education", "5 brewing mistakes", "Awareness", "Save this for Sunday morning.", "Five mistakes, ten-second fixes", "Save this guide", "6-slide carousel 1080×1350", "Design", "Maya Okafor", "Published", "—", "Published", "instagram.com/…/p/xyz", "Top saver rate this month"],
+    ["CP-008", iso(18), "Northwind Coffee Roasters", "Pinterest", "Pin", "Education", "Cold brew ratios cheat sheet", "Awareness", "Brew stronger, dilute later.", "Save the ratio card", "Save this pin", "1000×1500 infographic", "Design", "Priya Raman", "Approved", "Approved", "Scheduled", "", "Batch of 5 pins"],
+    ["CP-009", iso(21), "Northwind Coffee Roasters", "Instagram", "Carousel", "Behind the scenes", "Meet the team: roastery edition", "Interest", "The people behind your coffee.", "Series kickoff", "Follow the series", "5-slide portraits", "Photography", "Priya Raman", "Idea", "—", "Draft", "", "Need photographer availability"],
+    ["CP-010", iso(-9), "Northwind Coffee Roasters", "Instagram", "Reel", "Product", "How we choose origins", "Awareness", "Three questions before buying a harvest.", "Relationships over brokers", "Save this guide", "Vertical video 35s", "Edit", "Maya Okafor", "Published", "—", "Published", "instagram.com/…/p/abc", "Best CTR to waitlist"],
   ];
   return {
     id: "content-plan",
@@ -402,6 +414,7 @@ function makeContentPlanSheet(): SheetDef {
     columns: [
       { name: "Content ID", width: 90 },
       { name: "Date", width: 92, type: "date" },
+      { name: "Client", width: 150 },
       { name: "Platform", width: 100, type: "select", options: PLATFORMS },
       { name: "Content format", width: 110, type: "select", options: CONTENT_TYPES },
       { name: "Pillar", width: 140, type: "select", options: PILLARS },
@@ -426,25 +439,25 @@ function makeContentPlanSheet(): SheetDef {
 
 function makeTasksSheet(): SheetDef {
   const rows: (string | number)[][] = [
-    ["T-01", "Finalize fall menu campaign brief", "Fall menu", "Client", "Content", "Maya Okafor", "High", "In Progress", iso(-2), iso(3), "", "—", "Awaiting client photo approval"],
-    ["T-02", "Edit roastery walkthrough short", "Roastery series", "Client", "Production", "Priya Raman", "High", "In Progress", iso(-4), iso(2), "", "T-05", "Gimbal footage day 2 pending"],
-    ["T-03", "Design Guatemala launch carousel", "Origin drop", "Client", "Design", "Priya Raman", "High", "Blocked", iso(-6), iso(5), "", "T-04", "Needs final label art"],
-    ["T-04", "Deliver label art v3", "Origin drop", "Internal", "Design", "Client team", "Medium", "In Progress", iso(-3), iso(4), "", "—", "With client designer"],
-    ["T-05", "Book second shoot day", "Roastery series", "Internal", "Logistics", "Maya Okafor", "Medium", "Done", iso(-8), iso(-3), iso(-4), "—", ""],
-    ["T-06", "September analytics pull", "Reporting", "Client", "Reporting", "Jonas Feld", "Medium", "Backlog", iso(1), iso(6), "", "—", "Template ready in Reports"],
-    ["T-07", "Schedule Pinterest batch (5 pins)", "Evergreen pins", "Internal", "Publishing", "Priya Raman", "Low", "Done", iso(-5), iso(-1), iso(-1), "—", ""],
-    ["T-08", "Refresh link-in-bio page", "Website sync", "Client", "Content", "Jonas Feld", "Low", "Backlog", iso(2), iso(9), "", "—", "Copy with client"],
+    ["T-01", "Finalize fall menu campaign brief", "Northwind Coffee Roasters", "Fall menu", "Content", "Maya Okafor", "High", "In Progress", iso(-2), iso(3), "", "—", "Awaiting client photo approval"],
+    ["T-02", "Edit roastery walkthrough short", "Northwind Coffee Roasters", "Roastery series", "Production", "Priya Raman", "High", "In Progress", iso(-4), iso(2), "", "T-05", "Gimbal footage day 2 pending"],
+    ["T-03", "Design Guatemala launch carousel", "Northwind Coffee Roasters", "Origin drop", "Design", "Priya Raman", "High", "Blocked", iso(-6), iso(5), "", "T-04", "Needs final label art"],
+    ["T-04", "Deliver label art v3", "Northwind Coffee Roasters", "Origin drop", "Design", "Client team", "Medium", "In Progress", iso(-3), iso(4), "", "—", "With client designer"],
+    ["T-05", "Book second shoot day", "Northwind Coffee Roasters", "Roastery series", "Logistics", "Maya Okafor", "Medium", "Done", iso(-8), iso(-3), iso(-4), "—", ""],
+    ["T-06", "Monthly report", "Hale & Harbor Interiors", "Reporting", "Reporting", "Jonas Feld", "Medium", "Backlog", iso(1), iso(6), "", "—", "Template ready in Reports"],
+    ["T-07", "Schedule Pinterest batch (5 pins)", "Northwind Coffee Roasters", "Evergreen pins", "Publishing", "Priya Raman", "Low", "Done", iso(-5), iso(-1), iso(-1), "—", ""],
+    ["T-08", "Refresh link-in-bio page", "Bloomly Skincare", "Website sync", "Content", "Jonas Feld", "Low", "Backlog", iso(2), iso(9), "", "—", "Copy with client"],
   ];
   return {
     id: "tasks",
     name: "Tasks",
     group: "Production",
-    description: "Task & project management — dependencies, priorities, and due dates for everything around the content itself.",
+    description: "Task & project management — one Client column per row, with dependencies, priorities and due dates.",
     columns: [
       { name: "Task ID", width: 80 },
       { name: "Task", width: 240 },
+      { name: "Client", width: 160 },
       { name: "Project", width: 130 },
-      { name: "Client / internal", width: 120, type: "select", options: ["Client", "Internal"] },
       { name: "Category", width: 110 },
       { name: "Assigned to", width: 120 },
       { name: "Priority", width: 90, type: "select", options: PRIORITY_OPTIONS },
@@ -496,27 +509,28 @@ function makeThirtyDaySheet(): SheetDef {
 
 function makeFeedPreviewSheet(): SheetDef {
   const rows: (string | number)[][] = [
-    [1, iso(2), "Cold brew vs iced latte", "Reel", "Reel cover: side-by-side pours", "Education"],
-    [2, iso(4), "Roastery tour teaser", "Reel", "Wide roastery shot + logo sting", "Behind the scenes"],
-    [3, iso(7), "5 brewing mistakes", "Carousel", "Cover: numbered mistakes 1–5", "Education"],
-    [4, iso(9), "Guatemala reveal", "Post", "Studio shot on cream backdrop", "Product"],
-    [5, iso(12), "Team intro: Maya", "Carousel", "Portrait series, warm tones", "Behind the scenes"],
-    [6, iso(15), "Brew ratio card", "Post", "Infographic card, pine green", "Education"],
-    [7, iso(18), "Customer story: Brewed Awake", "Carousel", "Café interior photos", "Community"],
-    [8, iso(21), "Fall menu hero", "Post", "Terracotta flat lay", "Promotion"],
-    [9, iso(24), "Cupping clip cover", "Video", "Overhead cupping table", "Education"],
+    [1, iso(2), "Northwind Coffee Roasters", "Cold brew vs iced latte", "Reel", "Reel cover: side-by-side pours", "Education"],
+    [2, iso(4), "Northwind Coffee Roasters", "Roastery tour teaser", "Reel", "Wide roastery shot + logo sting", "Behind the scenes"],
+    [3, iso(7), "Northwind Coffee Roasters", "5 brewing mistakes", "Carousel", "Cover: numbered mistakes 1–5", "Education"],
+    [4, iso(9), "Northwind Coffee Roasters", "Guatemala reveal", "Post", "Studio shot on cream backdrop", "Product"],
+    [5, iso(12), "Hale & Harbor Interiors", "Warm minimalism explained", "Carousel", "Neutral palette flat lay", "Education"],
+    [6, iso(15), "Northwind Coffee Roasters", "Brew ratio card", "Post", "Infographic card, pine green", "Education"],
+    [7, iso(18), "Bloomly Skincare", "3-step winter routine", "Reel", "Bathroom shelf close-ups, soft light", "Education"],
+    [8, iso(21), "Northwind Coffee Roasters", "Fall menu hero", "Post", "Terracotta flat lay", "Promotion"],
+    [9, iso(24), "Bloomly Skincare", "Ingredient spotlight: squalane", "Carousel", "Macro texture shots on marble", "Education"],
   ];
   return {
     id: "feed-preview",
     name: "Feed Preview",
     group: "Planning",
-    description: "Visual feed planning — arrange upcoming posts in publication order to check rhythm and color balance before anything goes live.",
+    description: "Visual feed planning per client — arrange upcoming posts in publication order to check rhythm and color balance before anything goes live.",
     columns: [
       { name: "Post #", width: 70, type: "number" },
       { name: "Date", width: 92, type: "date" },
-      { name: "Content", width: 220 },
-      { name: "Content type", width: 110, type: "select", options: CONTENT_TYPES },
-      { name: "Visual concept", width: 260 },
+      { name: "Client", width: 160 },
+      { name: "Content", width: 200 },
+      { name: "Content type", width: 100, type: "select", options: CONTENT_TYPES },
+      { name: "Visual concept", width: 240 },
       { name: "Pillar", width: 140, type: "select", options: PILLARS },
     ],
     rows,
@@ -621,97 +635,74 @@ function makeFinanceSheet(): SheetDef {
   };
 }
 
-function makePlatformAnalyticsSheet(): SheetDef {
+// Client Reports replaces the old per-platform analytics tabs: without social
+// API connections there are no follower/reach numbers to track, so the manager
+// reports on what they actually control — delivery, approvals and money.
+function makeClientReportsSheet(): SheetDef {
   const rows: (string | number)[][] = [];
-  for (let m = 5; m >= 0; m--) {
-    const monthKey = monthISO(-m, 15);
-    PLATFORMS.forEach((platform) => {
-      const seed = m * 10 + platform.length;
-      const j = 0.85 + ((seed * 9301 + 49297) % 233280) / 233280 * 0.3;
-      const growth = (5 - m) * 0.05;
-      const base = {
-        Instagram: { followers: 18400, reach: 96000, impressions: 128000, engagement: 7400, likes: 5200, comments: 640, shares: 880, saves: 1300, clicks: 3100, visits: 2400, growth: 2.4 },
-        TikTok: { followers: 24800, reach: 168000, impressions: 224000, engagement: 12100, likes: 9800, comments: 980, shares: 1600, saves: 900, clicks: 4300, visits: 5100, growth: 4.1 },
-        LinkedIn: { followers: 6200, reach: 41000, impressions: 54000, engagement: 2100, likes: 1400, comments: 320, shares: 260, saves: 60, clicks: 1500, visits: 900, growth: 1.2 },
-        YouTube: { followers: 4100, reach: 28000, impressions: 36000, engagement: 1800, likes: 1200, comments: 240, shares: 140, saves: 30, clicks: 900, visits: 600, growth: 0.9 },
-        Facebook: { followers: 5200, reach: 21000, impressions: 27000, engagement: 1100, likes: 760, comments: 110, shares: 190, saves: 20, clicks: 700, visits: 380, growth: 0.4 },
-        Pinterest: { followers: 2300, reach: 19000, impressions: 31000, engagement: 900, likes: 420, comments: 40, shares: 130, saves: 210, clicks: 1200, visits: 700, growth: 1.8 },
-      }[platform];
+  const clientPlan: [string, number, number, number, number, number, string][] = [
+    ["Northwind Coffee Roasters", 12, 12, 11, 1, 4800, "Fall menu launch landed; December plan starts Nov 20"],
+    ["Hale & Harbor Interiors", 8, 8, 8, 0, 3200, "Spring calendar 60% booked from content leads"],
+    ["Bloomly Skincare", 16, 16, 14, 2, 6500, "Legal queue cleared; barrier cream launch on track"],
+    ["Vela Fitness Studio", 0, 0, 0, 0, 0, "Proposal stage — reporting starts after signature"],
+  ];
+  for (let m = 1; m >= -1; m--) {
+    clientPlan.forEach(([client, planned, delivered, onTime, flagged, fee, notes], ci) => {
+      const j = 0.9 + ((ci * 7 + m + 20) % 5) * 0.02;
       rows.push([
-        monthKey,
-        platform,
-        Math.round(base.followers * (1 + growth * 1.6) * j),
-        Math.round(base.reach * (1 + growth) * j),
-        Math.round(base.impressions * (1 + growth) * j),
-        Math.round(base.engagement * (1 + growth * 1.1) * j),
-        Math.round(base.likes * (1 + growth) * j),
-        Math.round(base.comments * (1 + growth) * j),
-        Math.round(base.shares * (1 + growth) * j),
-        Math.round(base.saves * (1 + growth) * j),
-        Math.round(base.clicks * (1 + growth * 0.9) * j),
-        Math.round(base.visits * (1 + growth * 0.8) * j),
-        (base.growth * j).toFixed(1) + "%",
+        monthISO(m, 15),
+        client,
+        ci === 3 && m !== -1 ? 0 : Math.round(planned * j),
+        ci === 3 && m !== -1 ? 0 : Math.round(delivered * j),
+        ci === 3 && m !== -1 ? 0 : Math.round(onTime * j),
+        ci === 3 && m !== -1 ? 0 : flagged,
+        ci === 3 && m !== -1 ? "—" : Math.round(fee * j),
+        ci === 3 && m !== -1 ? "Awaiting signed proposal" : ci === 0 && m === -1 ? notes : "",
       ]);
     });
   }
   return {
-    id: "platform-analytics",
-    name: "Platform Analytics",
+    id: "client-reports",
+    name: "Client Reports",
     group: "Growth",
-    description: "Platform-level analytics — followers, reach, impressions, engagement breakdown, clicks, and profile visits by month.",
+    description: "Monthly service summary per client — planned vs delivered, on-time rate, flagged pieces and fees. No social metrics: reports cover what the manager controls.",
     columns: [
-      { name: "Date", width: 92, type: "date" },
-      { name: "Platform", width: 110, type: "select", options: PLATFORMS },
-      { name: "Followers", width: 100, type: "number" },
-      { name: "Reach", width: 100, type: "number" },
-      { name: "Impressions", width: 110, type: "number" },
-      { name: "Engagement", width: 110, type: "number" },
-      { name: "Likes", width: 90, type: "number" },
-      { name: "Comments", width: 100, type: "number" },
-      { name: "Shares", width: 90, type: "number" },
-      { name: "Saves", width: 90, type: "number" },
-      { name: "Clicks", width: 90, type: "number" },
-      { name: "Profile visits", width: 110, type: "number" },
-      { name: "Growth", width: 90, type: "percent" },
+      { name: "Month", width: 92, type: "date" },
+      { name: "Client", width: 170 },
+      { name: "Planned posts", width: 100, type: "number" },
+      { name: "Delivered", width: 90, type: "number" },
+      { name: "On time", width: 80, type: "number" },
+      { name: "Flagged / revisions", width: 110, type: "number" },
+      { name: "Billed", width: 100, type: "currency" },
+      { name: "Summary notes", width: 280 },
     ],
     rows,
     freeze: 1,
   };
 }
 
-function makeContentAnalyticsSheet(): SheetDef {
+function makeServiceLogSheet(): SheetDef {
   const rows: (string | number)[][] = [
-    ["CP-006", iso(-6), "LinkedIn", "Article", "Why we publish green-coffee costs", 41200, 55100, 1420, 310, 268, 58, 610, 3.4, 12, "Top performer", "Strong pickup; repurpose as carousel"],
-    ["CP-007", iso(-6), "Instagram", "Carousel", "5 brewing mistakes", 28900, 38400, 2140, 186, 240, 490, 380, 4.2, 9, "Top performer", "Saver rate 2.1× account average"],
-    ["CP-010", iso(-9), "Instagram", "Reel", "How we choose origins", 36100, 47800, 2680, 214, 390, 310, 520, 5.1, 21, "Top performer", "Best CTR to waitlist so far"],
-    ["CP-003", iso(-16), "Instagram", "Story", "Fall menu teaser (early)", 9400, 12800, 610, 42, 55, 88, 140, 2.1, 2, "Average", "Poll participation solid"],
-    ["CP-001", iso(-3), "Instagram", "Reel", "Cold brew vs iced latte", 21800, 29300, 1610, 128, 176, 205, 290, 3.2, 6, "Average", "Re-render with new logo sting"],
-    ["CP-002", iso(-12), "TikTok", "Short", "Barista reacts to viral hacks", 47600, 63400, 3240, 288, 420, 610, 480, 4.8, 14, "Top performer", "Series potential — plan 3 more"],
-    ["CP-008", iso(-20), "Pinterest", "Pin", "Cold brew ratios cheat sheet", 8200, 11400, 380, 18, 30, 96, 240, 1.9, 1, "Average", "Batch of 5, watch monthly tail"],
-    ["CP-004", iso(-15), "Instagram", "Post", "Single-origin drop teaser", 14200, 18900, 980, 84, 96, 140, 210, 2.8, 4, "Average", "Hold variants until launch"],
+    [iso(-1), "Northwind Coffee Roasters", "Published", "Reel", "Cold brew vs iced latte", "Instagram", "Posted on schedule; morning slot"],
+    [iso(-3), "Northwind Coffee Roasters", "Scheduled", "Carousel", "5 brewing mistakes", "Instagram", "Batch scheduled with pinned ratios"],
+    [iso(-4), "Bloomly Skincare", "Changes requested", "Reel", "Barrier cream teaser", "Instagram", "Softer hook — re-editing today"],
+    [iso(-6), "Hale & Harbor Interiors", "Published", "Carousel", "Rug sizing cheat sheet", "Pinterest", "Top saver rate of the month"],
+    [iso(-7), "Northwind Coffee Roasters", "Published", "Article", "Why we publish green-coffee costs", "LinkedIn", "Strong pickup from wholesale accounts"],
+    [iso(-8), "Bloomly Skincare", "Scheduled", "Short", "Founder answers DMs #2", "TikTok", "Second in series; hooks landing"],
   ];
   return {
-    id: "content-analytics",
-    name: "Content Analytics",
+    id: "service-log",
+    name: "Service Log",
     group: "Growth",
-    description: "Per-content performance — engagement rate and classification help spot what to double down on.",
+    description: "Delivery log of what went out per client — a simple record of published/scheduled work without social platform metrics.",
     columns: [
-      { name: "Content ID", width: 90 },
       { name: "Date", width: 92, type: "date" },
-      { name: "Platform", width: 100, type: "select", options: PLATFORMS },
+      { name: "Client", width: 170 },
+      { name: "Status", width: 130, type: "select", options: STATUS_OPTIONS.concat(["Changes requested"]) },
       { name: "Format", width: 100, type: "select", options: CONTENT_TYPES },
       { name: "Topic", width: 230 },
-      { name: "Reach", width: 100, type: "number" },
-      { name: "Impressions", width: 110, type: "number" },
-      { name: "Likes", width: 90, type: "number" },
-      { name: "Comments", width: 100, type: "number" },
-      { name: "Shares", width: 90, type: "number" },
-      { name: "Saves", width: 90, type: "number" },
-      { name: "Clicks", width: 90, type: "number" },
-      { name: "Engagement rate", width: 110, type: "percent" },
-      { name: "Conversions", width: 100, type: "number" },
-      { name: "Classification", width: 120, type: "select", options: ["Top performer", "Average", "Below average"] },
-      { name: "Notes", width: 240 },
+      { name: "Platform", width: 100, type: "select", options: PLATFORMS },
+      { name: "Notes", width: 260 },
     ],
     rows,
     freeze: 1,
@@ -734,6 +725,31 @@ export function buildWorkbookSheets(): SheetDef[] {
       { name: "Value", width: 460 },
     ],
     rows: SETUP_ROWS,
+    freeze: 1,
+  });
+
+  sheets.push({
+    id: "clients",
+    name: "Clients",
+    group: "Setup & Brand",
+    description: "Client roster — one row per client with contact, package, fee, status and social handles. Setup formulas and the Dashboard read from here.",
+    columns: [
+      { name: "Client", width: 180 },
+      { name: "Contact", width: 130 },
+      { name: "Email", width: 180 },
+      { name: "Phone", width: 130 },
+      { name: "Website", width: 150 },
+      { name: "Industry", width: 150 },
+      { name: "Package", width: 170 },
+      { name: "Monthly fee", width: 100, type: "currency" },
+      { name: "Start date", width: 92, type: "date" },
+      { name: "Status", width: 100, type: "select", options: ["Active", "Paused", "Prospect", "Archived"] },
+      { name: "Instagram", width: 120 },
+      { name: "TikTok", width: 120 },
+      { name: "LinkedIn", width: 120 },
+      { name: "Notes", width: 260 },
+    ],
+    rows: CLIENTS_ROWS,
     freeze: 1,
   });
 
@@ -767,8 +783,8 @@ export function buildWorkbookSheets(): SheetDef[] {
   sheets.push(makeHashtagsSheet());
   sheets.push(makeCollabsSheet());
   sheets.push(makeFinanceSheet());
-  sheets.push(makePlatformAnalyticsSheet());
-  sheets.push(makeContentAnalyticsSheet());
+  sheets.push(makeClientReportsSheet());
+  sheets.push(makeServiceLogSheet());
 
   return sheets;
 }

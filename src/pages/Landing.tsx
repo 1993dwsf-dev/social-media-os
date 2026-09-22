@@ -1,13 +1,13 @@
 import { motion } from "framer-motion";
 import {
   ArrowRight,
-  BarChart3,
+  Building2,
   CalendarDays,
   CheckCircle2,
   FileCheck2,
-  LayoutDashboard,
   Sparkles,
   Table2,
+  Wallet,
 } from "lucide-react";
 import { Link } from "react-router";
 
@@ -25,41 +25,41 @@ const fadeUp = {
 const FEATURES = [
   {
     icon: Table2,
-    title: "28-sheet Manager Workbook",
-    body: "Setup, Brand, Goals, Dashboard, a full year of monthly calendars, Content Plan, Tasks, Hashtags, Collabs, Finance, and analytics — every sheet structured with dropdowns, formulas, and status formats.",
+    title: "Manager Workbook",
+    body: "Setup, client roster, a full year of monthly calendars, Content Plan, Tasks, Hashtags, Collabs and Finance — every sheet structured with dropdowns, formulas and status formats.",
   },
   {
-    icon: LayoutDashboard,
-    title: "Client Portal",
-    body: "Dashboard, Strategy, Calendar, Approvals, Files, Performance, Requests, and Meetings. Clients see progress and approve work — without ever seeing your internal complexity.",
+    icon: Building2,
+    title: "Client roster & CRM",
+    body: "Register every client with contacts, social handles, package, monthly fee and a private notes space. Prospects, active and paused accounts live side by side.",
   },
   {
     icon: FileCheck2,
-    title: "Approval workflow",
-    body: "Draft → In Review → Approved → Scheduled → Published, with client comments captured per piece so feedback never gets lost in DMs.",
+    title: "Multi-client approvals",
+    body: "Draft → In Review → Approved → Scheduled → Published, tracked per client. Filter the calendar and approvals by account, so every client's pipeline stays separate.",
   },
   {
-    icon: BarChart3,
-    title: "Analytics that mean something",
-    body: "Reach, engagement, and follower trends by platform, plus per-content performance — built to show clients what's actually working.",
+    icon: Wallet,
+    title: "Your money, in one place",
+    body: "Log retainers, collab income, software, contractors and gear. See income, expenses, net result and what's still to collect — per client and for the whole business.",
   },
   {
     icon: CalendarDays,
     title: "Plan months ahead",
-    body: "Annual themes, monthly calendars, weekly execution, and a Brain Dump for ideas — from spark to published post in one system.",
+    body: "Annual themes, monthly calendars, weekly execution and a Brain Dump for ideas — from spark to published post, for every client you serve.",
   },
   {
     icon: Sparkles,
     title: "Notion-ready",
-    body: "Export the portal as a Notion-compatible package: markdown pages plus CSV databases that mirror the same information architecture.",
+    body: "Export per-client Notion packages: one page set per client plus shared databases for tasks, meetings and finance — the client folder stays shareable, your numbers stay private.",
   },
 ];
 
 const WORKFLOW = [
-  { step: "01", title: "Onboard", body: "Brand, audience, objectives, and preferences captured once." },
-  { step: "02", title: "Plan", body: "Annual themes roll into monthly calendars and weekly execution." },
-  { step: "03", title: "Produce", body: "Content Plan, Tasks, and approvals keep production moving." },
-  { step: "04", title: "Report", body: "Analytics and KPI progress roll up into client-ready performance views." },
+  { step: "01", title: "Register", body: "Add the client: contacts, handles, package, fee and notes." },
+  { step: "02", title: "Plan", body: "Annual themes roll into monthly calendars and weekly execution per client." },
+  { step: "03", title: "Produce", body: "Content, tasks and approvals move through the pipeline, filtered by client." },
+  { step: "04", title: "Get paid", body: "Log retainers and expenses, track pending income and see your net each month." },
 ];
 
 export default function Landing() {
@@ -100,16 +100,16 @@ export default function Landing() {
           >
             <Badge variant="outline" className="mb-6 gap-1.5 rounded-full bg-card px-3 py-1">
               <span className="size-1.5 rounded-full bg-primary" />
-              For freelancers, agencies & content teams
+              For freelancers & boutique social media agencies
             </Badge>
             <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight sm:text-6xl">
               The operating system for
               <span className="text-primary"> social media managers</span>
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-              A 28-sheet manager workbook, a polished client portal, and a Notion-ready package —
-              one information architecture connecting planning, production, approvals, analytics,
-              and client management.
+              Manage all your clients in one place: a client roster with notes, calendars and tasks
+              per account, multi-client approvals, your own finance ledger, and a Notion-ready
+              export — built for how you actually work.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button asChild size="lg" className="h-11 px-6">
@@ -119,12 +119,12 @@ export default function Landing() {
               </Button>
               <Button asChild size="lg" variant="outline" className="h-11 px-6">
                 <Link to="/workbook">
-                  <Table2 className="mr-2 size-4" /> Browse the 28-sheet workbook
+                  <Table2 className="mr-2 size-4" /> Browse the manager workbook
                 </Link>
               </Button>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
-              Loads with a fully populated fictional client — Northwind Coffee Roasters.
+              Loads with a fully populated fictional agency — four demo clients included.
             </p>
           </motion.div>
 
@@ -136,10 +136,10 @@ export default function Landing() {
             className="card-lift mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border/70 bg-border/60 sm:grid-cols-4"
           >
             {[
-              ["28", "worksheets"],
-              ["10", "portal sections"],
-              ["6", "platforms tracked"],
-              ["100%", "client-ready"],
+              ["4", "demo clients"],
+              ["10+", "workspace sections"],
+              ["29", "workbook sheets"],
+              ["100%", "your data, your account"],
             ].map(([v, l]) => (
               <div key={l} className="bg-card px-6 py-5">
                 <p className="tabular text-2xl font-semibold tracking-tight">{v}</p>
@@ -161,29 +161,29 @@ export default function Landing() {
               Everything shares one information architecture
             </h2>
             <p className="mt-4 text-muted-foreground">
-              The workbook, the portal, and the Notion export are three views of the same model —
-              change the plan in one place and every surface follows.
+              The workbook, the manager workspace and the Notion export are three views of the same
+              model — register the client once and every surface follows.
             </p>
           </motion.div>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {[
+            {            [
               {
                 title: "Manager Workbook",
                 sub: "The engine room",
-                body: "Where managers live: annual planning, monthly calendars, content production, tasks, hashtags, collabs, finance, and deep analytics.",
-                points: ["Dashboard with live formulas", "12 monthly calendars", "Platform + content analytics"],
+                body: "Annual planning, monthly calendars per client, content production, tasks, hashtags, collabs and finance — with dashboard formulas that read the client roster.",
+                points: ["Dashboard with live formulas", "12 monthly calendars with Client column", "Client reports & service log"],
               },
               {
-                title: "Client Portal",
-                sub: "The client window",
-                body: "What clients see: strategy, calendar, approvals, deliverables, performance, requests, and meetings — clean, minimal, actionable.",
-                points: ["Approval queue with comments", "KPI snapshots", "Request center"],
+                title: "Manager Workspace",
+                sub: "Your daily cockpit",
+                body: "Clients, strategy, calendar, tasks, approvals, requests, meetings and money — all in your account, filtered per client when you need focus.",
+                points: ["Client roster with notes", "Approval queue across clients", "Finance ledger with net result"],
               },
               {
                 title: "Notion Package",
                 sub: "The portable copy",
-                body: "Markdown pages and CSV databases that import into Notion and mirror the portal, so clients can live where they already work.",
-                points: ["9 structured pages", "7 databases with relations", "README setup guide"],
+                body: "One page set per client plus shared databases that import into Notion — hand clients their folder while finance stays manager-only.",
+                points: ["Per-client page sets", "7 shared databases", "README setup guide"],
               },
             ].map((c) => (
               <motion.div
@@ -214,8 +214,8 @@ export default function Landing() {
             Built for the way managers actually work
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Not a generic dashboard — a workflow that runs from the first client call to the monthly
-            performance report.
+            Not a generic dashboard — a workflow that runs from the first client call to the invoice
+            getting paid.
           </p>
         </motion.div>
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -270,8 +270,8 @@ export default function Landing() {
               Open the workspace
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-              Sign in and the demo client loads instantly — calendar, approvals, analytics, and the
-              full 28-sheet workbook. Export a JSON backup or a Notion package any time.
+              Sign in and the demo workspace loads instantly — four fictional clients, calendar,
+              tasks, approvals and finance. Export a JSON backup or a Notion package any time.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button asChild size="lg" className="h-11 px-6">
