@@ -245,7 +245,7 @@ function makeDashboardSheet(): SheetDef {
     ["Total followers", "=SUM(Platform Analytics!C2:C1000)", "Avg reach", "=ROUND(AVERAGE(Platform Analytics!D2:D1000),0)"],
     ["Total engagement", "=SUM(Platform Analytics!F2:F1000)", "Engagement rate", "=ROUND(SUM(Platform Analytics!F2:F1000)/SUM(Platform Analytics!D2:D1000)*100,1)&\"%\""],
     ["", "", "", ""],
-    ["Top content (from Content Analytics)", "", ""],
+    ["Top content (from Content Analytics)", "", "", ""],
     ["Best reach", "=INDEX('Content Analytics'!E2:E1000,MATCH(MAX('Content Analytics'!F2:F1000),'Content Analytics'!F2:F1000,0))", "Most saves", "=MAX('Content Analytics'!K2:K1000)"],
   ];
   return {
@@ -526,14 +526,14 @@ function makeFeedPreviewSheet(): SheetDef {
 
 function makeHashtagsSheet(): SheetDef {
   const rows: (string | number)[][] = [
-    ["#specialtycoffee", "Industry", "Education", "Broad", "High", "Instagram, TikTok", "coffee, barista", "Any educational post", "Active", ""],
-    ["#homebrewing", "Community", "Education", "Niche", "Medium", "Instagram", "home cafe, v60", "Carousel guides", "Active", "Best saver rate"],
-    ["#coffeeroaster", "Industry", "Product", "Niche", "Medium", "Instagram, LinkedIn", "roastery, origins", "Product reveals", "Active", ""],
-    ["#pourover", "Technique", "Education", "Niche", "Medium", "Instagram, Pinterest", "v60, chemex", "Brew guides", "Active", ""],
-    ["#coldbrew", "Product", "Education", "Broad", "High", "Instagram, TikTok", "iced coffee", "Seasonal features", "Active", "Rotate with #icedcoffee"],
+    ["#specialtycoffee", "Industry", "Education", "Broad", "High", "Instagram", "coffee, barista", "Any educational post", "Active", "Also used on TikTok"],
+    ["#homebrewing", "Community", "Education", "Niche", "Medium", "Instagram", "home cafe, v60", "Carousel guides", "Active", "Best saver rate; also used on TikTok"],
+    ["#coffeeroaster", "Industry", "Product", "Niche", "Medium", "Instagram", "roastery, origins", "Product reveals", "Active", "Repurpose on LinkedIn origin posts"],
+    ["#pourover", "Technique", "Education", "Niche", "Medium", "Instagram", "v60, chemex", "Brew guides", "Active", "Pin the guide graphic on Pinterest"],
+    ["#coldbrew", "Product", "Education", "Broad", "High", "TikTok", "iced coffee", "Seasonal features", "Active", "Also used on Instagram; rotate with #icedcoffee"],
     ["#portlandcoffee", "Local", "Community", "Local", "Low", "Instagram", "pdx, local roaster", "Local community posts", "Active", "Strong local reach"],
-    ["#coffeegifts", "Seasonal", "Promotion", "Broad", "High", "Instagram, Pinterest", "gift guide", "Gift guide campaign", "Planned", "Nov 20 onward"],
-    ["#behindthescenes", "Style", "Behind the scenes", "Broad", "Medium", "TikTok, Instagram", "roastery life", "BTS content", "Active", ""],
+    ["#coffeegifts", "Seasonal", "Promotion", "Broad", "High", "Pinterest", "gift guide", "Gift guide campaign", "Planned", "Nov 20 onward; also used in Instagram stories"],
+    ["#behindthescenes", "Style", "Behind the scenes", "Broad", "Medium", "TikTok", "roastery life", "BTS content", "Active", "Repurpose clips to Instagram Reels"],
   ];
   return {
     id: "hashtags",
