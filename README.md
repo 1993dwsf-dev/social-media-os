@@ -2,8 +2,8 @@
 
 Um sistema operacional completo para **gestores de social media independentes e agências
 boutique**: um espaço de trabalho para toda a sua carteira (clientes, calendários, tarefas,
-aprovações, dinheiro), uma planilha de 29 abas e uma exportação compatível com o Notion — tudo
-compartilhando a mesma arquitetura de informação.
+aprovações, dinheiro) e uma planilha de 29 abas — tudo compartilhando a mesma arquitetura de
+informação.
 
 > Produto original. Sem vínculo, cópia ou inspiração em marca, anúncio de marketplace ou produto existente.
 
@@ -21,7 +21,6 @@ nenhum cliente acessa o espaço de trabalho.
 | --- | --- | --- |
 | **Espaço do gestor** | `/app/dashboard` (após entrar) | Clientes, estratégia, integração, calendário, tarefas, aprovações, solicitações, financeiro, reuniões, arquivos e configurações. |
 | **Planilha do gestor** | `/workbook` | 29 abas com fórmulas, listas suspensas e formatação de status — visíveis no app e exportáveis em CSV. |
-| **Pacote para o Notion** | Configurações → "Pacote para o Notion" | Um conjunto de páginas por cliente + bases compartilhadas (Clientes, Conteúdo, Tarefas, Solicitações, Reuniões, Entregas e Financeiro). |
 | **Ferramentas de dados** | Configurações | Exportar/importar JSON, espaço de exemplo (4 clientes fictícios) e limpeza total. |
 
 ## A arquitetura de informação
@@ -38,8 +37,8 @@ Gestor (você)
  → Financeiro         (receitas e despesas, opcionalmente vinculadas a um cliente)
 ```
 
-Cada superfície (espaço de trabalho, planilha, Notion) é uma visão desse mesmo modelo: o dado é
-digitado uma vez e referenciado em todos os lugares.
+Cada superfície (espaço de trabalho e planilha) é uma visão desse mesmo modelo: o dado é digitado
+uma vez e referenciado em todos os lugares.
 
 ## O espaço de trabalho do gestor
 
@@ -103,28 +102,16 @@ então a planilha acompanha apenas o que o gestor realmente controla — entrega
   conteúdos, tarefas, reuniões e finanças distribuídos ao redor de hoje.
 - **CRUD:** clientes, conteúdos, tarefas, solicitações, reuniões, entregas e financeiro permitem
   adicionar, editar e excluir; os status mudam na própria tela; tudo persiste na sua conta.
-- **Exportações:** backup em JSON (Configurações), pacote do Notion por cliente (Configurações) e
-  CSV da aba ou de todas as abas (página da Planilha).
+- **Exportações:** backup em JSON (Configurações) e CSV da aba ou de todas as abas (página da
+  Planilha).
 
 ## Idioma
 
-A interface, a planilha e o pacote do Notion estão em **português (pt-BR)**, com moeda em Real e
-datas no formato brasileiro. Os valores internos de status, prioridade e categoria continuam em
+A interface e a planilha estão em **português (pt-BR)**, com moeda em Real e datas no formato
+brasileiro. Os valores internos de status, prioridade e categoria continuam em
 inglês no banco e nos formulários; a tradução acontece só na exibição, via o dicionário em
 `src/data/labels.ts`. Assim, mudar ou revisar textos nunca corrompe dados já salvos nem quebra
 filtros e fórmulas.
-
-## Importar no Notion (versão curta)
-
-1. Baixe o pacote em **Configurações → Pacote para o Notion**.
-2. No Notion: **Workspace → Import → CSV** para cada arquivo em `databases/`.
-3. Crie páginas a partir dos arquivos markdown sob uma página principal — as pastas
-   `clients/<nome>/` correspondem a um conjunto de páginas por cliente.
-4. Ligue as páginas com menções `@` e agrupe a base **Content** por Status para ter um quadro de
-   aprovações.
-
-`Finance.csv`, as tabelas de indicadores e as observações "somente para o gestor" são de uso interno
-do negócio — remova-os antes de compartilhar a pasta de um cliente com o próprio cliente.
 
 ## Checklist de verificação
 
@@ -136,7 +123,6 @@ do negócio — remova-os antes de compartilhar a pasta de um cliente com o pró
 - [x] Navegação, formulários, filtros e busca do portal funcionando
 - [x] Exportar/importar JSON + carregar o espaço de exemplo
 - [x] Layouts responsivos (menu lateral no mobile, grades fluidas)
-- [x] Pacote do Notion espelhando o espaço de trabalho, por cliente
 - [x] Apenas identidade visual e textos originais
 
 ## Desenvolvimento
@@ -149,8 +135,8 @@ bun test                # testes de regressão da camada de dados
 ```
 
 `bun test` cobre a planilha (conjunto de abas, ausência de linhas desalinhadas, valores de lista,
-indicadores do Painel conferidos contra as abas de origem), o próprio motor de fórmulas, o
-planejador de faturas recorrentes e o pacote de exportação para o Notion.
+indicadores do Painel conferidos contra as abas de origem), o próprio motor de fórmulas e o
+planejador de faturas recorrentes.
 
 A plataforma roda o servidor de desenvolvimento e o processo do Convex automaticamente; publique
 para fazer o deploy.

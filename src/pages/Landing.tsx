@@ -4,8 +4,8 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
+  Download,
   FileCheck2,
-  Sparkles,
   Table2,
   Wallet,
 } from "lucide-react";
@@ -49,9 +49,9 @@ const FEATURES = [
     body: "Temas anuais, calendários mensais, execução semanal e um Banco de Ideias — da faísca ao post publicado, para cada cliente atendido.",
   },
   {
-    icon: Sparkles,
-    title: "Pronto para o Notion",
-    body: "Exporte pacotes do Notion por cliente: um conjunto de páginas para cada um e bases compartilhadas de tarefas, reuniões e financeiro — a pasta do cliente continua compartilhável, seus números ficam privados.",
+    icon: Download,
+    title: "Backup que é seu",
+    body: "Exporte todo o espaço de trabalho em um arquivo JSON e importe em outra conta quando quiser. Seus clientes, conteúdos e números nunca ficam presos aqui.",
   },
 ];
 
@@ -108,9 +108,8 @@ export default function Landing() {
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
               Administre todos os seus clientes em um só lugar: carteira de clientes com
-              anotações, calendários e tarefas por conta, aprovações multi-cliente, seu próprio
-              controle financeiro e uma exportação pronta para o Notion — feito para o seu jeito
-              real de trabalhar.
+              anotações, calendários e tarefas por conta, aprovações multi-cliente e seu próprio
+              controle financeiro — feito para o seu jeito real de trabalhar.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button asChild size="lg" className="h-11 px-6">
@@ -156,17 +155,17 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
           <motion.div {...fadeUp} className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-              Um sistema, três superfícies
+              Um sistema, duas superfícies
             </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
               Tudo compartilha a mesma arquitetura de informação
             </h2>
             <p className="mt-4 text-muted-foreground">
-              A planilha, o espaço do gestor e a exportação para o Notion são três visões do mesmo
-              modelo — cadastre o cliente uma vez e todas as superfícies acompanham.
+              A planilha e o espaço do gestor são duas visões do mesmo modelo — cadastre o cliente
+              uma vez e as duas acompanham.
             </p>
           </motion.div>
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
             {            [
               {
                 title: "Planilha do gestor",
@@ -179,12 +178,6 @@ export default function Landing() {
                 sub: "Seu cockpit diário",
                 body: "Clientes, estratégia, calendário, tarefas, aprovações, solicitações, reuniões e dinheiro — tudo na sua conta, filtrado por cliente quando você precisa de foco.",
                 points: ["Carteira de clientes com anotações", "Fila de aprovações entre clientes", "Financeiro com resultado líquido"],
-              },
-              {
-                title: "Pacote para o Notion",
-                sub: "A cópia portátil",
-                body: "Um conjunto de páginas por cliente e bases compartilhadas que importam no Notion — entregue a pasta ao cliente mantendo o financeiro só para o gestor.",
-                points: ["Páginas por cliente", "7 bases compartilhadas", "Guia de importação (README)"],
               },
             ].map((c) => (
               <motion.div
@@ -272,8 +265,7 @@ export default function Landing() {
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
               Entre e o espaço de exemplo carrega na hora — quatro clientes fictícios, calendário,
-              tarefas, aprovações e financeiro. Exporte um backup em JSON ou um pacote para o Notion
-              quando quiser.
+              tarefas, aprovações e financeiro. Exporte um backup em JSON quando quiser.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <Button asChild size="lg" className="h-11 px-6">

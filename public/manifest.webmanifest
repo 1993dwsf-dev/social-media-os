@@ -1,7 +1,7 @@
 {
   "name": "Contentplane — Sistema operacional para gestores de social media",
   "short_name": "Contentplane",
-  "description": "O sistema operacional para gestores de social media: planilha do gestor, espaço de trabalho e pacote pronto para o Notion.",
+  "description": "O sistema operacional para gestores de social media: planilha de 29 abas e espaço de trabalho para gerir clientes, conteúdo, aprovações e finanças.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F7FAFB",

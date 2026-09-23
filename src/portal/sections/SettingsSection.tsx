@@ -1,5 +1,5 @@
 // Configurações do workspace: quem é o gestor, como o espaço se comporta e as
-// ferramentas de dados (backup, dados de exemplo, exportação para Notion, reset).
+// ferramentas de dados (backup, dados de exemplo, reset).
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -18,7 +18,6 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { SectionHeader } from "@/components/portal/Shared";
 import { label } from "@/data/labels";
-import { exportNotionPackage } from "@/data/notion-export";
 import type { WorkspaceProfile } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
 import { cn } from "@/lib/utils";
@@ -54,22 +53,6 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
     } finally {
       setSaving(false);
     }
-  };
-
-  const notion = () => {
-    exportNotionPackage({
-      profile: ws.profile,
-      clients: ws.clients,
-      content: ws.content,
-      tasks: ws.tasks,
-      requests: ws.requests,
-      meetings: ws.meetings,
-      deliverables: ws.deliverables,
-      finance: ws.finance,
-    });
-    toast.success("Baixando o pacote para o Notion", {
-      description: "Páginas em Markdown e bases em CSV — confira seus downloads.",
-    });
   };
 
   return (
@@ -223,9 +206,6 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
                 }
               }}
             />
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={notion}>
-              <Sparkles className="size-4" /> Pacote para o Notion
-            </Button>
           </div>
         </section>
 

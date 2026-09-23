@@ -1,6 +1,6 @@
 // Testes de regressão da camada de dados do Contentplane:
-// a planilha de 29 abas (com seu motor de fórmulas), o planejador de faturas
-// recorrentes e o pacote de exportação para o Notion com vários clientes.
+// a planilha de 29 abas (com seu motor de fórmulas) e o planejador de faturas
+// recorrentes.
 //
 // Rode com: bun test
 
@@ -8,10 +8,8 @@ import { describe, expect, test } from "bun:test";
 
 import { computeWorkbook, evaluateFormula, matchesCriteria } from "../src/data/formula";
 import { planInvoices } from "../src/data/invoicing";
-import { buildNotionFiles } from "../src/data/notion-export";
 import { buildWorkbookSheets, toCSV } from "../src/data/workbook";
 import type { SheetColumn, SheetDef } from "../src/data/workbook";
-import type { ClientRecord, ContentItem } from "../src/data/types";
 
 const REQUIRED_SHEET_NAMES = [
   "Configuração",
@@ -82,46 +80,6 @@ function dashboardValue(label: string, labelColumn = 0): string | number {
   const rowIndex = sheet.rows.findIndex((row) => String(row[labelColumn]) === label);
   if (rowIndex < 0) throw new Error(`O Painel não tem o indicador "${label}"`);
   return sheet.computed![rowIndex][labelColumn + 1];
-}
-
-/** Parser de CSV mínimo (trata aspas, aspas escapadas e vírgulas). */
-function parseCSV(csv: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = "";
-  let inQuotes = false;
-  for (let i = 0; i < csv.length; i++) {
-    const ch = csv[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (csv[i + 1] === '"') {
-          field += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        field += ch;
-      }
-    } else if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === ",") {
-      row.push(field);
-      field = "";
-    } else if (ch === "\n") {
-      row.push(field);
-      rows.push(row);
-      row = [];
-      field = "";
-    } else {
-      field += ch;
-    }
-  }
-  if (field !== "" || row.length > 0) {
-    row.push(field);
-    rows.push(row);
-  }
-  return rows;
 }
 
 describe("planilha: 29 abas do espaço do gestor", () => {
@@ -347,133 +305,6 @@ describe("planilha: 29 abas do espaço do gestor", () => {
       freeze: 0,
     };
     expect(toCSV(sheet)).toBe('A,B\n"hello, ""world""",3');
-  });
-});
-
-function makeClient(partial: Partial<ClientRecord>): ClientRecord {
-  return {
-    id: "c1",
-    name: "Northwind Coffee Roasters",
-    contactName: "Maiara Okano",
-    email: "maiara@northwindcoffee.exemplo",
-    phone: "",
-    website: "",
-    industry: "Cafés especiais",
-    packageName: "Mensalidade — 12 posts/mês",
-    monthlyFee: 4800,
-    startDate: "2026-01-15",
-    status: "Active",
-    socials: { instagram: "@northwindcoffee" },
-    notes: "Prefere ajustes em lote.",
-    onboarding: {},
-    strategy: [
-      { key: "pillars", title: "Pilares de conteúdo", items: ["Educação", "Produto"] },
-    ],
-    kpis: [{ name: "Posts publicados / mês", baseline: "6", target: "12", actual: "9", unit: "posts", deadline: "2026-10-28" }],
-    createdAt: 0,
-    ...partial,
-  };
-}
-
-function makeContent(partial: Partial<ContentItem>): ContentItem {
-  return {
-    id: "x1",
-    clientId: "c1",
-    date: "2026-09-20",
-    platform: "Instagram",
-    format: "Reel",
-    topic: "Cold brew x café gelado",
-    caption: "",
-    assetNote: "",
-    status: "Published",
-    managerNotes: "",
-    clientComments: "",
-    pillar: "Education",
-    owner: "Priya",
-    ...partial,
-  };
-}
-
-describe("pacote de exportação para o Notion (vários clientes)", () => {
-  const clients = [
-    makeClient({ id: "c1" }),
-    makeClient({ id: "c2", name: "Hale & Harbor Interiors", status: "Prospect", monthlyFee: 3200 }),
-  ];
-  const pkg = buildNotionFiles({
-    profile: {
-      managerName: "Ana Moreira",
-      agency: "Moreira Social",
-      email: "",
-      currency: "R$",
-      weekStart: "Monday",
-      approvalTurnaroundDays: 3,
-      notifyEmail: true,
-      notifyApprovals: true,
-      notifyFinance: false,
-      density: "comfortable",
-    },
-    clients,
-    content: [
-      makeContent({}),
-      makeContent({ id: "x2", clientId: "c2", topic: "Guia de tamanhos de tapete", date: "2026-09-18" }),
-    ],
-    tasks: [],
-    requests: [],
-    meetings: [],
-    deliverables: [],
-    finance: [],
-  });
-
-  const markdown = pkg.filter((f) => f.name.endsWith(".md"));
-  const csvs = pkg.filter((f) => f.name.endsWith(".csv"));
-
-  test("entrega bases compartilhadas, pastas por cliente e um README", () => {
-    const names = pkg.map((f) => f.name);
-    expect(names).toContain("README.md");
-    expect(names).toContain("databases/Clients.csv");
-    expect(names).toContain("databases/Content.csv");
-    expect(names).toContain("databases/Tasks.csv");
-    expect(names).toContain("databases/Finance.csv");
-    expect(names.some((n) => n.startsWith("clients/northwind-coffee-roasters/"))).toBe(true);
-    expect(names.some((n) => n.startsWith("clients/hale-harbor-interiors/"))).toBe(true);
-    expect(csvs.length).toBe(7);
-    expect(markdown.length).toBeGreaterThanOrEqual(7);
-  });
-
-  test("as linhas de conteúdo estão atribuídas ao cliente certo", () => {
-    const rows = parseCSV(pkg.find((f) => f.name === "databases/Content.csv")!.content);
-    expect(rows[0]).toContain("Cliente");
-    const clientsColumn = rows[0].indexOf("Cliente");
-    const assigned = rows.slice(1).map((r) => r[clientsColumn]);
-    expect(assigned).toContain("Northwind Coffee Roasters");
-    expect(assigned).toContain("Hale & Harbor Interiors");
-  });
-
-  test("a página do cliente traz a estratégia e marca as notas exclusivas do gestor", () => {
-    const page = pkg.find((f) => f.name === "clients/northwind-coffee-roasters/Cliente.md")!.content;
-    expect(page).toContain("Northwind Coffee Roasters");
-    expect(page).toContain("Pilares de conteúdo");
-    expect(page).toContain("somente para o gestor");
-  });
-
-  test("todo CSV tem contagem de colunas consistente", () => {
-    for (const file of csvs) {
-      const rows = parseCSV(file.content);
-      const header = rows[0];
-      expect(header.length).toBeGreaterThan(1);
-      for (const row of rows.slice(1)) {
-        expect(row.length).toBe(header.length);
-      }
-    }
-  });
-
-  test("o pacote nunca inclui dados de métricas de rede social", () => {
-    for (const file of pkg) {
-      const text = file.content.toLowerCase();
-      expect(text).not.toContain("seguidores");
-      expect(text).not.toContain("impressões");
-      expect(text).not.toContain("taxa de engajamento");
-    }
   });
 });
 
