@@ -125,6 +125,13 @@ filtros e fórmulas.
 - [x] Layouts responsivos (menu lateral no mobile, grades fluidas)
 - [x] Apenas identidade visual e textos originais
 
+## Entrega ao usuário final
+
+O passo a passo de publicação, primeiro acesso, onboarding e suporte está em
+[`docs/entrega.md`](docs/entrega.md). Em resumo: publicar pelo Freebuff, o usuário entra em `/auth`
+com o código de 6 dígitos enviado ao e-mail dele, e a conta nova começa vazia — carregue os dados de
+exemplo em Configurações para demonstrar e depois limpe antes de cadastrar clientes reais.
+
 ## Desenvolvimento
 
 ```bash
