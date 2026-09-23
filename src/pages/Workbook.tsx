@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { computeWorkbook } from "@/data/formula";
 import {
   buildWorkbookSheets,
   downloadCSV,
@@ -50,14 +51,31 @@ const STATUS_TINT: Record<string, string> = {
 
 const STATUS_WORDS = new Set(Object.keys(STATUS_TINT));
 
-function Cell({ value, type }: { value: string | number; type?: string }) {
+function Cell({
+  value,
+  type,
+  formula,
+}: {
+  value: string | number;
+  type?: string;
+  formula?: string;
+}) {
   const s = String(value);
   if (s === "") return <TableCell className="text-muted-foreground/40">·</TableCell>;
 
   const isStatus = STATUS_WORDS.has(s);
   const isFormula = s.startsWith("=");
   const isDate = type === "date" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  const title = formula ?? undefined;
 
+  // A formula cell renders its computed value; hover shows the source formula.
+  if (title) {
+    return (
+      <TableCell className="tabular text-xs font-medium text-primary" title={title}>
+        {typeof value === "number" ? value.toLocaleString() : s}
+      </TableCell>
+    );
+  }
   if (isFormula) {
     return (
       <TableCell className="tabular max-w-[280px] truncate font-mono text-[11px] text-primary">
@@ -104,7 +122,7 @@ function Cell({ value, type }: { value: string | number; type?: string }) {
 }
 
 export default function Workbook() {
-  const sheets = useMemo(() => buildWorkbookSheets(), []);
+  const sheets = useMemo(() => computeWorkbook(buildWorkbookSheets()), []);
   const [activeId, setActiveId] = useState(sheets[0]?.id ?? "");
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState("all");
@@ -115,11 +133,13 @@ export default function Workbook() {
     (s) => groupFilter === "all" || s.group === groupFilter,
   );
 
-  // Filter rows by the search term (all columns).
+  // Filter rows by the search term (all columns), keeping the original row index
+  // so computed values and row numbers stay aligned while filtering.
   const rows = useMemo(() => {
-    if (!search.trim()) return sheet.rows;
+    const all = sheet.rows.map((row, index) => ({ row, index }));
+    if (!search.trim()) return all;
     const q = search.toLowerCase();
-    return sheet.rows.filter((r) => r.some((c) => String(c).toLowerCase().includes(q)));
+    return all.filter(({ row }) => row.some((c) => String(c).toLowerCase().includes(q)));
   }, [sheet, search]);
 
   const groups = [...new Set(sheets.map((s) => s.group))];
@@ -223,7 +243,7 @@ export default function Workbook() {
           <div>
             <h1 className="text-lg font-semibold tracking-tight">
               <span className="tabular mr-2 text-sm text-muted-foreground">
-                {sheets.indexOf(sheet) + 1}/28
+                {sheets.indexOf(sheet) + 1}/{sheets.length}
               </span>
               {sheet.name}
             </h1>
@@ -253,14 +273,22 @@ export default function Workbook() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((row, ri) => (
+                {rows.map(({ row, index: ri }) => (
                   <TableRow key={ri} className={ri % 2 ? "bg-muted/20" : ""}>
                     <TableCell className="tabular text-[10px] text-muted-foreground/60">
                       {ri + 1}
                     </TableCell>
-                    {row.map((cell, ci) => (
-                      <Cell key={ci} value={cell} type={sheet.columns[ci]?.type} />
-                    ))}
+                    {row.map((cell, ci) => {
+                      const isFormula = typeof cell === "string" && cell.startsWith("=");
+                      return (
+                        <Cell
+                          key={ci}
+                          value={isFormula ? sheet.computed?.[ri]?.[ci] ?? "" : cell}
+                          type={sheet.columns[ci]?.type}
+                          formula={isFormula ? cell : undefined}
+                        />
+                      );
+                    })}
                   </TableRow>
                 ))}
                 {rows.length === 0 && (
@@ -279,8 +307,9 @@ export default function Workbook() {
 
         <p className="mt-3 text-[11px] text-muted-foreground">
           Frozen headers, dropdown validation (▾), status conditional formatting, and cross-sheet
-          formulas are reproduced from the workbook spec. Input cells are blank in month calendars —
-          they're ready for real planning.
+          formulas are reproduced from the workbook spec — formula cells show their computed value,
+          hover to see the formula. Input cells are blank in month calendars — they're ready for real
+          planning.
         </p>
       </main>
     </div>

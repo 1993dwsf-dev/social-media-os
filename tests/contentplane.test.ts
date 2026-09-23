@@ -1,13 +1,16 @@
 // Targeted regression tests for the Contentplane manager workspace data layer:
-// the 28-sheet workbook engine and the multi-client Notion export package.
+// the 29-sheet workbook (including its live formula engine), the recurring
+// invoice planner and the multi-client Notion export package.
 //
 // Run with: bun test
 
 import { describe, expect, test } from "bun:test";
 
+import { computeWorkbook, evaluateFormula, matchesCriteria } from "../src/data/formula";
+import { planInvoices } from "../src/data/invoicing";
 import { buildNotionFiles } from "../src/data/notion-export";
 import { buildWorkbookSheets, toCSV } from "../src/data/workbook";
-import type { SheetDef } from "../src/data/workbook";
+import type { SheetColumn, SheetDef } from "../src/data/workbook";
 import type { ClientRecord, ContentItem } from "../src/data/types";
 
 const REQUIRED_SHEET_NAMES = [
@@ -46,11 +49,39 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 const sheets = buildWorkbookSheets();
 const sheetNames = sheets.map((s) => s.name);
+const computedSheets = computeWorkbook(sheets);
 
 function byName(name: string): SheetDef {
   const sheet = sheets.find((s) => s.name === name);
   if (!sheet) throw new Error(`Sheet "${name}" is missing from the workbook`);
   return sheet;
+}
+
+function computedByName(name: string): SheetDef {
+  const sheet = computedSheets.find((s) => s.name === name);
+  if (!sheet) throw new Error(`Sheet "${name}" is missing from the workbook`);
+  return sheet;
+}
+
+/** UTC-safe ISO date `days` away from today (the engine works in UTC). */
+function isoOffset(days: number): string {
+  const d = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function columnIndex(sheet: SheetDef, name: string): number {
+  const index = sheet.columns.findIndex((c) => c.name === name);
+  if (index < 0) throw new Error(`Column "${name}" is missing from ${sheet.name}`);
+  return index;
+}
+
+/** Read a computed Dashboard value by its metric label (value is the next cell over). */
+function dashboardValue(label: string, labelColumn = 0): string | number {
+  const sheet = computedByName("Dashboard");
+  const rowIndex = sheet.rows.findIndex((row) => String(row[labelColumn]) === label);
+  if (rowIndex < 0) throw new Error(`Dashboard has no metric named "${label}"`);
+  return sheet.computed![rowIndex][labelColumn + 1];
 }
 
 /** Minimal CSV parser (handles quotes, escaped quotes, commas). */
@@ -161,27 +192,125 @@ describe("workbook: 29 sheets for the manager workspace", () => {
     expect(violations).toEqual([]);
   });
 
-  test("dashboard formulas compute from Clients, Content Plan, Tasks and Finance", () => {
+  test("dashboard formulas point at the columns that actually hold the data", () => {
     const formulas = byName("Dashboard")
       .rows.flat()
       .filter((v): v is string => typeof v === "string" && v.startsWith("="));
     expect(formulas.length).toBeGreaterThanOrEqual(10);
     const joined = formulas.join("\n");
+
     expect(joined).toContain("Clients!A2:A1000");
     expect(joined).toContain("Clients!H2:H1000");
     expect(joined).toContain("Clients!J2:J1000");
-    // Content Plan with the new Client column: C = Client, P = Approval, Q = Publication
+
+    // Content Plan: C = Client, P = Approval status, Q = Publication status.
+    const plan = byName("Content Plan");
+    expect(plan.columns[columnIndex(plan, "Client")].name).toBe("Client");
+    expect(columnIndex(plan, "Approval status")).toBe(15);
+    expect(columnIndex(plan, "Publication status")).toBe(16);
+    expect(joined).toContain("'Content Plan'!C2:C1000");
     expect(joined).toContain("'Content Plan'!P2:P1000");
     expect(joined).toContain("'Content Plan'!Q2:Q1000");
-    expect(joined).not.toContain("'Content Plan'!O2:O1000");
-    // Tasks shifted by the Client column: I = Status, K = Due date
-    expect(joined).toContain("Tasks!I2:I1000");
-    expect(joined).toContain("Tasks!K2:K1000");
+
+    // Tasks: H = Status, J = Due date.
+    const tasks = byName("Tasks");
+    expect(columnIndex(tasks, "Status")).toBe(7);
+    expect(columnIndex(tasks, "Due date")).toBe(9);
+    expect(joined).toContain("Tasks!H2:H1000");
+    expect(joined).toContain("Tasks!J2:J1000");
+
+    // Finance: C = Revenue, D = Expense, G = Payment status.
+    const finance = byName("Finance");
+    expect(columnIndex(finance, "Payment status")).toBe(6);
     expect(joined).toContain("Finance!C2:C1000");
     expect(joined).toContain("Finance!D2:D1000");
+    expect(joined).toContain("Finance!G2:G1000");
+
     // No social-metric formulas remain.
     expect(joined).not.toContain("Platform Analytics");
     expect(joined).not.toContain("Content Analytics");
+  });
+
+  test("every workbook formula evaluates (no #ERROR cells)", () => {
+    const broken: string[] = [];
+    for (const sheet of computedSheets) {
+      sheet.computed!.forEach((row, rowIndex) => {
+        row.forEach((value, colIndex) => {
+          if (value === "#ERROR") {
+            broken.push(`${sheet.name}!${sheet.columns[colIndex]?.name} row ${rowIndex + 2}`);
+          }
+        });
+      });
+    }
+    expect(broken).toEqual([]);
+  });
+
+  test("dashboard metrics equal independently computed values from the source sheets", () => {
+    const clients = byName("Clients");
+    const clientStatus = columnIndex(clients, "Status");
+    const monthlyFee = columnIndex(clients, "Monthly fee");
+    const activeClients = clients.rows.filter((r) => r[clientStatus] === "Active");
+    const recurringRevenue = activeClients.reduce((sum, r) => sum + Number(r[monthlyFee] || 0), 0);
+
+    const content = byName("Content Plan");
+    const approval = columnIndex(content, "Approval status");
+    const publication = columnIndex(content, "Publication status");
+    const byPublication = (status: string) =>
+      content.rows.filter((r) => r[publication] === status).length;
+
+    const tasks = byName("Tasks");
+    const taskStatus = columnIndex(tasks, "Status");
+    const taskDue = columnIndex(tasks, "Due date");
+    const tasksDueThisWeek = tasks.rows.filter(
+      (r) => r[taskStatus] !== "Done" && String(r[taskDue]) <= isoOffset(7),
+    ).length;
+
+    const finance = byName("Finance");
+    const paymentStatus = columnIndex(finance, "Payment status");
+    const revenue = columnIndex(finance, "Revenue");
+    const unpaidIncome = finance.rows
+      .filter((r) => r[paymentStatus] !== "Paid")
+      .reduce((sum, r) => sum + Number(r[revenue] || 0), 0);
+
+    expect(dashboardValue("Total clients")).toBe(clients.rows.length);
+    expect(dashboardValue("Active clients", 2)).toBe(activeClients.length);
+    expect(dashboardValue("Monthly recurring revenue")).toBe(recurringRevenue);
+    expect(dashboardValue("Prospects", 2)).toBe(
+      clients.rows.filter((r) => r[clientStatus] === "Prospect").length,
+    );
+
+    expect(dashboardValue("Planned posts")).toBe(content.rows.length);
+    expect(dashboardValue("Published", 2)).toBe(byPublication("Published"));
+    expect(dashboardValue("Scheduled", 2)).toBe(byPublication("Scheduled"));
+    expect(dashboardValue("Awaiting approval")).toBe(
+      content.rows.filter((r) => r[approval] === "Pending").length,
+    );
+
+    expect(dashboardValue("Tasks due this week")).toBe(tasksDueThisWeek);
+    expect(dashboardValue("Tasks done", 2)).toBe(
+      tasks.rows.filter((r) => r[taskStatus] === "Done").length,
+    );
+
+    expect(dashboardValue("Unpaid / pending income")).toBe(unpaidIncome);
+    expect(dashboardValue("Overdue payments", 2)).toBe(
+      finance.rows.filter((r) => r[paymentStatus] === "Overdue").length,
+    );
+  });
+
+  test("this-month money metrics stay inside the current calendar month", () => {
+    const finance = byName("Finance");
+    const dateIdx = columnIndex(finance, "Date");
+    const revenueIdx = columnIndex(finance, "Revenue");
+    const expenseIdx = columnIndex(finance, "Expense");
+    const month = new Date().toISOString().slice(0, 7);
+    const inMonth = finance.rows.filter((r) => String(r[dateIdx]).slice(0, 7) === month);
+
+    expect(dashboardValue("Revenue this month")).toBe(
+      inMonth.reduce((sum, r) => sum + Number(r[revenueIdx] || 0), 0),
+    );
+    expect(dashboardValue("Expenses this month", 2)).toBe(
+      inMonth.reduce((sum, r) => sum + Number(r[expenseIdx] || 0), 0),
+    );
   });
 
   test("no social metric columns remain in the workbook", () => {
@@ -336,5 +465,136 @@ describe("notion export package (multi-client)", () => {
         expect(row.length).toBe(header.length);
       }
     }
+  });
+
+  test("package never ships social-metric data", () => {
+    for (const file of pkg) {
+      const text = file.content.toLowerCase();
+      expect(text).not.toContain("followers");
+      expect(text).not.toContain("impressions");
+      expect(text).not.toContain("engagement rate");
+    }
+  });
+});
+
+function fixtureSheet(
+  name: string,
+  columns: SheetColumn[],
+  rows: (string | number)[][],
+): SheetDef {
+  return {
+    id: name.toLowerCase(),
+    name,
+    group: "Setup & Brand",
+    description: "Test fixture sheet",
+    columns,
+    rows,
+    freeze: 1,
+  };
+}
+
+function lastDayOfMonthISO(): string {
+  const now = new Date();
+  const last = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
+  return last.toISOString().slice(0, 10);
+}
+
+describe("workbook formula engine", () => {
+  const book = [
+    fixtureSheet(
+      "Data",
+      [
+        { name: "Ref", width: 80 },
+        { name: "Status", width: 80 },
+        { name: "Amount", width: 80, type: "number" },
+        { name: "Date", width: 80, type: "date" },
+      ],
+      [
+        ["r1", "Done", 100, isoOffset(-90)],
+        ["r2", "Backlog", 200, isoOffset(-10)],
+        ["r3", "Done", 300, isoOffset(-200)],
+      ],
+    ),
+  ];
+
+  test("evaluates the aggregate functions the workbook relies on", () => {
+    expect(evaluateFormula("=COUNTA(Data!A2:A1000)", book)).toBe(3);
+    expect(evaluateFormula('=COUNTIF(Data!B2:B1000,"Done")', book)).toBe(2);
+    expect(evaluateFormula('=SUMIF(Data!B2:B1000,"Done",Data!C2:C1000)', book)).toBe(400);
+    expect(evaluateFormula('=SUMIF(Data!C2:C1000,">=200")', book)).toBe(500);
+    expect(evaluateFormula("=SUM(Data!C2:C1000)", book)).toBe(600);
+    expect(
+      evaluateFormula('=SUMIFS(Data!C2:C1000,Data!B2:B1000,"Done",Data!C2:C1000,">=200")', book),
+    ).toBe(300);
+  });
+
+  test("treats row 1 as the header row and missing cells as empty", () => {
+    expect(evaluateFormula("=COUNTA(Data!A1:A1)", book)).toBe(0);
+    expect(evaluateFormula("=COUNTA(Data!Z2:Z100)", book)).toBe(0);
+    expect(evaluateFormula('=COUNTIF(Data!Z2:Z100,"x")', book)).toBe(0);
+  });
+
+  test("supports date arithmetic and TEXT for month-bounded criteria", () => {
+    expect(evaluateFormula('=TEXT(TODAY()+7,"YYYY-MM-DD")', book)).toBe(isoOffset(7));
+    expect(evaluateFormula('=TEXT(EOMONTH(TODAY(),-1)+1,"YYYY-MM-DD")', book)).toBe(
+      `${new Date().toISOString().slice(0, 7)}-01`,
+    );
+    expect(evaluateFormula('=TEXT(EOMONTH(TODAY(),0),"YYYY-MM-DD")', book)).toBe(lastDayOfMonthISO());
+    expect(
+      evaluateFormula(
+        '=COUNTIFS(Data!B2:B1000,"<>Done",Data!D2:D1000,">="&TEXT(TODAY()-90,"YYYY-MM-DD"))',
+        book,
+      ),
+    ).toBe(1);
+  });
+
+  test("fails soft — unsupported formulas resolve to #ERROR instead of throwing", () => {
+    expect(evaluateFormula("=MADEUP(1)", book)).toBe("#ERROR");
+    expect(evaluateFormula("=COUNTA(Nope!A2:A5)", book)).toBe("#ERROR");
+  });
+
+  test("criteria matching mirrors spreadsheet semantics", () => {
+    expect(matchesCriteria("Done", "Done")).toBe(true);
+    expect(matchesCriteria("done", "DONE")).toBe(true);
+    expect(matchesCriteria("Done", "<>Done")).toBe(false);
+    expect(matchesCriteria("", "<>Paid")).toBe(true);
+    expect(matchesCriteria(200, ">=200")).toBe(true);
+    expect(matchesCriteria("2026-09-09", ">=2026-09-01")).toBe(true);
+    expect(matchesCriteria("2026-08-09", ">=2026-09-01")).toBe(false);
+  });
+});
+
+describe("recurring invoice planning", () => {
+  const now = new Date("2026-09-15T12:00:00Z");
+  const clients = [
+    { id: "c1", name: "Northwind Coffee Roasters", status: "Active", monthlyFee: 4800 },
+    { id: "c2", name: "Paused Client", status: "Paused", monthlyFee: 1000 },
+    { id: "c3", name: "Comped Client", status: "Active", monthlyFee: 0 },
+  ];
+
+  test("invoices active clients with a fee, one per month, due on the 10th", () => {
+    const plan = planInvoices(clients, [], 2, undefined, now);
+    expect(plan.map((p) => p.clientId)).toEqual(["c1", "c1"]);
+    expect(plan.map((p) => p.month)).toEqual(["2026-09", "2026-10"]);
+    expect(plan.every((p) => p.amount === 4800)).toBe(true);
+    expect(plan.every((p) => p.dueDate === `${p.month}-10`)).toBe(true);
+    expect(plan[0].description).toContain("Northwind Coffee Roasters");
+  });
+
+  test("is idempotent — existing invoices are never duplicated", () => {
+    const plan = planInvoices(clients, [], 2, undefined, now);
+    const finance = plan.map((p) => ({ clientId: p.clientId, kind: "invoice" as const, date: p.month }));
+    expect(planInvoices(clients, finance, 2, undefined, now)).toEqual([]);
+    // A previous month's invoice does not block the current window.
+    expect(
+      planInvoices(clients, [{ clientId: "c1", kind: "invoice", date: "2026-08" }], 1, undefined, now),
+    ).toHaveLength(1);
+  });
+
+  test("clamps the window to 12 months and can target a single client", () => {
+    expect(planInvoices(clients, [], 99, undefined, now)).toHaveLength(12);
+    expect(planInvoices(clients, [], 0, undefined, now)).toHaveLength(1);
+    expect(planInvoices(clients, [], 1, "unknown-client", now)).toEqual([]);
+    expect(planInvoices(clients, [], 2, "c1", now)).toHaveLength(2);
   });
 });

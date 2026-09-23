@@ -20,6 +20,12 @@ export interface SheetDef {
   columns: SheetColumn[];
   rows: (string | number)[][];
   freeze: number;
+  /**
+   * Set by `computeWorkbook` (src/data/formula.ts): the same grid with every
+   * formula cell replaced by its computed value. `rows` keeps the raw formulas
+   * so they can be shown as a tooltip and asserted on in tests.
+   */
+  computed?: (string | number)[][];
 }
 
 export const STATUS_OPTIONS = [
@@ -253,17 +259,20 @@ function makeDashboardSheet(): SheetDef {
     ["Content pipeline (from Content Plan)", "", "", ""],
     ["Planned posts", "=COUNTA('Content Plan'!C2:C1000)", "Published", "=COUNTIF('Content Plan'!Q2:Q1000,\"Published\")"],
     ["Awaiting approval", "=COUNTIF('Content Plan'!P2:P1000,\"Pending\")", "Scheduled", "=COUNTIF('Content Plan'!Q2:Q1000,\"Scheduled\")"],
-    ["Tasks due this week", "=COUNTIFS(Tasks!K2:K1000,\"<=\"&TEXT(TODAY()+7,\"YYYY-MM-DD\"),Tasks!I2:I1000,\"<>Done\")", "Tasks done", "=COUNTIF(Tasks!I2:I1000,\"Done\")"],
+    // Tasks columns: H = Status, J = Due date.
+    ["Tasks due this week", "=COUNTIFS(Tasks!J2:J1000,\"<=\"&TEXT(TODAY()+7,\"YYYY-MM-DD\"),Tasks!H2:H1000,\"<>Done\")", "Tasks done", "=COUNTIF(Tasks!H2:H1000,\"Done\")"],
     ["", "", "", ""],
     ["Money (from Finance)", "", "", ""],
-    ["Revenue this month", "=SUMIF(Finance!A2:A1000,\">=\"&TEXT(EOMONTH(TODAY(),-1)+1,\"YYYY-MM-DD\"),Finance!C2:C1000)", "Expenses this month", "=SUMIF(Finance!A2:A1000,\">=\"&TEXT(EOMONTH(TODAY(),-1)+1,\"YYYY-MM-DD\"),Finance!D2:D1000)"],
-    ["Unpaid / pending income", "=SUMIF(Finance!H2:H1000,\"<>Paid\",Finance!C2:C1000)", "Overdue payments", "=COUNTIF(Finance!H2:H1000,\"Overdue\")"],
+    // Month-bounded sums: first day of this month through the last day of it.
+    ["Revenue this month", "=SUMIFS(Finance!C2:C1000,Finance!A2:A1000,\">=\"&TEXT(EOMONTH(TODAY(),-1)+1,\"YYYY-MM-DD\"),Finance!A2:A1000,\"<=\"&TEXT(EOMONTH(TODAY(),0),\"YYYY-MM-DD\"))", "Expenses this month", "=SUMIFS(Finance!D2:D1000,Finance!A2:A1000,\">=\"&TEXT(EOMONTH(TODAY(),-1)+1,\"YYYY-MM-DD\"),Finance!A2:A1000,\"<=\"&TEXT(EOMONTH(TODAY(),0),\"YYYY-MM-DD\"))"],
+    // Finance columns: G = Payment status, C = Revenue.
+    ["Unpaid / pending income", "=SUMIF(Finance!G2:G1000,\"<>Paid\",Finance!C2:C1000)", "Overdue payments", "=COUNTIF(Finance!G2:G1000,\"Overdue\")"],
   ];
   return {
     id: "dashboard",
     name: "Dashboard",
     group: "Setup & Brand",
-    description: "Management dashboard for ${monthName} — every metric computes live from the Clients, Content Plan, Tasks and Finance sheets.",
+    description: `Management dashboard for ${monthName} — every metric computes live from the Clients, Content Plan, Tasks and Finance sheets.`,
     columns: [
       { name: "Metric", width: 260 },
       { name: "Value", width: 240 },

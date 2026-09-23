@@ -77,9 +77,11 @@ Everything is reactive: each section is a live Convex query scoped to the signed
 28. **Client Reports** — monthly planned vs delivered, on-time rate, flagged pieces, billed
 29. **Service Log** — what went out per client (delivery record, no social metrics)
 
-The Dashboard sheet computes from the other sheets (`COUNTIF`/`SUMIF` references to Clients,
-Content Plan, Tasks and Finance), and the in-app viewer renders those formulas live, tints status
-cells, and marks dropdown-validated columns with ▾.
+The Dashboard sheet computes from the other sheets (`COUNTA`/`COUNTIF`/`COUNTIFS`/`SUMIF`/`SUMIFS`
+references to Clients, Content Plan, Tasks and Finance). A small formula engine
+(`src/data/formula.ts`) evaluates those formulas for the in-app viewer, so each cell shows its
+computed value — hover a cell to see the formula — while status cells are tinted and
+dropdown-validated columns are marked with ▾.
 
 **Deliberately removed:** the old Platform Analytics and Content Analytics sheets (followers,
 reach, impressions, engagement). The app has no social platform API connections, so the workbook
@@ -113,7 +115,7 @@ before sharing a client folder with the client.
 
 - [x] Manager workspace with client roster, per-client records and finance
 - [x] Workbook: 29 sheets, no ragged rows, dropdown values always valid
-- [x] Dashboard formulas reference the correct source columns
+- [x] Dashboard formulas reference the correct source columns and compute live in the viewer
 - [x] No social metric columns anywhere (followers/reach removed by design)
 - [x] Convex tables scoped by `ownerId`; deletes cascade per client
 - [x] Portal navigation, forms, filters and search work
@@ -128,7 +130,11 @@ before sharing a client folder with the client.
 bun install
 bun convex dev --once   # regenerate Convex types / push functions
 bun tsc -b --noEmit     # typecheck
-bun test                # data-layer regression tests (workbook + Notion export)
+bun test                # data-layer regression tests
 ```
+
+`bun test` covers the workbook (sheet set, no ragged rows, dropdown values, computed
+Dashboard metrics cross-checked against the source sheets), the formula engine itself, the
+recurring-invoice planner, and the Notion export package.
 
 The platform runs the dev server and Convex process automatically; push to deploy.
