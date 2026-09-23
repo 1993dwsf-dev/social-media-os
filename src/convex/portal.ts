@@ -10,6 +10,7 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
+import { planInvoices } from "../data/invoicing";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -242,18 +243,11 @@ export const removeFinance = finance.remove;
 
 // ---- recurring invoices ---------------------------------------------------
 
-/** First day of the month `offset` months from now (ISO yyyy-mm-dd). */
-function monthStart(offset: number): string {
-  const d = new Date();
-  d.setHours(12, 0, 0, 0);
-  d.setDate(1);
-  d.setMonth(d.getMonth() + offset);
-  return d.toISOString().slice(0, 10);
-}
-
 /**
  * Generate Income entries from each active client's monthly fee.
  *
+ * The plan is computed by the pure helper in `src/data/invoicing.ts` (unit
+ * tested there); this handler only maps the plan onto database inserts.
  * For every active client (monthlyFee > 0) it creates one "invoice" entry per
  * month in the window, unless that client already has an invoice entry for the
  * month — so it is safe to press repeatedly. Each invoice is due on the 10th.
@@ -268,47 +262,29 @@ export const generateInvoices = mutation({
   handler: async (ctx, { months = 1, clientId }) => {
     const ownerId = await requireOwner(ctx);
     const clients = (await listOwned(ctx, ownerId, "clients")) as any[];
-    const count = Math.max(1, Math.min(12, Math.floor(months)));
+    const existing = (await db(ctx)
+      .query("finance")
+      .withIndex("by_owner", (q: any) => q.eq("ownerId", ownerId))
+      .collect()) as any[];
 
-    let created = 0;
-    for (const client of clients) {
-      if (clientId && client._id !== clientId) continue;
-      if (client.status !== "Active") continue;
-      const fee = Number(client.monthlyFee ?? 0);
-      if (!(fee > 0)) continue;
+    const plan = planInvoices(clients, existing, months, clientId);
 
-      for (let m = 0; m < count; m++) {
-        const month = monthStart(m);
-        const existing = (await db(ctx)
-          .query("finance")
-          .withIndex("by_owner", (q: any) => q.eq("ownerId", ownerId))
-          .collect()) as any[];
-        const already = existing.some(
-          (row) =>
-            row.clientId === client._id &&
-            row.kind === "invoice" &&
-            typeof row.date === "string" &&
-            row.date.slice(0, 7) === month.slice(0, 7),
-        );
-        if (already) continue;
-
-        await db(ctx).insert("finance", {
-          ownerId,
-          clientId: client._id,
-          date: month,
-          type: "Income",
-          amount: fee,
-          category: "Retainer",
-          description: `Monthly retainer — ${client.name}`,
-          status: "Pending",
-          dueDate: `${month.slice(0, 7)}-10`,
-          paidDate: "",
-          kind: "invoice",
-        });
-        created += 1;
-      }
+    for (const invoice of plan) {
+      await db(ctx).insert("finance", {
+        ownerId,
+        clientId: invoice.clientId,
+        date: invoice.month,
+        type: "Income",
+        amount: invoice.amount,
+        category: "Retainer",
+        description: invoice.description,
+        status: "Pending",
+        dueDate: invoice.dueDate,
+        paidDate: "",
+        kind: "invoice",
+      });
     }
-    return { created };
+    return { created: plan.length };
   },
 });
 
