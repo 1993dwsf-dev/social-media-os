@@ -1,11 +1,11 @@
-// Contentplane manager workspace API.
+// API do espaço de trabalho do gestor no Contentplane.
 //
-// Every query and mutation is scoped to the signed-in manager (`ownerId`), so
-// two accounts never see each other's clients, content, tasks, or finances.
+// Cada consulta e mutation é limitada ao gestor logado (`ownerId`), então duas
+// contas nunca veem os clientes, conteúdos, tarefas ou finanças uma da outra.
 //
-// Creates take a complete record from the typed client helpers (`data`) and
-// updates take a partial patch; the TypeScript model in `src/data/types.ts`
-// stays the source of truth for the field shapes.
+// As criações recebem um registro completo dos helpers tipados do cliente
+// (`data`) e as atualizações recebem um patch parcial; o modelo TypeScript em
+// `src/data/types.ts` continua sendo a fonte de verdade dos campos.
 
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
@@ -39,11 +39,11 @@ async function currentOwner(ctx: Ctx): Promise<Owner | null> {
 
 async function requireOwner(ctx: Ctx): Promise<Owner> {
   const ownerId = await currentOwner(ctx);
-  if (!ownerId) throw new Error("Not authenticated");
+  if (!ownerId) throw new Error("Não autenticado");
   return ownerId;
 }
 
-/** Never let a client payload overwrite identity/system fields. */
+/** Nunca deixe um payload sobrescrever campos de identidade/sistema. */
 function sanitize(patch: unknown): Record<string, unknown> {
   if (!patch || typeof patch !== "object") return {};
   const { ownerId: _o, _id: _i, _creationTime: _c, ...rest } = patch as Record<string, unknown>;
@@ -63,11 +63,11 @@ async function getOwned(ctx: Ctx, ownerId: Owner, id: string) {
   return doc;
 }
 
-/** Reject writes that point at a client owned by somebody else. */
+/** Rejeita gravações que apontem para um cliente de outra pessoa. */
 async function assertOwnedClient(ctx: Ctx, ownerId: Owner, clientId?: string) {
   if (!clientId) return;
   const client = await getOwned(ctx, ownerId, clientId);
-  if (!client) throw new Error("Client not found in this workspace");
+  if (!client) throw new Error("Cliente não encontrado neste espaço de trabalho");
 }
 
 // ---- workspace profile ----------------------------------------------------
@@ -102,7 +102,7 @@ export const saveWorkspace = mutation({
       managerName: "",
       agency: "",
       email: "",
-      currency: "$",
+      currency: "R$",
       weekStart: "Monday",
       approvalTurnaroundDays: 3,
       notifyEmail: true,
@@ -139,7 +139,7 @@ export const updateClient = mutation({
   handler: async (ctx, { id, patch }) => {
     const ownerId = await requireOwner(ctx);
     const doc = await getOwned(ctx, ownerId, id);
-    if (!doc) throw new Error("Client not found in this workspace");
+    if (!doc) throw new Error("Cliente não encontrado neste espaço de trabalho");
     await ctx.db.patch(doc._id, sanitize(patch));
   },
 });
@@ -149,8 +149,8 @@ export const removeClient = mutation({
   handler: async (ctx, { id }) => {
     const ownerId = await requireOwner(ctx);
     const doc = await getOwned(ctx, ownerId, id);
-    if (!doc) throw new Error("Client not found in this workspace");
-    // Remove everything that belongs to the client so no orphan rows remain.
+    if (!doc) throw new Error("Cliente não encontrado neste espaço de trabalho");
+    // Remove tudo que pertence ao cliente para não sobrar registro órfão.
     for (const table of OWNED_TABLES.filter((t): t is PerClientTable => t !== "clients")) {
       const rows = (await db(ctx)
         .query(table)
@@ -162,7 +162,7 @@ export const removeClient = mutation({
   },
 });
 
-// ---- per-client records (content, tasks, requests, meetings, files, money) -
+// ---- registros por cliente (conteúdo, tarefas, solicitações, reuniões, arquivos, dinheiro) -
 
 function perClientApi(table: PerClientTable) {
   return {
@@ -188,7 +188,7 @@ function perClientApi(table: PerClientTable) {
       handler: async (ctx, { id, patch }) => {
         const ownerId = await requireOwner(ctx);
         const doc = await getOwned(ctx, ownerId, id);
-        if (!doc) throw new Error("Record not found in this workspace");
+        if (!doc) throw new Error("Registro não encontrado neste espaço de trabalho");
         await ctx.db.patch(doc._id, sanitize(patch));
       },
     }),
@@ -197,14 +197,14 @@ function perClientApi(table: PerClientTable) {
       handler: async (ctx, { id }) => {
         const ownerId = await requireOwner(ctx);
         const doc = await getOwned(ctx, ownerId, id);
-        if (!doc) throw new Error("Record not found in this workspace");
+        if (!doc) throw new Error("Registro não encontrado neste espaço de trabalho");
         await ctx.db.delete(doc._id);
       },
     }),
   };
 }
 
-// Each Convex function must be exported individually for codegen to pick it up.
+// Cada função do Convex precisa ser exportada individualmente para o codegen vê-la.
 const content = perClientApi("content");
 export const listContent = content.list;
 export const createContent = content.create;
@@ -244,19 +244,19 @@ export const removeFinance = finance.remove;
 // ---- recurring invoices ---------------------------------------------------
 
 /**
- * Generate Income entries from each active client's monthly fee.
+ * Gera lançamentos de receita a partir da mensalidade de cada cliente ativo.
  *
- * The plan is computed by the pure helper in `src/data/invoicing.ts` (unit
- * tested there); this handler only maps the plan onto database inserts.
- * For every active client (monthlyFee > 0) it creates one "invoice" entry per
- * month in the window, unless that client already has an invoice entry for the
- * month — so it is safe to press repeatedly. Each invoice is due on the 10th.
+ * O plano é calculado pelo helper puro em `src/data/invoicing.ts` (testado
+ * lá); este handler apenas converte o plano em inserções no banco.
+ * Para cada cliente ativo (mensalidade > 0) cria um lançamento "invoice" por
+ * mês da janela, a menos que o cliente já tenha uma fatura daquele mês — por
+ * isso é seguro clicar várias vezes. Cada fatura vence no dia 10.
  */
 export const generateInvoices = mutation({
   args: {
-    /** How many months to invoice: 1 = current month only, 2 = current + next. */
+    /** Quantos meses faturar: 1 = só o mês atual, 2 = atual + próximo. */
     months: v.optional(v.number()),
-    /** Restrict generation to a single client (defaults to all active clients). */
+    /** Restringe a geração a um cliente (padrão: todos os clientes ativos). */
     clientId: v.optional(v.string()),
   },
   handler: async (ctx, { months = 1, clientId }) => {
@@ -288,13 +288,13 @@ export const generateInvoices = mutation({
   },
 });
 
-/** Mark an income entry as paid today. */
+/** Marca um lançamento de receita como pago hoje. */
 export const markFinancePaid = mutation({
   args: { id: v.string() },
   handler: async (ctx, { id }) => {
     const ownerId = await requireOwner(ctx);
     const doc = await getOwned(ctx, ownerId, id);
-    if (!doc) throw new Error("Record not found in this workspace");
+    if (!doc) throw new Error("Registro não encontrado neste espaço de trabalho");
     await ctx.db.patch(doc._id, { status: "Paid", paidDate: new Date().toISOString().slice(0, 10) });
   },
 });

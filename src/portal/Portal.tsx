@@ -50,21 +50,21 @@ const NAV: {
   icon: React.ComponentType<{ className?: string }>;
   group: string;
 }[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, group: "Overview" },
-  { id: "clients", label: "Clients", icon: Building2, group: "Overview" },
-  { id: "strategy", label: "Strategy", icon: Sparkles, group: "Overview" },
-  { id: "onboarding", label: "Onboarding", icon: ListChecks, group: "Overview" },
-  { id: "calendar", label: "Content calendar", icon: CalendarDays, group: "Production" },
-  { id: "tasks", label: "Tasks", icon: CheckSquare, group: "Production" },
-  { id: "approvals", label: "Approvals", icon: ClipboardCheck, group: "Production" },
-  { id: "requests", label: "Requests", icon: FileText, group: "Production" },
-  { id: "finance", label: "Finance", icon: Wallet, group: "Business" },
-  { id: "meetings", label: "Meetings", icon: Video, group: "Business" },
-  { id: "files", label: "Files & deliverables", icon: FolderOpen, group: "Business" },
-  { id: "settings", label: "Settings", icon: SettingsIcon, group: "Business" },
+  { id: "dashboard", label: "Painel", icon: LayoutDashboard, group: "Visão geral" },
+  { id: "clients", label: "Clientes", icon: Building2, group: "Visão geral" },
+  { id: "strategy", label: "Estratégia", icon: Sparkles, group: "Visão geral" },
+  { id: "onboarding", label: "Integração", icon: ListChecks, group: "Visão geral" },
+  { id: "calendar", label: "Calendário de conteúdo", icon: CalendarDays, group: "Produção" },
+  { id: "tasks", label: "Tarefas", icon: CheckSquare, group: "Produção" },
+  { id: "approvals", label: "Aprovações", icon: ClipboardCheck, group: "Produção" },
+  { id: "requests", label: "Solicitações", icon: FileText, group: "Produção" },
+  { id: "finance", label: "Financeiro", icon: Wallet, group: "Negócios" },
+  { id: "meetings", label: "Reuniões", icon: Video, group: "Negócios" },
+  { id: "files", label: "Arquivos e entregas", icon: FolderOpen, group: "Negócios" },
+  { id: "settings", label: "Configurações", icon: SettingsIcon, group: "Negócios" },
 ];
 
-const GROUPS = ["Overview", "Production", "Business"];
+const GROUPS = ["Visão geral", "Produção", "Negócios"];
 
 export default function Portal() {
   const { section } = useParams<{ section: string }>();
@@ -143,7 +143,7 @@ export default function Portal() {
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold tracking-tight">Contentplane</p>
         <p className="truncate text-[11px] text-muted-foreground">
-          {ws.profile.agency || ws.profile.managerName || "Manager workspace"}
+          {ws.profile.agency || ws.profile.managerName || "Espaço do gestor"}
         </p>
       </div>
     </div>
@@ -195,7 +195,7 @@ export default function Portal() {
           >
             <div className="flex items-center gap-2">
               <Table2 className="size-4" />
-              Manager workbook
+              Planilha do gestor
             </div>
           </Button>
         </div>
@@ -208,13 +208,13 @@ export default function Portal() {
             variant="outline"
             size="icon"
             className="fixed left-4 top-3.5 z-40 lg:hidden"
-            aria-label="Open navigation"
+            aria-label="Abrir navegação"
           >
             <Menu className="size-4" />
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-72 p-0">
-          <SheetTitle className="sr-only">Navigation</SheetTitle>
+          <SheetTitle className="sr-only">Navegação</SheetTitle>
           {brand}
           {navList}
         </SheetContent>
@@ -235,9 +235,9 @@ export default function Portal() {
                 value={focus.clientId}
                 onChange={(e) => focus.setFocus(e.target.value)}
                 className="h-8 w-auto max-w-44 min-w-36 rounded-md border border-input bg-transparent px-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                aria-label="Focused client"
+                aria-label="Cliente em foco"
               >
-                <option value="">All clients ({ws.clients.length})</option>
+                <option value="">Todos os clientes ({ws.clients.length})</option>
                 {ws.clients.map((client) => (
                   <option key={client.id} value={client.id}>
                     {client.name}
@@ -255,7 +255,7 @@ export default function Portal() {
               }}
             >
               <LogOut className="size-3.5" />
-              <span className="hidden sm:inline">{user?.name || "Sign out"}</span>
+              <span className="hidden sm:inline">{user?.name || "Sair"}</span>
               <X className="size-3.5 sm:hidden" />
             </Button>
           </div>
@@ -266,7 +266,7 @@ export default function Portal() {
             renderSection()
           ) : (
             <div className="flex min-h-64 items-center justify-center">
-              <p className="animate-pulse text-sm text-muted-foreground">Loading your workspace…</p>
+              <p className="animate-pulse text-sm text-muted-foreground">Carregando seu espaço de trabalho…</p>
             </div>
           )}
         </main>

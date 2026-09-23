@@ -1,8 +1,8 @@
-// Fictional demo workspace for Contentplane.
+// Espaço de exemplo fictício do Contentplane.
 //
-// Three clients of a fictional independent social media manager, with content,
-// tasks, requests, meetings, deliverables and finances spread around "today" so
-// the calendar, dashboard and money views are populated immediately.
+// Quatro clientes de uma gestora de social media independente, com conteúdos,
+// tarefas, solicitações, reuniões, entregas e finanças distribuídos ao redor de
+// "hoje" para que calendário, painel e visão financeira já apareçam populados.
 
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
@@ -73,12 +73,12 @@ const CLIENTS: ClientSeed[] = [
   {
     slug: "northwind",
     name: "Northwind Coffee Roasters",
-    contactName: "Maya Okafor",
-    email: "maya@northwindcoffee.example",
-    phone: "+1 (503) 555-0142",
-    website: "northwindcoffee.example",
-    industry: "Specialty coffee roastery",
-    packageName: "Retainer — 12 posts/month",
+    contactName: "Maiara Okano",
+    email: "maiara@northwindcoffee.exemplo",
+    phone: "+55 (11) 95555-0142",
+    website: "northwindcoffee.exemplo",
+    industry: "Torrefação de cafés especiais",
+    packageName: "Mensalidade — 12 posts/mês",
     monthlyFee: 4800,
     startDate: iso(-240),
     status: "Active",
@@ -88,21 +88,21 @@ const CLIENTS: ClientSeed[] = [
       pinterest: "northwindcoffee",
     },
     notes:
-      "Prefers edits in batches. Never posts pricing. Photos must use the natural light set shot in week 12.",
-    audience: "Home brewers 25–40 who already own a pour-over setup.",
-    objectives: "Grow local wholesale interest and lift web orders 15% this quarter.",
+      "Prefere ajustes em lote. Nunca publica preços. As fotos devem usar o conjunto de luz natural gravado na semana 12.",
+    audience: "Quem prepara café em casa, 25–40 anos, e já tem um suporte de coado.",
+    objectives: "Ampliar o interesse no atacado local e elevar os pedidos do site em 15% no trimestre.",
     pillars: ["Education", "Behind the scenes", "Product", "Community"],
     topics: [
-      "Cold brew vs iced latte",
-      "How we choose a new origin",
-      "Barista reacts to viral hacks",
-      "Guatemala single-origin drop",
-      "5 brewing mistakes to avoid",
-      "Roastery walkthrough: green room",
-      "Fall menu preview",
-      "Subscription unboxing",
-      "What 'specialty' actually means",
-      "Meet the roaster: Dani",
+      "Cold brew x café gelado",
+      "Como escolhemos uma nova origem",
+      "Barista reage a truques virais",
+      "Lançamento do Guatemala de origem única",
+      "5 erros no preparo que você deve evitar",
+      "Tour pela torrefação: a sala do café verde",
+      "Prévia do menu de outono",
+      "Unboxing da assinatura",
+      "O que 'especial' realmente significa",
+      "Conheça o mestre de torra: Dani",
     ],
     platforms: ["Instagram", "TikTok", "Pinterest", "YouTube"],
     formats: ["Reel", "Carousel", "Single post", "Story", "Pin"],
@@ -111,29 +111,29 @@ const CLIENTS: ClientSeed[] = [
   {
     slug: "hale-harbor",
     name: "Hale & Harbor Interiors",
-    contactName: "Dana Whitfield",
-    email: "dana@haleharbor.example",
-    phone: "+1 (617) 555-0198",
-    website: "haleharbor.example",
-    industry: "Residential interior design studio",
-    packageName: "Retainer — 8 posts/month",
+    contactName: "Débora Whitfield",
+    email: "debora@haleharbor.exemplo",
+    phone: "+55 (11) 95555-0198",
+    website: "haleharbor.exemplo",
+    industry: "Estúdio de design de interiores residencial",
+    packageName: "Mensalidade — 8 posts/mês",
     monthlyFee: 3200,
     startDate: iso(-120),
     status: "Active",
     socials: { instagram: "@haleandharbor", pinterest: "haleandharbor", linkedin: "hale-harbor" },
-    notes: "Always tag the photographer. Approvals come from Dana only — the studio manager is CC'd.",
-    audience: "Homeowners renovating a first house, plus local real-estate agents.",
-    objectives: "Fill the spring project calendar and grow Pinterest saves.",
+    notes: "Sempre marcar o fotógrafo. As aprovações vêm só da Débora — a gerente do estúdio fica em cópia.",
+    audience: "Quem está reformando a primeira casa, além de corretores locais.",
+    objectives: "Preencher a agenda de projetos da primavera e crescer os salvamentos no Pinterest.",
     pillars: ["Education", "Product", "Community", "Promotion"],
     topics: [
-      "Small living room, big storage",
-      "Warm minimalism explained",
-      "Before and after: Beacon Hill",
-      "5 lighting rules we always follow",
-      "Rug sizing cheat sheet",
-      "Behind the site visit",
-      "Client reveal day",
-      "How to brief a designer",
+      "Sala pequena, muito armário",
+      "Minimalismo acolhedor explicado",
+      "Antes e depois: Beacon Hill",
+      "5 regras de iluminação que sempre seguimos",
+      "Guia de tamanhos de tapete",
+      "Por trás da visita técnica",
+      "O dia da revelação para a cliente",
+      "Como fazer um briefing para um designer",
     ],
     platforms: ["Instagram", "Pinterest", "LinkedIn"],
     formats: ["Carousel", "Single post", "Pin", "Reel"],
@@ -143,96 +143,96 @@ const CLIENTS: ClientSeed[] = [
     slug: "bloomly",
     name: "Bloomly Skincare",
     contactName: "Renata Silva",
-    email: "renata@bloomly.example",
-    phone: "+1 (512) 555-0177",
-    website: "bloomly.example",
-    industry: "Direct-to-consumer skincare",
-    packageName: "Retainer — 16 posts/month + ads",
+    email: "renata@bloomly.exemplo",
+    phone: "+55 (11) 95555-0177",
+    website: "bloomly.exemplo",
+    industry: "Skincare de venda direta ao consumidor",
+    packageName: "Mensalidade — 16 posts/mês + anúncios",
     monthlyFee: 6500,
     startDate: iso(-75),
     status: "Active",
     socials: { instagram: "@bloomlyskin", tiktok: "@bloomly", youtube: "@bloomlyskin" },
-    notes: "Claims must match the approved copy deck. Legal review adds two working days for product posts.",
-    audience: "Sensitive-skin shoppers aged 18–34 who buy online.",
-    objectives: "Launch the barrier cream and keep CPM under control in Q4.",
+    notes: "As alegações precisam seguir o texto aprovado. O jurídico acrescenta dois dias úteis nos posts de produto.",
+    audience: "Pessoas com pele sensível, de 18 a 34 anos, que compram online.",
+    objectives: "Lançar o creme reparador e manter o custo por mil impressões sob controle no 4º trimestre.",
     pillars: ["Education", "Product", "Behind the scenes", "Promotion"],
     topics: [
-      "Barrier cream launch teaser",
-      "Niacinamide without the sting",
-      "Founder answers DMs",
-      "Packing orders with the team",
-      "Ingredient spotlight: squalane",
-      "3-step routine for winter",
-      "Customer results roundup",
-      "Behind the lab visit",
+      "Teaser do lançamento do creme reparador",
+      "Niacinamida sem ardor",
+      "A fundadora responde às mensagens",
+      "Embalando pedidos com o time",
+      "Ingrediente em foco: esqualano",
+      "Rotina de inverno em 3 passos",
+      "Resultados das clientes em resumo",
+      "Por trás da visita ao laboratório",
     ],
     platforms: ["Instagram", "TikTok", "YouTube"],
     formats: ["Reel", "Short", "Carousel", "Story", "Video"],
-    owner: "Alex Moreno",
+    owner: "Ana Moreira",
   },
   {
     slug: "vela",
     name: "Vela Fitness Studio",
-    contactName: "Tom Beck",
-    email: "tom@velafitness.example",
-    phone: "+1 (305) 555-0110",
-    website: "velafitness.example",
-    industry: "Boutique fitness studio",
-    packageName: "Proposal — 8 posts/month",
+    contactName: "Tomás Beck",
+    email: "tomas@velafitness.exemplo",
+    phone: "+55 (11) 95555-0110",
+    website: "velafitness.exemplo",
+    industry: "Estúdio de fitness boutique",
+    packageName: "Proposta — 8 posts/mês",
     monthlyFee: 2200,
     startDate: iso(0),
     status: "Prospect",
     socials: { instagram: "@velafitness" },
-    notes: "Waiting on the signed proposal. They want to start with a 30-day relaunch sprint.",
-    audience: "New members within a 5 km radius of the studio.",
-    objectives: "Relaunch the account and fill morning classes.",
+    notes: "Aguardando a proposta assinada. Querem começar com um sprint de relançamento de 30 dias.",
+    audience: "Novos alunos em um raio de 5 km do estúdio.",
+    objectives: "Relançar a conta e lotar as aulas da manhã.",
     pillars: ["Education", "Community", "Promotion"],
     topics: [
-      "30-day relaunch plan",
-      "Meet the coaches",
-      "Member of the month",
-      "Class timetable walkthrough",
+      "Plano de relançamento em 30 dias",
+      "Conheça os treinadores",
+      "Aluno do mês",
+      "Passo a passo da grade de aulas",
     ],
     platforms: ["Instagram", "TikTok"],
     formats: ["Reel", "Carousel", "Story"],
-    owner: "Alex Moreno",
+    owner: "Ana Moreira",
   },
 ];
 
 const TASK_SEEDS: [string, string, string, string, string, number, number][] = [
-  ["Finalize monthly content brief", "Monthly planning", "Strategy", "High", "In Progress", -2, 3],
-  ["Shoot batch: 10 assets", "Production", "Production", "High", "Backlog", 1, 6],
-  ["Schedule next week's posts", "Publishing", "Publishing", "Medium", "Backlog", 0, 2],
-  ["Monthly performance report", "Reporting", "Reporting", "Medium", "Backlog", 2, 6],
-  ["Collect pending client assets", "Client admin", "Admin", "Medium", "Blocked", -3, 1],
-  ["Refresh link-in-bio page", "Website sync", "Content", "Low", "Done", -8, -4],
+  ["Finalizar o briefing de conteúdo do mês", "Planejamento mensal", "Strategy", "High", "In Progress", -2, 3],
+  ["Gravar lote: 10 peças", "Produção", "Production", "High", "Backlog", 1, 6],
+  ["Agendar os posts da próxima semana", "Publicação", "Publishing", "Medium", "Backlog", 0, 2],
+  ["Relatório mensal de desempenho", "Relatórios", "Reporting", "Medium", "Backlog", 2, 6],
+  ["Reunir os materiais pendentes do cliente", "Administração do cliente", "Admin", "Medium", "Blocked", -3, 1],
+  ["Atualizar a página de links da bio", "Sincronia do site", "Content", "Low", "Done", -8, -4],
 ];
 
 const REQUEST_SEEDS: [string, string, string, string, string, number][] = [
-  ["Add a second Reel this week", "Content", "High", "In Progress", "Priya Raman", 2],
-  ["New product photography needed", "Design", "Medium", "Waiting", "Jonas Feld", 5],
-  ["Pull engagement numbers for the board pack", "Report", "Medium", "New", "Alex Moreno", 4],
-  ["Update the shared drive folder", "Access", "Low", "Completed", "Alex Moreno", -3],
-  ["Budget increase for boosted posts", "Budget", "High", "New", "Alex Moreno", 7],
+  ["Adicionar um segundo Reel esta semana", "Content", "High", "In Progress", "Priya Raman", 2],
+  ["Precisamos de novas fotos de produto", "Design", "Medium", "Waiting", "Jonas Feld", 5],
+  ["Levantar os números de engajamento para o conselho", "Report", "Medium", "New", "Ana Moreira", 4],
+  ["Atualizar a pasta compartilhada no drive", "Access", "Low", "Completed", "Ana Moreira", -3],
+  ["Aumento de verba para posts impulsionados", "Budget", "High", "New", "Ana Moreira", 7],
 ];
 
 const FINANCE_SEEDS: [string, string, number, number, string, string][] = [
-  ["Monthly retainer", "Retainer", 4800, 0, "Income", "Northwind Coffee Roasters"],
-  ["Monthly retainer", "Retainer", 3200, -1, "Income", "Hale & Harbor Interiors"],
-  ["Ads management fee", "Project fee", 1200, -1, "Income", "Bloomly Skincare"],
-  ["Sponsored Short — deposit", "Collab", 450, -2, "Income", "Northwind Coffee Roasters"],
-  ["Boosted post budget", "Ads", 600, -1, "Expense", "Bloomly Skincare"],
-  ["Editing suite subscription", "Software", 89, -1, "Expense", ""],
-  ["Freelance videographer", "Contractor", 1200, -2, "Expense", "Northwind Coffee Roasters"],
-  ["Ring light + backdrop", "Equipment", 340, -3, "Expense", ""],
-  ["Scheduling tool (annual)", "Software", 288, -1, "Expense", ""],
+  ["Mensalidade", "Retainer", 4800, 0, "Income", "Northwind Coffee Roasters"],
+  ["Mensalidade", "Retainer", 3200, -1, "Income", "Hale & Harbor Interiors"],
+  ["Taxa de gestão de anúncios", "Project fee", 1200, -1, "Income", "Bloomly Skincare"],
+  ["Short patrocinado — sinal", "Collab", 450, -2, "Income", "Northwind Coffee Roasters"],
+  ["Verba de impulsionamento", "Ads", 600, -1, "Expense", "Bloomly Skincare"],
+  ["Assinatura do suíte de edição", "Software", 89, -1, "Expense", ""],
+  ["Videomaker freelancer", "Contractor", 1200, -2, "Expense", "Northwind Coffee Roasters"],
+  ["Ring light + fundo fotográfico", "Equipment", 340, -3, "Expense", ""],
+  ["Ferramenta de agendamento (anual)", "Software", 288, -1, "Expense", ""],
 ];
 
 export const seedDemo = mutation({
   args: {},
   handler: async (ctx) => {
     const ownerId = await getAuthUserId(ctx);
-    if (!ownerId) throw new Error("Not authenticated");
+    if (!ownerId) throw new Error("Não autenticado");
     const store = db(ctx);
 
     for (const table of OWNED_TABLES) {
@@ -261,52 +261,52 @@ export const seedDemo = mutation({
         socials: c.socials,
         notes: c.notes,
         onboarding: {
-          company: `${c.industry}. Contact: ${c.contactName}.`,
+          company: `${c.industry}. Contato: ${c.contactName}.`,
           contact: `${c.email} · ${c.phone}`,
-          brand: `Voice: warm, expert, never salesy. Pillars: ${c.pillars.join(", ")}.`,
+          brand: `Voz: calorosa, especialista, nunca vendedora. Pilares: ${c.pillars.join(", ")}.`,
           socialAccounts: Object.entries(c.socials)
             .map(([k, val]) => `${k}: ${val}`)
             .join(" · "),
           audience: c.audience,
           objectives: c.objectives,
-          competitors: "Tracked in the strategy notes.",
-          contentPreferences: `Prefers ${c.formats.slice(0, 2).join(" and ")}.`,
-          approvalPreferences: "Approvals by email, 2 working days ahead of scheduling.",
-          importantDates: "Launch windows and product drops recorded in the content calendar.",
-          brandAssets: "Shared drive: brand, fonts, photography.",
+          competitors: "Acompanhados nas observações da estratégia.",
+          contentPreferences: `Prefere ${c.formats.slice(0, 2).join(" e ")}.`,
+          approvalPreferences: "Aprovações por e-mail, 2 dias úteis antes do agendamento.",
+          importantDates: "Janelas de lançamento e novidades de produto registradas no calendário de conteúdo.",
+          brandAssets: "Drive compartilhado: marca, fontes, fotografias.",
           notes: c.notes,
         },
         strategy: [
           {
             key: "business",
-            title: "Business objective",
+            title: "Objetivo de negócio",
             items: [c.objectives],
           },
           {
             key: "social",
-            title: "Social media objectives",
+            title: "Objetivos de social media",
             items: [
-              "Publish consistently on the agreed cadence",
-              "Reply to every comment within 24 hours",
-              "Turn top-performing posts into repeatable formats",
+              "Publicar com consistência na cadência combinada",
+              "Responder todos os comentários em até 24 horas",
+              "Transformar os posts com melhor desempenho em formatos repetíveis",
             ],
           },
-          { key: "audience", title: "Target audience", items: [c.audience] },
-          { key: "pillars", title: "Content pillars", items: c.pillars },
+          { key: "audience", title: "Público-alvo", items: [c.audience] },
+          { key: "pillars", title: "Pilares de conteúdo", items: c.pillars },
           {
             key: "voice",
-            title: "Brand voice",
-            items: ["Confident but friendly", "Short sentences", "No jargon"],
+            title: "Voz da marca",
+            items: ["Confiante, mas próxima", "Frases curtas", "Sem jargão"],
           },
           {
             key: "kpis",
-            title: "KPIs",
-            items: ["Posts published per month", "Approval turnaround (days)", "Saves per post"],
+            title: "Indicadores",
+            items: ["Posts publicados por mês", "Prazo de aprovação (dias)", "Salvamentos por post"],
           },
         ],
         kpis: [
           {
-            name: "Posts published / month",
+            name: "Posts publicados / mês",
             baseline: "6",
             target: "12",
             actual: "9",
@@ -314,11 +314,11 @@ export const seedDemo = mutation({
             deadline: monthDay(1, 28),
           },
           {
-            name: "Approval turnaround",
+            name: "Prazo de aprovação",
             baseline: "5",
             target: "2",
             actual: "3",
-            unit: "days",
+            unit: "dias",
             deadline: monthDay(1, 28),
           },
         ],
@@ -326,7 +326,7 @@ export const seedDemo = mutation({
       });
       clientIds[c.slug] = id;
 
-      // Content across the current month: past items published, future planned.
+      // Conteúdo ao longo do mês corrente: o que passou publicado, o que vem planejado.
       const offsets = [-19, -16, -13, -10, -7, -5, -2, 0, 2, 4, 7, 11, 15, 19];
       for (let i = 0; i < offsets.length; i++) {
         const offset = offsets[i];
@@ -343,23 +343,23 @@ export const seedDemo = mutation({
           topic,
           caption:
             status === "Published"
-              ? `${topic} — posted and performing as expected.`
-              : `Draft caption for "${topic}".`,
-          assetNote: format === "Reel" || format === "Video" || format === "Short" ? "Video edit + captions" : "Static graphic",
+              ? `${topic} — publicado e rendendo como esperado.`
+              : `Legenda em rascunho para "${topic}".`,
+          assetNote: format === "Reel" || format === "Video" || format === "Short" ? "Edição de vídeo + legendas" : "Arte estática",
           status,
           managerNotes:
             status === "Changes Requested"
-              ? "Client asked for a softer opening line."
+              ? "O cliente pediu uma abertura mais suave."
               : status === "In Review"
-                ? "With client for approval."
+                ? "Com o cliente para aprovação."
                 : "",
-          clientComments: status === "Published" ? "" : status === "In Review" ? "Looks good overall — one tweak on the hook." : "",
+          clientComments: status === "Published" ? "" : status === "In Review" ? "No geral está ótimo — um ajuste no gancho." : "",
           pillar: c.pillars[i % c.pillars.length],
           owner: c.owner,
         });
       }
 
-      // Tasks, staggered so the dashboard always has overdue / due-soon work.
+      // Tarefas escalonadas para o painel sempre ter trabalho atrasado e a vencer.
       const taskOffsets = [0, 1, 3, 4, 6, 7];
       for (let i = 0; i < TASK_SEEDS.length; i++) {
         const [title, project, category, priority, status, startOffset, dueOffset] = TASK_SEEDS[i];
@@ -376,11 +376,11 @@ export const seedDemo = mutation({
           dueDate: iso(dueOffset + shift - 4),
           completedAt: status === "Done" ? iso(-2) : "",
           dependsOn: "",
-          notes: c.status === "Prospect" ? "Only start once the proposal is signed." : "",
+          notes: c.status === "Prospect" ? "Só começar depois da proposta assinada." : "",
         });
       }
 
-      // A couple of client requests each.
+      // Algumas solicitações de cada cliente.
       for (let i = 0; i < 2; i++) {
         const [title, category, priority, status, assignedTo, dueOffset] = REQUEST_SEEDS[(i + c.slug.length) % REQUEST_SEEDS.length];
         await store.insert("requests", {
@@ -393,19 +393,19 @@ export const seedDemo = mutation({
           status,
           assignedTo,
           dueDate: iso(dueOffset),
-          comments: status === "Waiting" ? "Needs input from the client." : "",
+          comments: status === "Waiting" ? "Precisa de informação do cliente." : "",
         });
       }
 
-      // One upcoming call and one past call with notes.
+      // Uma chamada futura e uma passada, com anotações.
       await store.insert("meetings", {
         ownerId,
         clientId: id,
-        title: "Monthly planning call",
+        title: "Chamada de planejamento mensal",
         date: iso(3 + c.slug.length),
         time: "10:00",
-        agenda: "Review last month's content, confirm the next campaign, collect assets.",
-        participants: `${c.contactName}, Alex Moreno`,
+        agenda: "Revisar o conteúdo do último mês, confirmar a próxima campanha, reunir materiais.",
+        participants: `${c.contactName}, Ana Moreira`,
         status: "Scheduled",
         notes: "",
         actionItems: "",
@@ -413,21 +413,21 @@ export const seedDemo = mutation({
       await store.insert("meetings", {
         ownerId,
         clientId: id,
-        title: "Content review",
+        title: "Revisão de conteúdo",
         date: iso(-9),
         time: "15:30",
-        agenda: "Walk through the calendar and approvals backlog.",
-        participants: `${c.contactName}, Alex Moreno`,
+        agenda: "Percorrer o calendário e a fila de aprovações.",
+        participants: `${c.contactName}, Ana Moreira`,
         status: "Completed",
-        notes: "Client wants more behind-the-scenes footage and fewer product posts.",
-        actionItems: "Draft 2 BTS concepts before the next batch shoot.",
+        notes: "O cliente quer mais bastidores e menos posts de produto.",
+        actionItems: "Rascunhar 2 conceitos de bastidores antes da próxima gravação em lote.",
       });
 
-      // Deliverables.
+      // Entregas.
       const files: [string, string, string][] = [
-        ["Brand guidelines v2.pdf", "Brand assets", "Shared"],
-        ["Monthly content plan.pdf", "Documents", "Shared"],
-        ["Batch 12 graphics.zip", "Graphics", "In progress"],
+        ["Manual de marca v2.pdf", "Brand assets", "Shared"],
+        ["Plano de conteúdo mensal.pdf", "Documents", "Shared"],
+        ["Gráficos do lote 12.zip", "Graphics", "In progress"],
       ];
       for (let i = 0; i < files.length; i++) {
         const [name, category, status] = files[i];
@@ -436,15 +436,15 @@ export const seedDemo = mutation({
           clientId: id,
           name,
           category,
-          description: `${name.replace(/\.[a-z]+$/, "")} for ${c.name}.`,
+          description: `${name.replace(/\.[a-z]+$/, "")} para ${c.name}.`,
           date: iso(-12 + i * 3),
           status,
           relatedContent: "",
-          relatedProject: "Monthly retainer",
+          relatedProject: "Mensalidade",
         });
       }
 
-      // Monthly retainer for the last three months; newest is still pending.
+      // Mensalidade dos últimos três meses; a mais recente ainda está pendente.
       for (let m = 2; m >= 0; m--) {
         if (c.status !== "Active") continue;
         await store.insert("finance", {
@@ -454,7 +454,7 @@ export const seedDemo = mutation({
           type: "Income",
           amount: c.monthlyFee,
           category: "Retainer",
-          description: `Retainer — ${c.name}`,
+          description: `Mensalidade — ${c.name}`,
           status: m === 0 ? "Pending" : "Paid",
           dueDate: monthDay(-m, 12),
           paidDate: m === 0 ? "" : monthDay(-m, 10),
@@ -462,7 +462,7 @@ export const seedDemo = mutation({
       }
     }
 
-    // One-off income and running expenses, independent of any single client.
+    // Receitas avulsas e despesas fixas, sem vínculo com um cliente específico.
     for (const [description, category, amount, monthOffset, type, clientName] of FINANCE_SEEDS) {
       const slug = CLIENTS.find((c) => c.name === clientName)?.slug;
       await store.insert("finance", {
@@ -485,10 +485,10 @@ export const seedDemo = mutation({
       .unique();
     const workspace = {
       ownerId,
-      managerName: "Alex Moreno",
-      agency: "Marrow Social",
-      email: "alex@marrowsocial.example",
-      currency: "$",
+      managerName: "Ana Moreira",
+      agency: "Moreira Social",
+      email: "ana@moreirasocial.exemplo",
+      currency: "R$",
       weekStart: "Monday",
       approvalTurnaroundDays: 3,
       notifyEmail: true,

@@ -7,7 +7,7 @@ import type {
   RequestStatus,
 } from "./types";
 
-// One source of truth for every status/priority/platform chip in the portal.
+// Fonte única de estilos para cada chip de status/prioridade/plataforma do portal.
 export interface ChipStyle {
   className: string;
   dot: string;
@@ -114,7 +114,7 @@ export const FILE_CATEGORIES: FileCategory[] = [
   "Final deliverables",
 ];
 
-export const CURRENCY = "$";
+export const CURRENCY = "R$";
 
 export function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -124,12 +124,12 @@ export function formatNumber(n: number): string {
 }
 
 export function formatMoney(n: number): string {
-  return `${CURRENCY}${n.toLocaleString("en-US")}`;
+  return `${CURRENCY}${n.toLocaleString("pt-BR")}`;
 }
 
 export function formatDate(iso: string): string {
   if (!iso) return "—";
-  return new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("en-US", {
+  return new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString("pt-BR", {
     month: "short",
     day: "numeric",
     year: "numeric",

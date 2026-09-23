@@ -1,6 +1,6 @@
-// Money in and money out: retainers, project fees, tools and contractors.
-// Retainers can be billed in one click from each client's monthly fee; the
-// manager keeps everything else up to date by hand — no bank integration.
+// Dinheiro que entra e que sai: mensalidades, projetos, ferramentas e
+// freelancers. As mensalidades podem ser faturadas em um clique a partir do
+// valor de cada cliente; o resto o gestor mantém à mão — sem integração bancária.
 
 import { useMemo, useState } from "react";
 import {
@@ -27,15 +27,15 @@ import { useMutation } from "convex/react";
 import { cn } from "@/lib/utils";
 
 const FIELDS: FieldSpec[] = [
-  { key: "date", label: "Date", type: "date", required: true },
-  { key: "description", label: "Description", required: true, placeholder: "Monthly retainer" },
-  { key: "clientId", label: "Client", type: "client" },
-  { key: "type", label: "Type", type: "select", options: ["Income", "Expense"], required: true },
-  { key: "amount", label: "Amount", type: "number", required: true },
-  { key: "category", label: "Category", type: "select", options: FINANCE_CATEGORIES },
-  { key: "status", label: "Payment status", type: "select", options: ["Paid", "Pending", "Overdue"] },
-  { key: "dueDate", label: "Due date", type: "date" },
-  { key: "paidDate", label: "Payment date", type: "date" },
+  { key: "date", label: "Data", type: "date", required: true },
+  { key: "description", label: "Descrição", required: true, placeholder: "Mensalidade" },
+  { key: "clientId", label: "Cliente", type: "client" },
+  { key: "type", label: "Tipo", type: "select", options: ["Income", "Expense"], required: true },
+  { key: "amount", label: "Valor", type: "number", required: true },
+  { key: "category", label: "Categoria", type: "select", options: FINANCE_CATEGORIES },
+  { key: "status", label: "Status de pagamento", type: "select", options: ["Paid", "Pending", "Overdue"] },
+  { key: "dueDate", label: "Vencimento", type: "date" },
+  { key: "paidDate", label: "Data de pagamento", type: "date" },
 ];
 
 function monthKey(iso: string): string {
@@ -70,7 +70,7 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
     return { income, expense, net: income - expense, pending, unpaid };
   }, [scoped]);
 
-  // Recurring billing summary, computed from the client roster.
+  // Resumo de faturamento recorrente, calculado a partir da carteira de clientes.
   const billingSummary = useMemo(() => {
     const active = ws.clients.filter((c) => c.status === "Active" && c.monthlyFee > 0);
     const mrr = active.reduce((s, c) => s + c.monthlyFee, 0);
@@ -89,11 +89,11 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
       const result = await generateInvoices({ months });
       toast.success(
         result.created === 0
-          ? "Everything already billed"
-          : `${result.created} invoice${result.created === 1 ? "" : "s"} created`,
+          ? "Tudo já estava faturado"
+          : `${result.created} fatura${result.created === 1 ? "" : "s"} gerada${result.created === 1 ? "" : "s"}`,
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not generate the invoices");
+      toast.error(error instanceof Error ? error.message : "Não foi possível gerar as faturas");
     } finally {
       setBilling(false);
     }
@@ -118,7 +118,7 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
     if (unassigned.length > 0) {
       const cost = unassigned.reduce((s, f) => s + (f.type === "Expense" ? f.amount : -f.amount), 0);
       rows.push({
-        client: { id: "none", name: "Unassigned / business costs" } as never,
+        client: { id: "none", name: "Sem cliente / custos do negócio" } as never,
         income: 0,
         cost,
         net: -cost,
@@ -132,19 +132,19 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
   return (
     <div>
       <SectionHeader
-        title="Finance"
-        description="Track what each client pays you and what the work costs — retainers, project fees, tools, contractors and ads."
+        title="Financeiro"
+        description="Acompanhe o que cada cliente paga e quanto custa o trabalho — mensalidades, projetos, ferramentas, freelancers e anúncios."
       >
         <select
           value={month}
           onChange={(e) => setMonth(e.target.value)}
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          aria-label="Filter by month"
+          aria-label="Filtrar por mês"
         >
-          <option value="all">All time</option>
+          <option value="all">Todo o período</option>
           {months.map((key) => (
             <option key={key} value={key}>
-              {new Date(`${key}-01T00:00:00`).toLocaleDateString("en-US", {
+              {new Date(`${key}-01T00:00:00`).toLocaleDateString("pt-BR", {
                 month: "long",
                 year: "numeric",
               })}
@@ -156,22 +156,22 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
           size="sm"
           className="gap-1.5"
           disabled={billing || billingSummary.activeCount === 0}
-          title="Create this month's retainer invoices from each active client's fee"
+          title="Criar as faturas de mensalidade do mês a partir do valor de cada cliente ativo"
           onClick={() => void billMonth(1)}
         >
           <FileSpreadsheet className="size-4" />
-          Bill this month
+          Faturar este mês
         </Button>
         <Button
           variant="outline"
           size="sm"
           className="gap-1.5"
           disabled={billing || billingSummary.activeCount === 0}
-          title="Bill the current and next month"
+          title="Faturar o mês atual e o próximo"
           onClick={() => void billMonth(2)}
         >
           <Repeat className="size-4" />
-          Bill 2 months
+          Faturar 2 meses
         </Button>
       </SectionHeader>
 
@@ -181,17 +181,17 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
           <strong className="font-semibold text-foreground">
             {billingSummary.activeCount}
           </strong>{" "}
-          client{billingSummary.activeCount === 1 ? "" : "s"} on retainer
+          cliente{billingSummary.activeCount === 1 ? "" : "s"} com mensalidade
         </span>
         <span>
-          Recurring revenue: <strong className="font-semibold text-foreground">{ws.money(billingSummary.mrr)}/mo</strong>
+          Receita recorrente: <strong className="font-semibold text-foreground">{ws.money(billingSummary.mrr)}/mês</strong>
         </span>
         <span>
-          Billed this month: <strong className="font-semibold text-foreground">{billingSummary.billedThisMonth}</strong> of {billingSummary.activeCount}
+          Faturado no mês: <strong className="font-semibold text-foreground">{billingSummary.billedThisMonth}</strong> de {billingSummary.activeCount}
         </span>
         {pendingInvoices.length > 0 ? (
           <span className="ml-auto inline-flex items-center gap-2">
-            {pendingInvoices.length} invoice{pendingInvoices.length === 1 ? "" : "s"} awaiting payment
+            {pendingInvoices.length} fatura{pendingInvoices.length === 1 ? "" : "s"} aguardando pagamento
             <Button
               variant="outline"
               size="sm"
@@ -199,13 +199,13 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
               onClick={async () => {
                 try {
                   await Promise.all(pendingInvoices.map((f) => markPaid({ id: f.id })));
-                  toast.success("Invoices marked as paid");
+                  toast.success("Faturas marcadas como pagas");
                 } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Could not update the invoices");
+                  toast.error(error instanceof Error ? error.message : "Não foi possível atualizar as faturas");
                 }
               }}
             >
-              <CheckCheck className="size-3.5" /> Mark all paid
+              <CheckCheck className="size-3.5" /> Marcar todas como pagas
             </Button>
           </span>
         ) : null}
@@ -213,29 +213,29 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label={month === "all" ? "Income (all time)" : "Income this month"}
+          label={month === "all" ? "Receitas (todo o período)" : "Receitas do mês"}
           value={ws.money(totals.income)}
           icon={<ArrowUpRight className="size-4" />}
         />
         <KpiCard
-          label={month === "all" ? "Expenses (all time)" : "Expenses this month"}
+          label={month === "all" ? "Despesas (todo o período)" : "Despesas do mês"}
           value={ws.money(totals.expense)}
           icon={<ArrowDownRight className="size-4" />}
         />
         <KpiCard
-          label="Net result"
+          label="Resultado líquido"
           value={ws.money(totals.net)}
           icon={<PiggyBank className="size-4" />}
         />
         <KpiCard
-          label="Awaiting payment"
+          label="A receber"
           value={ws.money(totals.pending)}
           icon={<Wallet className="size-4" />}
         />
         <KpiCard
-          label="Recurring revenue"
-          value={`${ws.money(billingSummary.mrr)}/mo`}
-          delta={`${billingSummary.activeCount} active retainer${billingSummary.activeCount === 1 ? "" : "s"}`}
+          label="Receita recorrente"
+          value={`${ws.money(billingSummary.mrr)}/mês`}
+          delta={`${billingSummary.activeCount} mensalidade${billingSummary.activeCount === 1 ? "" : "s"} ativa${billingSummary.activeCount === 1 ? "" : "s"}`}
           icon={<Repeat className="size-4" />}
         />
       </div>
@@ -243,12 +243,12 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
       <div className="mb-6 grid gap-4 lg:grid-cols-[2fr_3fr]">
         <div className="rounded-xl border border-border/70 bg-card p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Income vs expenses
+            Receitas x despesas
           </p>
           <div className="mt-4 space-y-3">
             {[
-              { label: "Income", value: totals.income, className: "bg-teal-500" },
-              { label: "Expenses", value: totals.expense, className: "bg-rose-400" },
+              { label: "Receitas", value: totals.income, className: "bg-teal-500" },
+              { label: "Despesas", value: totals.expense, className: "bg-rose-400" },
             ].map((bar) => (
               <div key={bar.label}>
                 <div className="flex items-center justify-between text-xs">
@@ -273,14 +273,14 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
           </div>
           {totals.unpaid > 0 ? (
             <p className="mt-4 text-xs text-muted-foreground">
-              You still owe {ws.money(totals.unpaid)} in unpaid expenses.
+              Você ainda tem {ws.money(totals.unpaid)} em despesas não pagas.
             </p>
           ) : null}
         </div>
 
         <div className="rounded-xl border border-border/70 bg-card p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Per client — {month === "all" ? "all time" : formatDate(`${month}-01`).slice(0, -6)}
+            Por cliente — {month === "all" ? "todo o período" : formatDate(`${month}-01`).slice(0, -6)}
           </p>
           <ul className="mt-3 space-y-3">
             {perClient.map((row) => (
@@ -288,7 +288,7 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <span className="truncate font-medium">{row.client.name}</span>
                   <span className="tabular whitespace-nowrap text-muted-foreground">
-                    {ws.money(row.income)} in · {ws.money(row.cost)} out
+                    {ws.money(row.income)} entrando · {ws.money(row.cost)} saindo
                   </span>
                 </div>
                 <div className="mt-1 flex items-center gap-2">
@@ -325,11 +325,11 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
         searchText={(row) =>
           [row.description, row.category, ws.clientName(row.clientId), row.type].join(" ")
         }
-        addLabel="New entry"
-        entityName="Entries"
+        addLabel="Novo lançamento"
+        entityName="Lançamentos"
         statusKey="status"
-        emptyTitle="No financial entries yet"
-        emptyHint="Log retainers, project fees and your running costs to see your margin."
+        emptyTitle="Nenhum lançamento financeiro ainda"
+        emptyHint="Registre mensalidades, projetos e seus custos fixos para ver sua margem."
         defaults={{
           date: todayISO(),
           type: "Income",
@@ -353,14 +353,14 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
               },
               id,
             );
-            toast.success(id ? "Entry updated" : "Entry added");
+            toast.success(id ? "Lançamento atualizado" : "Lançamento adicionado");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Could not save the entry");
+            toast.error(error instanceof Error ? error.message : "Não foi possível salvar o lançamento");
           }
         }}
         onDelete={async (id) => {
           await ws.remove("finance", id);
-          toast.success("Entry deleted");
+          toast.success("Lançamento excluído");
         }}
       />
     </div>

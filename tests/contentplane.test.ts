@@ -1,8 +1,8 @@
-// Targeted regression tests for the Contentplane manager workspace data layer:
-// the 29-sheet workbook (including its live formula engine), the recurring
-// invoice planner and the multi-client Notion export package.
+// Testes de regressão da camada de dados do Contentplane:
+// a planilha de 29 abas (com seu motor de fórmulas), o planejador de faturas
+// recorrentes e o pacote de exportação para o Notion com vários clientes.
 //
-// Run with: bun test
+// Rode com: bun test
 
 import { describe, expect, test } from "bun:test";
 
@@ -14,38 +14,38 @@ import type { SheetColumn, SheetDef } from "../src/data/workbook";
 import type { ClientRecord, ContentItem } from "../src/data/types";
 
 const REQUIRED_SHEET_NAMES = [
-  "Setup",
-  "Clients",
-  "Brand",
-  "Goals",
-  "Dashboard",
-  "Year",
+  "Configuração",
+  "Clientes",
+  "Marca",
+  "Metas",
+  "Painel",
+  "Ano",
   "Jan",
-  "Feb",
+  "Fev",
   "Mar",
-  "Apr",
-  "May",
+  "Abr",
+  "Mai",
   "Jun",
   "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
+  "Ago",
+  "Set",
+  "Out",
   "Nov",
-  "Dec",
-  "Weekly",
-  "Brain Dump",
-  "Content Plan",
-  "Tasks",
-  "30 Day",
-  "Feed Preview",
+  "Dez",
+  "Semanal",
+  "Banco de Ideias",
+  "Plano de Conteúdo",
+  "Tarefas",
+  "30 Dias",
+  "Prévia do Feed",
   "Hashtags",
-  "Collabs",
-  "Finance",
-  "Client Reports",
-  "Service Log",
+  "Parcerias",
+  "Financeiro",
+  "Relatórios de Clientes",
+  "Registro de Entregas",
 ];
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
 const sheets = buildWorkbookSheets();
 const sheetNames = sheets.map((s) => s.name);
@@ -53,17 +53,17 @@ const computedSheets = computeWorkbook(sheets);
 
 function byName(name: string): SheetDef {
   const sheet = sheets.find((s) => s.name === name);
-  if (!sheet) throw new Error(`Sheet "${name}" is missing from the workbook`);
+  if (!sheet) throw new Error(`A aba "${name}" está faltando na planilha`);
   return sheet;
 }
 
 function computedByName(name: string): SheetDef {
   const sheet = computedSheets.find((s) => s.name === name);
-  if (!sheet) throw new Error(`Sheet "${name}" is missing from the workbook`);
+  if (!sheet) throw new Error(`A aba "${name}" está faltando na planilha`);
   return sheet;
 }
 
-/** UTC-safe ISO date `days` away from today (the engine works in UTC). */
+/** Data ISO segura em UTC `days` dias a partir de hoje (o motor trabalha em UTC). */
 function isoOffset(days: number): string {
   const d = new Date(`${new Date().toISOString().slice(0, 10)}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
@@ -72,19 +72,19 @@ function isoOffset(days: number): string {
 
 function columnIndex(sheet: SheetDef, name: string): number {
   const index = sheet.columns.findIndex((c) => c.name === name);
-  if (index < 0) throw new Error(`Column "${name}" is missing from ${sheet.name}`);
+  if (index < 0) throw new Error(`A coluna "${name}" está faltando em ${sheet.name}`);
   return index;
 }
 
-/** Read a computed Dashboard value by its metric label (value is the next cell over). */
+/** Lê um valor calculado do Painel pelo rótulo do indicador (o valor é a célula seguinte). */
 function dashboardValue(label: string, labelColumn = 0): string | number {
-  const sheet = computedByName("Dashboard");
+  const sheet = computedByName("Painel");
   const rowIndex = sheet.rows.findIndex((row) => String(row[labelColumn]) === label);
-  if (rowIndex < 0) throw new Error(`Dashboard has no metric named "${label}"`);
+  if (rowIndex < 0) throw new Error(`O Painel não tem o indicador "${label}"`);
   return sheet.computed![rowIndex][labelColumn + 1];
 }
 
-/** Minimal CSV parser (handles quotes, escaped quotes, commas). */
+/** Parser de CSV mínimo (trata aspas, aspas escapadas e vírgulas). */
 function parseCSV(csv: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -124,12 +124,12 @@ function parseCSV(csv: string): string[][] {
   return rows;
 }
 
-describe("workbook: 29 sheets for the manager workspace", () => {
-  test("contains the manager sheet set, in order", () => {
+describe("planilha: 29 abas do espaço do gestor", () => {
+  test("contém o conjunto de abas do gestor, na ordem", () => {
     expect(sheetNames).toEqual(REQUIRED_SHEET_NAMES);
   });
 
-  test("sheet ids are unique and every sheet is populated and documented", () => {
+  test("os ids das abas são únicos e toda aba tem conteúdo e descrição", () => {
     const ids = sheets.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
     for (const sheet of sheets) {
@@ -139,43 +139,43 @@ describe("workbook: 29 sheets for the manager workspace", () => {
     }
   });
 
-  test("no ragged rows (every row matches its column count)", () => {
+  test("nenhuma linha desalinhada (toda linha bate com o número de colunas)", () => {
     const ragged: string[] = [];
     for (const sheet of sheets) {
       sheet.rows.forEach((row, i) => {
         if (row.length !== sheet.columns.length) {
-          ragged.push(`${sheet.name} row ${i + 2}: ${row.length} cells vs ${sheet.columns.length} columns`);
+          ragged.push(`${sheet.name} linha ${i + 2}: ${row.length} células para ${sheet.columns.length} colunas`);
         }
       });
     }
     expect(ragged).toEqual([]);
   });
 
-  test("clients sheet holds a roster with fees and statuses", () => {
-    const clients = byName("Clients");
+  test("a aba Clientes guarda a carteira com mensalidades e status", () => {
+    const clients = byName("Clientes");
     const names = clients.rows.map((r) => String(r[0]));
     expect(names).toContain("Northwind Coffee Roasters");
     expect(names).toContain("Vela Fitness Studio");
     const statusIndex = clients.columns.findIndex((c) => c.name === "Status");
     const statuses = clients.rows.map((r) => String(r[statusIndex]));
-    expect(statuses).toContain("Active");
-    expect(statuses).toContain("Prospect");
+    expect(statuses).toContain("Ativo");
+    expect(statuses).toContain("Prospecto");
   });
 
-  test("monthly calendars carry a Client column and stay consistent", () => {
+  test("os calendários mensais têm coluna de cliente e estrutura consistente", () => {
     const shapes = MONTHS.map((m) => byName(m).columns.map((c) => c.name));
     for (const shape of shapes) {
       expect(shape).toEqual(shapes[0]);
-      expect(shape).toContain("Client");
-      expect(shape).toContain("Approval status");
-      expect(shape).toContain("Publication status");
+      expect(shape).toContain("Cliente");
+      expect(shape).toContain("Status de aprovação");
+      expect(shape).toContain("Status de publicação");
     }
     for (const m of MONTHS) {
       expect(byName(m).rows.length).toBeGreaterThan(0);
     }
   });
 
-  test("dropdown (select) values all come from the declared option lists", () => {
+  test("os valores das listas suspensas vêm todos das opções declaradas", () => {
     const violations: string[] = [];
     for (const sheet of sheets) {
       sheet.columns.forEach((col, colIndex) => {
@@ -184,7 +184,7 @@ describe("workbook: 29 sheets for the manager workspace", () => {
           const value = row[colIndex];
           if (value === undefined || value === "" || value === "—") return;
           if (!col.options!.includes(String(value))) {
-            violations.push(`${sheet.name}!${col.name} row ${rowIndex + 2}: "${value}"`);
+            violations.push(`${sheet.name}!${col.name} linha ${rowIndex + 2}: "${value}"`);
           }
         });
       });
@@ -192,52 +192,52 @@ describe("workbook: 29 sheets for the manager workspace", () => {
     expect(violations).toEqual([]);
   });
 
-  test("dashboard formulas point at the columns that actually hold the data", () => {
-    const formulas = byName("Dashboard")
+  test("as fórmulas do Painel apontam para as colunas que realmente têm os dados", () => {
+    const formulas = byName("Painel")
       .rows.flat()
       .filter((v): v is string => typeof v === "string" && v.startsWith("="));
     expect(formulas.length).toBeGreaterThanOrEqual(10);
     const joined = formulas.join("\n");
 
-    expect(joined).toContain("Clients!A2:A1000");
-    expect(joined).toContain("Clients!H2:H1000");
-    expect(joined).toContain("Clients!J2:J1000");
+    expect(joined).toContain("Clientes!A2:A1000");
+    expect(joined).toContain("Clientes!H2:H1000");
+    expect(joined).toContain("Clientes!J2:J1000");
 
-    // Content Plan: C = Client, P = Approval status, Q = Publication status.
-    const plan = byName("Content Plan");
-    expect(plan.columns[columnIndex(plan, "Client")].name).toBe("Client");
-    expect(columnIndex(plan, "Approval status")).toBe(15);
-    expect(columnIndex(plan, "Publication status")).toBe(16);
-    expect(joined).toContain("'Content Plan'!C2:C1000");
-    expect(joined).toContain("'Content Plan'!P2:P1000");
-    expect(joined).toContain("'Content Plan'!Q2:Q1000");
+    // Plano de Conteúdo: C = Cliente, P = Status de aprovação, Q = Status de publicação.
+    const plan = byName("Plano de Conteúdo");
+    expect(plan.columns[columnIndex(plan, "Cliente")].name).toBe("Cliente");
+    expect(columnIndex(plan, "Status de aprovação")).toBe(15);
+    expect(columnIndex(plan, "Status de publicação")).toBe(16);
+    expect(joined).toContain("'Plano de Conteúdo'!C2:C1000");
+    expect(joined).toContain("'Plano de Conteúdo'!P2:P1000");
+    expect(joined).toContain("'Plano de Conteúdo'!Q2:Q1000");
 
-    // Tasks: H = Status, J = Due date.
-    const tasks = byName("Tasks");
+    // Tarefas: H = Status, J = Prazo.
+    const tasks = byName("Tarefas");
     expect(columnIndex(tasks, "Status")).toBe(7);
-    expect(columnIndex(tasks, "Due date")).toBe(9);
-    expect(joined).toContain("Tasks!H2:H1000");
-    expect(joined).toContain("Tasks!J2:J1000");
+    expect(columnIndex(tasks, "Prazo")).toBe(9);
+    expect(joined).toContain("Tarefas!H2:H1000");
+    expect(joined).toContain("Tarefas!J2:J1000");
 
-    // Finance: C = Revenue, D = Expense, G = Payment status.
-    const finance = byName("Finance");
-    expect(columnIndex(finance, "Payment status")).toBe(6);
-    expect(joined).toContain("Finance!C2:C1000");
-    expect(joined).toContain("Finance!D2:D1000");
-    expect(joined).toContain("Finance!G2:G1000");
+    // Financeiro: C = Receita, D = Despesa, G = Status de pagamento.
+    const finance = byName("Financeiro");
+    expect(columnIndex(finance, "Status de pagamento")).toBe(6);
+    expect(joined).toContain("Financeiro!C2:C1000");
+    expect(joined).toContain("Financeiro!D2:D1000");
+    expect(joined).toContain("Financeiro!G2:G1000");
 
-    // No social-metric formulas remain.
-    expect(joined).not.toContain("Platform Analytics");
-    expect(joined).not.toContain("Content Analytics");
+    // Nenhuma fórmula de métrica de rede social sobrou.
+    expect(joined).not.toContain("Plataformas");
+    expect(joined).not.toContain("Análise");
   });
 
-  test("every workbook formula evaluates (no #ERROR cells)", () => {
+  test("toda fórmula da planilha é avaliada (nenhuma célula #ERROR)", () => {
     const broken: string[] = [];
     for (const sheet of computedSheets) {
       sheet.computed!.forEach((row, rowIndex) => {
         row.forEach((value, colIndex) => {
           if (value === "#ERROR") {
-            broken.push(`${sheet.name}!${sheet.columns[colIndex]?.name} row ${rowIndex + 2}`);
+            broken.push(`${sheet.name}!${sheet.columns[colIndex]?.name} linha ${rowIndex + 2}`);
           }
         });
       });
@@ -245,99 +245,99 @@ describe("workbook: 29 sheets for the manager workspace", () => {
     expect(broken).toEqual([]);
   });
 
-  test("dashboard metrics equal independently computed values from the source sheets", () => {
-    const clients = byName("Clients");
+  test("os indicadores do Painel batem com valores calculados de forma independente", () => {
+    const clients = byName("Clientes");
     const clientStatus = columnIndex(clients, "Status");
-    const monthlyFee = columnIndex(clients, "Monthly fee");
-    const activeClients = clients.rows.filter((r) => r[clientStatus] === "Active");
+    const monthlyFee = columnIndex(clients, "Mensalidade");
+    const activeClients = clients.rows.filter((r) => r[clientStatus] === "Ativo");
     const recurringRevenue = activeClients.reduce((sum, r) => sum + Number(r[monthlyFee] || 0), 0);
 
-    const content = byName("Content Plan");
-    const approval = columnIndex(content, "Approval status");
-    const publication = columnIndex(content, "Publication status");
+    const content = byName("Plano de Conteúdo");
+    const approval = columnIndex(content, "Status de aprovação");
+    const publication = columnIndex(content, "Status de publicação");
     const byPublication = (status: string) =>
       content.rows.filter((r) => r[publication] === status).length;
 
-    const tasks = byName("Tasks");
+    const tasks = byName("Tarefas");
     const taskStatus = columnIndex(tasks, "Status");
-    const taskDue = columnIndex(tasks, "Due date");
+    const taskDue = columnIndex(tasks, "Prazo");
     const tasksDueThisWeek = tasks.rows.filter(
-      (r) => r[taskStatus] !== "Done" && String(r[taskDue]) <= isoOffset(7),
+      (r) => r[taskStatus] !== "Concluído" && String(r[taskDue]) <= isoOffset(7),
     ).length;
 
-    const finance = byName("Finance");
-    const paymentStatus = columnIndex(finance, "Payment status");
-    const revenue = columnIndex(finance, "Revenue");
+    const finance = byName("Financeiro");
+    const paymentStatus = columnIndex(finance, "Status de pagamento");
+    const revenue = columnIndex(finance, "Receita");
     const unpaidIncome = finance.rows
-      .filter((r) => r[paymentStatus] !== "Paid")
+      .filter((r) => r[paymentStatus] !== "Pago")
       .reduce((sum, r) => sum + Number(r[revenue] || 0), 0);
 
-    expect(dashboardValue("Total clients")).toBe(clients.rows.length);
-    expect(dashboardValue("Active clients", 2)).toBe(activeClients.length);
-    expect(dashboardValue("Monthly recurring revenue")).toBe(recurringRevenue);
-    expect(dashboardValue("Prospects", 2)).toBe(
-      clients.rows.filter((r) => r[clientStatus] === "Prospect").length,
+    expect(dashboardValue("Total de clientes")).toBe(clients.rows.length);
+    expect(dashboardValue("Clientes ativos", 2)).toBe(activeClients.length);
+    expect(dashboardValue("Receita recorrente mensal")).toBe(recurringRevenue);
+    expect(dashboardValue("Prospectos", 2)).toBe(
+      clients.rows.filter((r) => r[clientStatus] === "Prospecto").length,
     );
 
-    expect(dashboardValue("Planned posts")).toBe(content.rows.length);
-    expect(dashboardValue("Published", 2)).toBe(byPublication("Published"));
-    expect(dashboardValue("Scheduled", 2)).toBe(byPublication("Scheduled"));
-    expect(dashboardValue("Awaiting approval")).toBe(
-      content.rows.filter((r) => r[approval] === "Pending").length,
+    expect(dashboardValue("Posts planejados")).toBe(content.rows.length);
+    expect(dashboardValue("Publicados", 2)).toBe(byPublication("Publicado"));
+    expect(dashboardValue("Agendados", 2)).toBe(byPublication("Agendado"));
+    expect(dashboardValue("Aguardando aprovação")).toBe(
+      content.rows.filter((r) => r[approval] === "Pendente").length,
     );
 
-    expect(dashboardValue("Tasks due this week")).toBe(tasksDueThisWeek);
-    expect(dashboardValue("Tasks done", 2)).toBe(
-      tasks.rows.filter((r) => r[taskStatus] === "Done").length,
+    expect(dashboardValue("Tarefas para esta semana")).toBe(tasksDueThisWeek);
+    expect(dashboardValue("Tarefas concluídas", 2)).toBe(
+      tasks.rows.filter((r) => r[taskStatus] === "Concluído").length,
     );
 
-    expect(dashboardValue("Unpaid / pending income")).toBe(unpaidIncome);
-    expect(dashboardValue("Overdue payments", 2)).toBe(
-      finance.rows.filter((r) => r[paymentStatus] === "Overdue").length,
+    expect(dashboardValue("Receita pendente")).toBe(unpaidIncome);
+    expect(dashboardValue("Pagamentos atrasados", 2)).toBe(
+      finance.rows.filter((r) => r[paymentStatus] === "Atrasado").length,
     );
   });
 
-  test("this-month money metrics stay inside the current calendar month", () => {
-    const finance = byName("Finance");
-    const dateIdx = columnIndex(finance, "Date");
-    const revenueIdx = columnIndex(finance, "Revenue");
-    const expenseIdx = columnIndex(finance, "Expense");
+  test("as métricas de dinheiro do mês ficam dentro do mês corrente", () => {
+    const finance = byName("Financeiro");
+    const dateIdx = columnIndex(finance, "Data");
+    const revenueIdx = columnIndex(finance, "Receita");
+    const expenseIdx = columnIndex(finance, "Despesa");
     const month = new Date().toISOString().slice(0, 7);
     const inMonth = finance.rows.filter((r) => String(r[dateIdx]).slice(0, 7) === month);
 
-    expect(dashboardValue("Revenue this month")).toBe(
+    expect(dashboardValue("Receita do mês")).toBe(
       inMonth.reduce((sum, r) => sum + Number(r[revenueIdx] || 0), 0),
     );
-    expect(dashboardValue("Expenses this month", 2)).toBe(
+    expect(dashboardValue("Despesas do mês", 2)).toBe(
       inMonth.reduce((sum, r) => sum + Number(r[expenseIdx] || 0), 0),
     );
   });
 
-  test("no social metric columns remain in the workbook", () => {
+  test("nenhuma coluna de métrica de rede social sobrou na planilha", () => {
     for (const sheet of sheets) {
       for (const col of sheet.columns) {
-        expect(["Followers", "Reach", "Impressions", "Engagement", "Engagement rate"]).not.toContain(col.name);
+        expect(["Seguidores", "Alcance", "Impressões", "Engajamento", "Taxa de engajamento"]).not.toContain(col.name);
       }
     }
-    expect(sheetNames).not.toContain("Platform Analytics");
-    expect(sheetNames).not.toContain("Content Analytics");
+    expect(sheetNames).not.toContain("Análise de Plataformas");
+    expect(sheetNames).not.toContain("Análise de Conteúdo");
   });
 
-  test("finance sheet feeds the dashboard with matching columns", () => {
-    const finance = byName("Finance");
+  test("a aba Financeiro alimenta o Painel com colunas compatíveis", () => {
+    const finance = byName("Financeiro");
     const names = finance.columns.map((c) => c.name);
-    expect(names).toEqual(["Date", "Client / payee", "Revenue", "Expense", "Category", "Description", "Payment status", "Due date", "Payment date"]);
-    const revenueIdx = names.indexOf("Revenue");
+    expect(names).toEqual(["Data", "Cliente / favorecido", "Receita", "Despesa", "Categoria", "Descrição", "Status de pagamento", "Vencimento", "Data de pagamento"]);
+    const revenueIdx = names.indexOf("Receita");
     expect(finance.rows.some((r) => Number(r[revenueIdx]) > 0)).toBe(true);
-    const expenseIdx = names.indexOf("Expense");
+    const expenseIdx = names.indexOf("Despesa");
     expect(finance.rows.some((r) => Number(r[expenseIdx]) > 0)).toBe(true);
   });
 
-  test("toCSV escapes commas and quotes", () => {
+  test("toCSV escapa vírgulas e aspas", () => {
     const sheet: SheetDef = {
       id: "t",
       name: "T",
-      group: "Setup & Brand",
+      group: "Configuração e Marca",
       description: "test",
       columns: [
         { name: "A", width: 10 },
@@ -354,22 +354,22 @@ function makeClient(partial: Partial<ClientRecord>): ClientRecord {
   return {
     id: "c1",
     name: "Northwind Coffee Roasters",
-    contactName: "Maya Okafor",
-    email: "maya@northwindcoffee.example",
+    contactName: "Maiara Okano",
+    email: "maiara@northwindcoffee.exemplo",
     phone: "",
     website: "",
-    industry: "Specialty coffee",
-    packageName: "Retainer — 12 posts/month",
+    industry: "Cafés especiais",
+    packageName: "Mensalidade — 12 posts/mês",
     monthlyFee: 4800,
     startDate: "2026-01-15",
     status: "Active",
     socials: { instagram: "@northwindcoffee" },
-    notes: "Prefers batch edits.",
+    notes: "Prefere ajustes em lote.",
     onboarding: {},
     strategy: [
-      { key: "pillars", title: "Content pillars", items: ["Education", "Product"] },
+      { key: "pillars", title: "Pilares de conteúdo", items: ["Educação", "Produto"] },
     ],
-    kpis: [{ name: "Posts published / month", baseline: "6", target: "12", actual: "9", unit: "posts", deadline: "2026-10-28" }],
+    kpis: [{ name: "Posts publicados / mês", baseline: "6", target: "12", actual: "9", unit: "posts", deadline: "2026-10-28" }],
     createdAt: 0,
     ...partial,
   };
@@ -382,7 +382,7 @@ function makeContent(partial: Partial<ContentItem>): ContentItem {
     date: "2026-09-20",
     platform: "Instagram",
     format: "Reel",
-    topic: "Cold brew vs iced latte",
+    topic: "Cold brew x café gelado",
     caption: "",
     assetNote: "",
     status: "Published",
@@ -394,17 +394,17 @@ function makeContent(partial: Partial<ContentItem>): ContentItem {
   };
 }
 
-describe("notion export package (multi-client)", () => {
+describe("pacote de exportação para o Notion (vários clientes)", () => {
   const clients = [
     makeClient({ id: "c1" }),
     makeClient({ id: "c2", name: "Hale & Harbor Interiors", status: "Prospect", monthlyFee: 3200 }),
   ];
   const pkg = buildNotionFiles({
     profile: {
-      managerName: "Alex Moreno",
-      agency: "Marrow Social",
+      managerName: "Ana Moreira",
+      agency: "Moreira Social",
       email: "",
-      currency: "$",
+      currency: "R$",
       weekStart: "Monday",
       approvalTurnaroundDays: 3,
       notifyEmail: true,
@@ -415,7 +415,7 @@ describe("notion export package (multi-client)", () => {
     clients,
     content: [
       makeContent({}),
-      makeContent({ id: "x2", clientId: "c2", topic: "Rug sizing cheat sheet", date: "2026-09-18" }),
+      makeContent({ id: "x2", clientId: "c2", topic: "Guia de tamanhos de tapete", date: "2026-09-18" }),
     ],
     tasks: [],
     requests: [],
@@ -427,7 +427,7 @@ describe("notion export package (multi-client)", () => {
   const markdown = pkg.filter((f) => f.name.endsWith(".md"));
   const csvs = pkg.filter((f) => f.name.endsWith(".csv"));
 
-  test("ships shared databases, per-client folders and a README", () => {
+  test("entrega bases compartilhadas, pastas por cliente e um README", () => {
     const names = pkg.map((f) => f.name);
     expect(names).toContain("README.md");
     expect(names).toContain("databases/Clients.csv");
@@ -440,23 +440,23 @@ describe("notion export package (multi-client)", () => {
     expect(markdown.length).toBeGreaterThanOrEqual(7);
   });
 
-  test("content rows are attributed to the right client", () => {
+  test("as linhas de conteúdo estão atribuídas ao cliente certo", () => {
     const rows = parseCSV(pkg.find((f) => f.name === "databases/Content.csv")!.content);
-    expect(rows[0]).toContain("Client");
-    const clientsColumn = rows[0].indexOf("Client");
+    expect(rows[0]).toContain("Cliente");
+    const clientsColumn = rows[0].indexOf("Cliente");
     const assigned = rows.slice(1).map((r) => r[clientsColumn]);
     expect(assigned).toContain("Northwind Coffee Roasters");
     expect(assigned).toContain("Hale & Harbor Interiors");
   });
 
-  test("per-client page includes strategy and flags manager-only notes", () => {
-    const page = pkg.find((f) => f.name === "clients/northwind-coffee-roasters/Client.md")!.content;
+  test("a página do cliente traz a estratégia e marca as notas exclusivas do gestor", () => {
+    const page = pkg.find((f) => f.name === "clients/northwind-coffee-roasters/Cliente.md")!.content;
     expect(page).toContain("Northwind Coffee Roasters");
-    expect(page).toContain("Content pillars");
-    expect(page).toContain("manager only");
+    expect(page).toContain("Pilares de conteúdo");
+    expect(page).toContain("somente para o gestor");
   });
 
-  test("every CSV has a consistent column count", () => {
+  test("todo CSV tem contagem de colunas consistente", () => {
     for (const file of csvs) {
       const rows = parseCSV(file.content);
       const header = rows[0];
@@ -467,12 +467,12 @@ describe("notion export package (multi-client)", () => {
     }
   });
 
-  test("package never ships social-metric data", () => {
+  test("o pacote nunca inclui dados de métricas de rede social", () => {
     for (const file of pkg) {
       const text = file.content.toLowerCase();
-      expect(text).not.toContain("followers");
-      expect(text).not.toContain("impressions");
-      expect(text).not.toContain("engagement rate");
+      expect(text).not.toContain("seguidores");
+      expect(text).not.toContain("impressões");
+      expect(text).not.toContain("taxa de engajamento");
     }
   });
 });
@@ -485,8 +485,8 @@ function fixtureSheet(
   return {
     id: name.toLowerCase(),
     name,
-    group: "Setup & Brand",
-    description: "Test fixture sheet",
+    group: "Configuração e Marca",
+    description: "Aba de teste",
     columns,
     rows,
     freeze: 1,
@@ -499,7 +499,7 @@ function lastDayOfMonthISO(): string {
   return last.toISOString().slice(0, 10);
 }
 
-describe("workbook formula engine", () => {
+describe("motor de fórmulas da planilha", () => {
   const book = [
     fixtureSheet(
       "Data",
@@ -517,7 +517,7 @@ describe("workbook formula engine", () => {
     ),
   ];
 
-  test("evaluates the aggregate functions the workbook relies on", () => {
+  test("avalia as funções agregadas usadas pela planilha", () => {
     expect(evaluateFormula("=COUNTA(Data!A2:A1000)", book)).toBe(3);
     expect(evaluateFormula('=COUNTIF(Data!B2:B1000,"Done")', book)).toBe(2);
     expect(evaluateFormula('=SUMIF(Data!B2:B1000,"Done",Data!C2:C1000)', book)).toBe(400);
@@ -528,13 +528,13 @@ describe("workbook formula engine", () => {
     ).toBe(300);
   });
 
-  test("treats row 1 as the header row and missing cells as empty", () => {
+  test("trata a linha 1 como cabeçalho e células ausentes como vazias", () => {
     expect(evaluateFormula("=COUNTA(Data!A1:A1)", book)).toBe(0);
     expect(evaluateFormula("=COUNTA(Data!Z2:Z100)", book)).toBe(0);
     expect(evaluateFormula('=COUNTIF(Data!Z2:Z100,"x")', book)).toBe(0);
   });
 
-  test("supports date arithmetic and TEXT for month-bounded criteria", () => {
+  test("suporta aritmética de datas e TEXT para critérios por mês", () => {
     expect(evaluateFormula('=TEXT(TODAY()+7,"YYYY-MM-DD")', book)).toBe(isoOffset(7));
     expect(evaluateFormula('=TEXT(EOMONTH(TODAY(),-1)+1,"YYYY-MM-DD")', book)).toBe(
       `${new Date().toISOString().slice(0, 7)}-01`,
@@ -548,12 +548,12 @@ describe("workbook formula engine", () => {
     ).toBe(1);
   });
 
-  test("fails soft — unsupported formulas resolve to #ERROR instead of throwing", () => {
+  test("falha sem quebrar — fórmulas não suportadas viram #ERROR em vez de lançar erro", () => {
     expect(evaluateFormula("=MADEUP(1)", book)).toBe("#ERROR");
     expect(evaluateFormula("=COUNTA(Nope!A2:A5)", book)).toBe("#ERROR");
   });
 
-  test("criteria matching mirrors spreadsheet semantics", () => {
+  test("a comparação de critérios segue a semântica de planilha", () => {
     expect(matchesCriteria("Done", "Done")).toBe(true);
     expect(matchesCriteria("done", "DONE")).toBe(true);
     expect(matchesCriteria("Done", "<>Done")).toBe(false);
@@ -564,34 +564,35 @@ describe("workbook formula engine", () => {
   });
 });
 
-describe("recurring invoice planning", () => {
+describe("planejamento de faturas recorrentes", () => {
   const now = new Date("2026-09-15T12:00:00Z");
   const clients = [
     { id: "c1", name: "Northwind Coffee Roasters", status: "Active", monthlyFee: 4800 },
-    { id: "c2", name: "Paused Client", status: "Paused", monthlyFee: 1000 },
-    { id: "c3", name: "Comped Client", status: "Active", monthlyFee: 0 },
+    { id: "c2", name: "Cliente pausado", status: "Paused", monthlyFee: 1000 },
+    { id: "c3", name: "Cliente cortesia", status: "Active", monthlyFee: 0 },
   ];
 
-  test("invoices active clients with a fee, one per month, due on the 10th", () => {
+  test("fatura clientes ativos com mensalidade, uma por mês, vencendo no dia 10", () => {
     const plan = planInvoices(clients, [], 2, undefined, now);
     expect(plan.map((p) => p.clientId)).toEqual(["c1", "c1"]);
     expect(plan.map((p) => p.month)).toEqual(["2026-09", "2026-10"]);
     expect(plan.every((p) => p.amount === 4800)).toBe(true);
     expect(plan.every((p) => p.dueDate === `${p.month}-10`)).toBe(true);
     expect(plan[0].description).toContain("Northwind Coffee Roasters");
+    expect(plan[0].description).toContain("Mensalidade");
   });
 
-  test("is idempotent — existing invoices are never duplicated", () => {
+  test("é idempotente — faturas existentes nunca são duplicadas", () => {
     const plan = planInvoices(clients, [], 2, undefined, now);
     const finance = plan.map((p) => ({ clientId: p.clientId, kind: "invoice" as const, date: p.month }));
     expect(planInvoices(clients, finance, 2, undefined, now)).toEqual([]);
-    // A previous month's invoice does not block the current window.
+    // Uma fatura de um mês anterior não bloqueia a janela atual.
     expect(
       planInvoices(clients, [{ clientId: "c1", kind: "invoice", date: "2026-08" }], 1, undefined, now),
     ).toHaveLength(1);
   });
 
-  test("clamps the window to 12 months and can target a single client", () => {
+  test("limita a janela a 12 meses e permite mirar um único cliente", () => {
     expect(planInvoices(clients, [], 99, undefined, now)).toHaveLength(12);
     expect(planInvoices(clients, [], 0, undefined, now)).toHaveLength(1);
     expect(planInvoices(clients, [], 1, "unknown-client", now)).toEqual([]);

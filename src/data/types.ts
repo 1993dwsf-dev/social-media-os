@@ -1,9 +1,9 @@
-// Shared data model for the Contentplane manager workspace.
+// Modelo de dados compartilhado do workspace do gestor de social media.
 //
-// This is a single-seat product: the social media manager signs in and manages
-// several clients. Every record belongs to a client and is stored per account
-// in Convex, so the shape here mirrors the Convex documents (id mapped from
-// _id, dates kept as ISO strings for easy export).
+// Produto de assento único: o gestor entra na conta e administra vários
+// clientes. Cada registro pertence a um cliente e é salvo por conta no Convex,
+// então o formato abaixo espelha os documentos do Convex (id mapeado de _id,
+// datas mantidas como strings ISO para facilitar a exportação).
 
 export type Id = string;
 
@@ -198,7 +198,7 @@ export interface DeliverableItem {
 
 export interface FinanceEntry {
   id: Id;
-  /** Empty string when the entry is not tied to a specific client. */
+  /** String vazia quando o lançamento não está ligado a um cliente específico. */
   clientId: Id | "";
   date: string;
   type: FinanceType;
@@ -208,7 +208,7 @@ export interface FinanceEntry {
   status: FinanceStatus;
   dueDate: string;
   paidDate: string;
-  /** "invoice" for entries generated from a client's recurring monthly fee. */
+  /** "invoice" para lançamentos gerados a partir da mensalidade recorrente. */
   kind?: "invoice";
 }
 

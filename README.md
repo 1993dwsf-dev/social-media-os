@@ -1,140 +1,156 @@
-# Contentplane — Social Media Manager OS
+# Contentplane — Sistema operacional para gestores de social media
 
-A complete operating system for **independent social media managers and boutique agencies**: a
-manager workspace for your whole book of business (clients, calendars, tasks, approvals, money),
-a 29-sheet manager workbook, and a Notion-compatible export — all sharing one information
-architecture.
+Um sistema operacional completo para **gestores de social media independentes e agências
+boutique**: um espaço de trabalho para toda a sua carteira (clientes, calendários, tarefas,
+aprovações, dinheiro), uma planilha de 29 abas e uma exportação compatível com o Notion — tudo
+compartilhando a mesma arquitetura de informação.
 
-> Original product. No affiliation with, or copying of, any existing tool, marketplace listing, or brand.
+> Produto original. Sem vínculo, cópia ou inspiração em marca, anúncio de marketplace ou produto existente.
 
-## Who it's for
+## Para quem é
 
-Contentplane is a **single-seat product**: the social media manager signs in and manages many
-clients. Clients are records you create — with company data, social handles, package, monthly fee
-and a private notes space — not user accounts. All data lives in **your** Convex account, scoped by
-`ownerId`, so it follows you between devices and no client can access the workspace.
+Contentplane é um produto de **assento único**: o gestor de social media entra na conta e administra
+vários clientes. Clientes são registros que você cria — com dados da empresa, perfis sociais,
+pacote, mensalidade e um espaço privado de anotações — e não contas de usuário. Todos os dados
+ficam na **sua** conta Convex, limitados por `ownerId`, então acompanham você entre dispositivos e
+nenhum cliente acessa o espaço de trabalho.
 
-## What's inside
+## O que vem aqui
 
-| Surface | Where | What it does |
+| Superfície | Onde | O que faz |
 | --- | --- | --- |
-| **Manager workspace** | `/app/dashboard` (after sign-in) | Clients, strategy, onboarding, calendar, tasks, approvals, requests, finance, meetings, files, settings. |
-| **Manager Workbook** | `/workbook` | 29 worksheets with formulas, dropdowns and status formats — viewable in-app, exportable to CSV. |
-| **Notion package** | Settings → "Notion package" | One page set per client + shared databases (Clients, Content, Tasks, Requests, Meetings, Deliverables, Finance). |
-| **Data tools** | Settings | JSON export/import, demo workspace (4 fictional clients), reset. |
+| **Espaço do gestor** | `/app/dashboard` (após entrar) | Clientes, estratégia, integração, calendário, tarefas, aprovações, solicitações, financeiro, reuniões, arquivos e configurações. |
+| **Planilha do gestor** | `/workbook` | 29 abas com fórmulas, listas suspensas e formatação de status — visíveis no app e exportáveis em CSV. |
+| **Pacote para o Notion** | Configurações → "Pacote para o Notion" | Um conjunto de páginas por cliente + bases compartilhadas (Clientes, Conteúdo, Tarefas, Solicitações, Reuniões, Entregas e Financeiro). |
+| **Ferramentas de dados** | Configurações | Exportar/importar JSON, espaço de exemplo (4 clientes fictícios) e limpeza total. |
 
-## The information architecture
+## A arquitetura de informação
 
 ```
-Manager (you)
- → Clients            (roster: company, contacts, package, fee, status, notes)
-    → Strategy        (objectives, audience, pillars, voice, KPIs per client)
-    → Content         (idea → draft → review → approval → schedule → publish)
-    → Tasks           (everything around the content, per client)
-    → Requests        (intake → in progress → waiting → completed)
-    → Meetings        (agenda → notes → action items)
-    → Deliverables    (files tied to content & projects)
- → Finance            (income & expenses, optionally tagged per client)
+Gestor (você)
+ → Clientes           (carteira: empresa, contatos, pacote, mensalidade, status, anotações)
+    → Estratégia      (objetivos, público, pilares, voz e indicadores por cliente)
+    → Conteúdo        (ideia → rascunho → revisão → aprovação → agendamento → publicação)
+    → Tarefas         (tudo em volta do conteúdo, por cliente)
+    → Solicitações    (entrada → em andamento → aguardando → concluída)
+    → Reuniões        (pauta → anotações → itens de ação)
+    → Entregas        (arquivos ligados a conteúdos e projetos)
+ → Financeiro         (receitas e despesas, opcionalmente vinculadas a um cliente)
 ```
 
-Every surface (workspace, workbook, Notion) is a view of this same model, so data is entered once
-and referenced everywhere.
+Cada superfície (espaço de trabalho, planilha, Notion) é uma visão desse mesmo modelo: o dado é
+digitado uma vez e referenciado em todos os lugares.
 
-## The manager workspace
+## O espaço de trabalho do gestor
 
-- **Dashboard** — active clients, approvals waiting, open/overdue tasks, income, expenses, net,
-  posts planned, next-7-days agenda and a per-client table (planned, published, open tasks, net).
-- **Clients** — the roster. Add/edit clients with company data, social handles, package, fee,
-  status (Active / Paused / Prospect / Archived) and free-form notes. Deleting a client removes
-  their content, tasks, requests, meetings, deliverables and finance rows.
-- **Calendar & Approvals** — content pipeline across all clients, filterable per client, with the
-  Idea → Published workflow.
-- **Tasks** — cross-client task board with priority, due dates and overdue tracking.
-- **Finance** — income & expenses with category, payment status, due/paid dates; monthly totals
-  and pending amounts roll up to the dashboard.
-- **Meetings, Files, Strategy, Onboarding, Settings** — per-client records and workspace tools.
+- **Painel** — clientes ativos, aprovações pendentes, tarefas abertas/atrasadas, receitas,
+  despesas, resultado, posts planejados, agenda dos próximos 7 dias e uma tabela por cliente
+  (planejados, publicados, tarefas abertas, resultado).
+- **Clientes** — a carteira. Cadastre e edite clientes com dados da empresa, perfis sociais,
+  pacote, mensalidade, status (Ativo / Pausado / Prospecto / Arquivado) e anotações livres.
+  Excluir um cliente remove também seus conteúdos, tarefas, solicitações, reuniões, entregas e
+  lançamentos financeiros.
+- **Calendário e Aprovações** — o fluxo de conteúdo de todos os clientes, filtrável por cliente,
+  com o percurso Ideia → Publicado.
+- **Tarefas** — quadro de tarefas entre clientes, com prioridade, prazos e acompanhamento de atrasos.
+- **Financeiro** — receitas e despesas com categoria, status de pagamento e datas de vencimento e
+  pagamento; totais do mês e valores pendentes sobem para o painel.
+- **Reuniões, Arquivos, Estratégia, Integração e Configurações** — registros por cliente e
+  ferramentas do espaço.
 
-Everything is reactive: each section is a live Convex query scoped to the signed-in manager.
+Tudo é reativo: cada seção é uma consulta ao vivo do Convex limitada ao gestor logado.
 
-## The 29 worksheets
+## As 29 abas da planilha
 
-1. **Setup** — manager profile + live totals (`COUNTIF`/`SUMIF` reading the Clients sheet)
-2. **Clients** — the roster: contact, package, monthly fee, status, social handles, notes
-3. **Brand** — brand reference (duplicate per client when needed)
-4. **Goals** — KPI framework with computed progress
-5. **Dashboard** — live business snapshot from Clients, Content Plan, Tasks and Finance
-6. **Year** — 12-month campaign overview
-7–18. **Jan … Dec** — monthly calendars with a **Client** column and status dropdowns
-19. **Weekly** — week-at-a-glance plan with Client column
-20. **Brain Dump** — idea capture
-21. **Content Plan** — the operational core (18 columns, per-client rows)
-22. **Tasks** — task management with Client, dependencies and priorities
-23. **30 Day** — account relaunch planner
-24. **Feed Preview** — feed planning per client
-25. **Hashtags** — research & set management
-26. **Collabs** — partnership tracker
-27. **Finance** — revenue/expense ledger feeding the Dashboard
-28. **Client Reports** — monthly planned vs delivered, on-time rate, flagged pieces, billed
-29. **Service Log** — what went out per client (delivery record, no social metrics)
+1. **Configuração** — perfil do gestor + totais ao vivo (`COUNTIF`/`SUMIF` lendo a aba Clientes)
+2. **Clientes** — a carteira: contato, pacote, mensalidade, status, perfis sociais, anotações
+3. **Marca** — referência de marca (duplique por cliente quando precisar)
+4. **Metas** — estrutura de indicadores com progresso calculado
+5. **Painel** — panorama do negócio ao vivo a partir de Clientes, Plano de Conteúdo, Tarefas e Financeiro
+6. **Ano** — visão geral de campanhas em 12 meses
+7–18. **Jan … Dez** — calendários mensais com coluna **Cliente** e listas suspensas de status
+19. **Semanal** — plano da semana com coluna de cliente
+20. **Banco de Ideias** — captura de ideias
+21. **Plano de Conteúdo** — o núcleo operacional (18 colunas, uma linha por cliente)
+22. **Tarefas** — gestão de tarefas com cliente, dependências e prioridades
+23. **30 Dias** — planejador de relançamento de conta
+24. **Prévia do Feed** — planejamento visual do feed por cliente
+25. **Hashtags** — pesquisa e organização de conjuntos de tags
+26. **Parcerias** — controle de colaborações
+27. **Financeiro** — livro de receitas/despesas que alimenta o Painel
+28. **Relatórios de Clientes** — planejado x entregue no mês, pontualidade, peças com ajuste e faturado
+29. **Registro de Entregas** — o que saiu por cliente (registro de entrega, sem métricas de redes)
 
-The Dashboard sheet computes from the other sheets (`COUNTA`/`COUNTIF`/`COUNTIFS`/`SUMIF`/`SUMIFS`
-references to Clients, Content Plan, Tasks and Finance). A small formula engine
-(`src/data/formula.ts`) evaluates those formulas for the in-app viewer, so each cell shows its
-computed value — hover a cell to see the formula — while status cells are tinted and
-dropdown-validated columns are marked with ▾.
+A aba Painel calcula a partir das outras abas (referências `COUNTA`/`COUNTIF`/`COUNTIFS`/`SUMIF`/
+`SUMIFS` a Clientes, Plano de Conteúdo, Tarefas e Financeiro). Um motor de fórmulas enxuto
+(`src/data/formula.ts`) avalia essas fórmulas para o visualizador no app, então cada célula mostra
+o valor calculado — passe o mouse para ver a fórmula — enquanto células de status ganham cor e as
+colunas com lista suspensa aparecem marcadas com ▾.
 
-**Deliberately removed:** the old Platform Analytics and Content Analytics sheets (followers,
-reach, impressions, engagement). The app has no social platform API connections, so the workbook
-only tracks what the manager actually controls — delivery, approvals and money.
+**Removido de propósito:** as antigas abas de Análise de Plataformas e Análise de Conteúdo
+(seguidores, alcance, impressões, engajamento). O app não tem conexão com APIs das redes sociais,
+então a planilha acompanha apenas o que o gestor realmente controla — entrega, aprovações e dinheiro.
 
-## How the web app works
+## Como o app funciona
 
-- **Stack:** React + Vite + Tailwind + shadcn/ui. All workspace data lives in **Convex**, scoped to
-  the signed-in manager (`ownerId` on every table); writes go through authenticated mutations.
-- **Auth:** Convex auth protects `/app/*` and `/workbook`. After sign-in you land on `/app/dashboard`.
-- **Demo data:** Settings → "Load demo data" seeds four fictional clients (Northwind Coffee
-  Roasters, Hale & Harbor Interiors, Bloomly Skincare, Vela Fitness Studio) with content, tasks,
-  meetings and finances spread around today's date.
-- **CRUD:** clients, content, tasks, requests, meetings, deliverables and finance support
-  add/edit/delete; statuses change inline; everything persists in your account.
-- **Exports:** JSON backup (Settings), per-client Notion package (Settings), CSV per sheet or all
-  sheets (Workbook page).
+- **Stack:** React + Vite + Tailwind + shadcn/ui. Todos os dados do espaço ficam no **Convex**,
+  limitados ao gestor logado (`ownerId` em cada tabela); as escritas passam por mutations
+  autenticadas.
+- **Autenticação:** a autenticação do Convex protege `/app/*` e `/workbook`. Após entrar, você cai
+  em `/app/dashboard`.
+- **Dados de exemplo:** Configurações → "Carregar dados de exemplo" cria quatro clientes fictícios
+  (Northwind Coffee Roasters, Hale & Harbor Interiors, Bloomly Skincare e Vela Fitness Studio) com
+  conteúdos, tarefas, reuniões e finanças distribuídos ao redor de hoje.
+- **CRUD:** clientes, conteúdos, tarefas, solicitações, reuniões, entregas e financeiro permitem
+  adicionar, editar e excluir; os status mudam na própria tela; tudo persiste na sua conta.
+- **Exportações:** backup em JSON (Configurações), pacote do Notion por cliente (Configurações) e
+  CSV da aba ou de todas as abas (página da Planilha).
 
-## Notion import (short version)
+## Idioma
 
-1. Download the package from **Settings → Notion package**.
-2. In Notion: **Workspace → Import → CSV** for each file in `databases/`.
-3. Create pages from the markdown files under one parent — `clients/<name>/` folders map to one
-   page set per client.
-4. Link pages with `@` mentions and group the Content database by Status for an approvals board.
+A interface, a planilha e o pacote do Notion estão em **português (pt-BR)**, com moeda em Real e
+datas no formato brasileiro. Os valores internos de status, prioridade e categoria continuam em
+inglês no banco e nos formulários; a tradução acontece só na exibição, via o dicionário em
+`src/data/labels.ts`. Assim, mudar ou revisar textos nunca corrompe dados já salvos nem quebra
+filtros e fórmulas.
 
-`Finance.csv`, the KPI tables and the "manager only" notes are business-internal — remove them
-before sharing a client folder with the client.
+## Importar no Notion (versão curta)
 
-## Verification checklist
+1. Baixe o pacote em **Configurações → Pacote para o Notion**.
+2. No Notion: **Workspace → Import → CSV** para cada arquivo em `databases/`.
+3. Crie páginas a partir dos arquivos markdown sob uma página principal — as pastas
+   `clients/<nome>/` correspondem a um conjunto de páginas por cliente.
+4. Ligue as páginas com menções `@` e agrupe a base **Content** por Status para ter um quadro de
+   aprovações.
 
-- [x] Manager workspace with client roster, per-client records and finance
-- [x] Workbook: 29 sheets, no ragged rows, dropdown values always valid
-- [x] Dashboard formulas reference the correct source columns and compute live in the viewer
-- [x] No social metric columns anywhere (followers/reach removed by design)
-- [x] Convex tables scoped by `ownerId`; deletes cascade per client
-- [x] Portal navigation, forms, filters and search work
-- [x] JSON export/import + demo workspace loader
-- [x] Responsive layouts (mobile sidebar, fluid grids)
-- [x] Notion package mirrors the workspace, per client
-- [x] Original branding and copy only
+`Finance.csv`, as tabelas de indicadores e as observações "somente para o gestor" são de uso interno
+do negócio — remova-os antes de compartilhar a pasta de um cliente com o próprio cliente.
 
-## Development
+## Checklist de verificação
+
+- [x] Espaço do gestor com carteira de clientes, registros por cliente e financeiro
+- [x] Planilha: 29 abas, nenhuma linha desalinhada, valores de lista sempre válidos
+- [x] Fórmulas do Painel referenciam as colunas corretas e calculam ao vivo no visualizador
+- [x] Nenhuma coluna de métrica de rede social (seguidores/alcance removidos por decisão de projeto)
+- [x] Tabelas do Convex limitadas por `ownerId`; exclusões em cascata por cliente
+- [x] Navegação, formulários, filtros e busca do portal funcionando
+- [x] Exportar/importar JSON + carregar o espaço de exemplo
+- [x] Layouts responsivos (menu lateral no mobile, grades fluidas)
+- [x] Pacote do Notion espelhando o espaço de trabalho, por cliente
+- [x] Apenas identidade visual e textos originais
+
+## Desenvolvimento
 
 ```bash
 bun install
-bun convex dev --once   # regenerate Convex types / push functions
-bun tsc -b --noEmit     # typecheck
-bun test                # data-layer regression tests
+bun convex dev --once   # regenera os tipos do Convex / publica as funções
+bun tsc -b --noEmit     # checagem de tipos
+bun test                # testes de regressão da camada de dados
 ```
 
-`bun test` covers the workbook (sheet set, no ragged rows, dropdown values, computed
-Dashboard metrics cross-checked against the source sheets), the formula engine itself, the
-recurring-invoice planner, and the Notion export package.
+`bun test` cobre a planilha (conjunto de abas, ausência de linhas desalinhadas, valores de lista,
+indicadores do Painel conferidos contra as abas de origem), o próprio motor de fórmulas, o
+planejador de faturas recorrentes e o pacote de exportação para o Notion.
 
-The platform runs the dev server and Convex process automatically; push to deploy.
+A plataforma roda o servidor de desenvolvimento e o processo do Convex automaticamente; publique
+para fazer o deploy.

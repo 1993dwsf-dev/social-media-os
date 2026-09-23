@@ -31,22 +31,36 @@ import {
 } from "@/data/workbook";
 import type { SheetDef } from "@/data/workbook";
 
-// Status → tinted cell background (mirrors the workbook's conditional formats).
+// Status → fundo colorido da célula (espelha a formatação condicional da planilha).
 const STATUS_TINT: Record<string, string> = {
-  Idea: "bg-muted text-muted-foreground",
-  Drafting: "bg-sky-50 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200",
-  "In Review": "bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
-  "Changes Requested": "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200",
-  Approved: "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200",
-  Scheduled: "bg-indigo-50 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200",
-  Published: "bg-teal-50 text-teal-800 dark:bg-teal-950/50 dark:text-teal-200",
-  Done: "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200",
-  "In Progress": "bg-sky-50 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200",
-  Blocked: "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200",
-  Pending: "bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
-  Paid: "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200",
-  Overdue: "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200",
-  Draft: "bg-muted text-muted-foreground",
+  Ideia: "bg-muted text-muted-foreground",
+  Rascunhando: "bg-sky-50 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200",
+  "Em revisão": "bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
+  "Alterações solicitadas": "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200",
+  Aprovado: "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200",
+  Agendado: "bg-indigo-50 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200",
+  Publicado: "bg-teal-50 text-teal-800 dark:bg-teal-950/50 dark:text-teal-200",
+  Concluído: "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200",
+  "Em andamento": "bg-sky-50 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200",
+  Bloqueado: "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200",
+  "A fazer": "bg-muted text-muted-foreground",
+  Pendente: "bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
+  Pago: "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200",
+  Atrasado: "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200",
+  Rascunho: "bg-muted text-muted-foreground",
+  "Em espera": "bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
+  "Não necessário": "bg-muted text-muted-foreground",
+  "Em produção": "bg-sky-50 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200",
+  Arquivada: "bg-muted text-muted-foreground",
+  "Pronto para planejar": "bg-indigo-50 text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200",
+  "Não iniciado": "bg-muted text-muted-foreground",
+  Compartilhado: "bg-teal-50 text-teal-800 dark:bg-teal-950/50 dark:text-teal-200",
+  "No caminho": "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200",
+  Atenção: "bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200",
+  "Em risco": "bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200",
+  Ativa: "bg-teal-50 text-teal-800 dark:bg-teal-950/50 dark:text-teal-200",
+  Planejada: "bg-sky-50 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200",
+  Aposentada: "bg-muted text-muted-foreground",
 };
 
 const STATUS_WORDS = new Set(Object.keys(STATUS_TINT));
@@ -68,11 +82,11 @@ function Cell({
   const isDate = type === "date" && /^\d{4}-\d{2}-\d{2}$/.test(s);
   const title = formula ?? undefined;
 
-  // A formula cell renders its computed value; hover shows the source formula.
+  // Célula de fórmula mostra o valor calculado; ao passar o mouse, a fórmula.
   if (title) {
     return (
       <TableCell className="tabular text-xs font-medium text-primary" title={title}>
-        {typeof value === "number" ? value.toLocaleString() : s}
+        {typeof value === "number" ? value.toLocaleString("pt-BR") : s}
       </TableCell>
     );
   }
@@ -100,7 +114,7 @@ function Cell({
   if (isDate) {
     return (
       <TableCell className="tabular text-xs">
-        {new Date(`${s}T00:00:00`).toLocaleDateString("en-US", {
+        {new Date(`${s}T00:00:00`).toLocaleDateString("pt-BR", {
           month: "short",
           day: "numeric",
           year: "2-digit",
@@ -109,7 +123,7 @@ function Cell({
     );
   }
   if (type === "currency" || type === "number") {
-    return <TableCell className="tabular text-xs">{Number(value).toLocaleString()}</TableCell>;
+    return <TableCell className="tabular text-xs">{Number(value).toLocaleString("pt-BR")}</TableCell>;
   }
   if (type === "percent") {
     return (
@@ -133,8 +147,8 @@ export default function Workbook() {
     (s) => groupFilter === "all" || s.group === groupFilter,
   );
 
-  // Filter rows by the search term (all columns), keeping the original row index
-  // so computed values and row numbers stay aligned while filtering.
+  // Filtra as linhas pelo termo buscado (todas as colunas), mantendo o índice
+  // original para que valores calculados e números de linha fiquem alinhados.
   const rows = useMemo(() => {
     const all = sheet.rows.map((row, index) => ({ row, index }));
     if (!search.trim()) return all;
@@ -146,21 +160,21 @@ export default function Workbook() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Top bar */}
+      {/* Barra superior */}
       <header className="sticky top-0 z-30 border-b border-border/70 bg-card/90 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-[1400px] items-center gap-3 px-4 sm:px-6">
           <Button asChild variant="ghost" size="icon" className="size-8">
-            <Link to="/app/dashboard" aria-label="Back to portal">
+            <Link to="/app/dashboard" aria-label="Voltar ao painel">
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
           <img src={logo} alt="" className="size-7 rounded-md" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold leading-tight">
-              Contentplane Manager Workbook
+              Planilha do Gestor — Contentplane
             </p>
             <p className="text-[11px] leading-tight text-muted-foreground">
-              {sheets.length} worksheets · formulas, dropdowns & status formats
+              {sheets.length} abas · fórmulas, listas suspensas e formatação de status
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">
@@ -169,7 +183,7 @@ export default function Workbook() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Filter rows…"
+                placeholder="Filtrar linhas…"
                 className="h-9 w-48 pl-8"
               />
             </div>
@@ -177,18 +191,18 @@ export default function Workbook() {
               variant="outline"
               size="sm"
               onClick={() => downloadAllSheetsCSV(sheets)}
-              title="Download every sheet as CSV"
+              title="Baixar todas as abas em CSV"
             >
-              <Files className="mr-1.5 size-3.5" /> All CSVs
+              <Files className="mr-1.5 size-3.5" /> Todos os CSVs
             </Button>
             <Button size="sm" onClick={() => downloadCSV(sheet)}>
-              <Download className="mr-1.5 size-3.5" /> Sheet CSV
+              <Download className="mr-1.5 size-3.5" /> CSV da aba
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Sheet tabs */}
+      {/* Abas das planilhas */}
       <div className="sticky top-14 z-20 border-b border-border/70 bg-background/95 backdrop-blur">
         <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6">
           <div className="flex items-center gap-2 py-2">
@@ -197,7 +211,7 @@ export default function Workbook() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All groups</SelectItem>
+                <SelectItem value="all">Todos os grupos</SelectItem>
                 {groups.map((g) => (
                   <SelectItem key={g} value={g}>
                     {g}
@@ -237,7 +251,7 @@ export default function Workbook() {
         </div>
       </div>
 
-      {/* Sheet content */}
+      {/* Conteúdo da aba */}
       <main className="mx-auto w-full max-w-[1400px] flex-1 px-4 py-5 sm:px-6">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
           <div>
@@ -251,8 +265,8 @@ export default function Workbook() {
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline">{sheet.group}</Badge>
-            <Badge variant="outline">{sheet.columns.length} cols</Badge>
-            <Badge variant="outline">{sheet.rows.length} rows</Badge>
+            <Badge variant="outline">{sheet.columns.length} colunas</Badge>
+            <Badge variant="outline">{sheet.rows.length} linhas</Badge>
           </div>
         </div>
 
@@ -295,7 +309,7 @@ export default function Workbook() {
                   <TableRow>
                     <TableCell colSpan={sheet.columns.length + 1} className="h-24 text-center">
                       <p className="text-sm text-muted-foreground">
-                        No rows match “{search}”.
+                        Nenhuma linha corresponde a “{search}”.
                       </p>
                     </TableCell>
                   </TableRow>
@@ -306,10 +320,10 @@ export default function Workbook() {
         </div>
 
         <p className="mt-3 text-[11px] text-muted-foreground">
-          Frozen headers, dropdown validation (▾), status conditional formatting, and cross-sheet
-          formulas are reproduced from the workbook spec — formula cells show their computed value,
-          hover to see the formula. Input cells are blank in month calendars — they're ready for real
-          planning.
+          Cabeçalhos fixos, validação por lista suspensa (▾), formatação condicional de status e
+          fórmulas entre abas reproduzem a especificação da planilha — células de fórmula mostram o
+          valor calculado; passe o mouse para ver a fórmula. As células de entrada estão em branco
+          nos calendários mensais — prontas para o planejamento real.
         </p>
       </main>
     </div>

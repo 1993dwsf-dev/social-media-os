@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { label } from "@/data/labels";
 import {
   CLIENT_CHIP,
   FILE_CHIP,
@@ -62,7 +63,7 @@ export function StatusChip({
       )}
     >
       <span className={cn("size-1.5 rounded-full", s.dot)} />
-      {status}
+      {label(status)}
     </span>
   );
 }

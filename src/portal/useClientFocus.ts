@@ -1,9 +1,10 @@
-// Client focus: a single selection shared by the whole workspace.
+// Foco de cliente: uma seleção única compartilhada por todo o workspace.
 //
-// The topbar selector sets the "active client" so every section (calendar,
-// tasks, strategy, onboarding, finance…) follows the same focus without each
-// one maintaining its own dropdown. The selection lives in the URL
-// (`/app/dashboard?client=<id>`), so focus survives reloads and back/forward.
+// O seletor da barra superior define o "cliente ativo" para que todas as seções
+// (calendário, tarefas, estratégia, integração, financeiro…) sigam o mesmo foco
+// sem manter cada uma o seu próprio menu. A seleção fica na URL
+// (`/app/dashboard?client=<id>`), então o foco sobrevive a recarregamentos e ao
+// botão voltar/avançar.
 
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router";
@@ -11,15 +12,15 @@ import { useSearchParams } from "react-router";
 import type { ClientRecord } from "@/data/types";
 
 export interface ClientFocus {
-  /** The focused client id, or "" when the focus is "all clients". */
+  /** Id do cliente em foco, ou "" quando o foco é "todos os clientes". */
   clientId: string;
-  /** The focused client record, or undefined for "all clients". */
+  /** Registro do cliente em foco, ou undefined para "todos os clientes". */
   client: ClientRecord | undefined;
-  /** True when the workspace is scoped to a single client. */
+  /** True quando o workspace está limitado a um único cliente. */
   isFocused: boolean;
-  /** Set the focus to a client id, or "" to clear it (show all clients). */
+  /** Define o foco em um cliente, ou "" para limpar (mostrar todos). */
   setFocus: (id: string) => void;
-  /** Default clientId for new records — the focused client, if any. */
+  /** clientId padrão para novos registros — o cliente em foco, se houver. */
   defaultClientId: string;
 }
 
@@ -46,8 +47,8 @@ export function useClientFocus(
   );
 
   return useMemo(() => {
-    // While clients are still loading, accept the URL value as-is so the
-    // selector can render; the focused record resolves once data arrives.
+    // Enquanto os clientes carregam, aceita o valor da URL como está para que
+    // o seletor possa ser renderizado; o registro resolve quando os dados chegam.
     const valid = isReady && clients.some((c) => c.id === raw);
     const clientId = valid ? raw : "";
     return {

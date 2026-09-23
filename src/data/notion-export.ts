@@ -1,9 +1,10 @@
-// Notion-compatible export package for the manager workspace.
+// Pacote de exportação compatível com o Notion para o workspace do gestor.
 //
-// One markdown page set per client plus shared databases (Tasks, Meetings,
-// Finance), so a manager can hand each client their own Notion pages with
-// strategy, content, requests and deliverables — while the business view
-// (finance, full task board) stays clearly marked as manager-only.
+// Um conjunto de páginas em markdown por cliente, além das bases
+// compartilhadas (Tarefas, Reuniões, Financeiro), para que o gestor entregue a
+// cada cliente suas próprias páginas do Notion com estratégia, conteúdo,
+// solicitações e entregas — mantendo a visão do negócio (financeiro e quadro
+// completo de tarefas) claramente marcada como exclusiva do gestor.
 
 import type {
   ClientRecord,
@@ -50,14 +51,21 @@ function download(filename: string, content: string, mime: string) {
 }
 
 function slugify(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "client";
+  return (
+    name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "cliente"
+  );
 }
 
 function bulletList(items: string[]): string {
   return items.length > 0 ? items.map((i) => `- ${i}`).join("\n") : "- —";
 }
 
-/** Export the whole Notion package as sequential file downloads (no ZIP dep). */
+/** Exporta o pacote completo do Notion como downloads sequenciais (sem ZIP). */
 export function exportNotionPackage(input: NotionExportInput) {
   const files = buildNotionFiles(input);
   files.forEach((f, i) => {
@@ -72,11 +80,11 @@ export function buildNotionFiles(input: NotionExportInput): { name: string; cont
   const { profile, clients, content, tasks, requests, meetings, deliverables, finance } = input;
   const files: { name: string; content: string }[] = [];
 
-  // ---- Shared databases -----------------------------------------------------
+  // ---- Bases compartilhadas -------------------------------------------------
   files.push({
     name: "databases/Clients.csv",
     content: toCSV(
-      ["Client", "Contact", "Email", "Phone", "Website", "Industry", "Package", "Monthly fee", "Start date", "Status", "Instagram", "TikTok", "LinkedIn", "YouTube", "Facebook", "Pinterest", "Other", "Notes"],
+      ["Cliente", "Contato", "E-mail", "Telefone", "Site", "Segmento", "Pacote", "Mensalidade", "Data de início", "Status", "Instagram", "TikTok", "LinkedIn", "YouTube", "Facebook", "Pinterest", "Outro", "Observações"],
       clients.map((c) => [
         c.name, c.contactName, c.email, c.phone, c.website, c.industry, c.packageName, c.monthlyFee,
         c.startDate, c.status, c.socials.instagram ?? "", c.socials.tiktok ?? "", c.socials.linkedin ?? "",
@@ -88,7 +96,7 @@ export function buildNotionFiles(input: NotionExportInput): { name: string; cont
   files.push({
     name: "databases/Content.csv",
     content: toCSV(
-      ["Client", "Date", "Platform", "Format", "Pillar", "Topic", "Status"],
+      ["Cliente", "Data", "Plataforma", "Formato", "Pilar", "Tema", "Status"],
       content.map((c) => [clientName(clients, c.clientId), c.date, c.platform, c.format, c.pillar ?? "", c.topic, c.status]),
     ),
   });
@@ -96,7 +104,7 @@ export function buildNotionFiles(input: NotionExportInput): { name: string; cont
   files.push({
     name: "databases/Tasks.csv",
     content: toCSV(
-      ["Client", "Task", "Project", "Category", "Priority", "Status", "Start date", "Due date", "Notes"],
+      ["Cliente", "Tarefa", "Projeto", "Categoria", "Prioridade", "Status", "Data de início", "Prazo", "Observações"],
       tasks.map((t) => [clientName(clients, t.clientId), t.title, t.project, t.category, t.priority, t.status, t.startDate, t.dueDate, t.notes]),
     ),
   });
@@ -104,7 +112,7 @@ export function buildNotionFiles(input: NotionExportInput): { name: string; cont
   files.push({
     name: "databases/Requests.csv",
     content: toCSV(
-      ["Client", "Request", "Category", "Priority", "Submitted", "Status", "Assigned to", "Due date", "Comments"],
+      ["Cliente", "Solicitação", "Categoria", "Prioridade", "Solicitado em", "Status", "Responsável", "Prazo", "Comentários"],
       requests.map((r) => [clientName(clients, r.clientId), r.title, r.category, r.priority, r.dateSubmitted, r.status, r.assignedTo, r.dueDate, r.comments]),
     ),
   });
@@ -112,7 +120,7 @@ export function buildNotionFiles(input: NotionExportInput): { name: string; cont
   files.push({
     name: "databases/Meetings.csv",
     content: toCSV(
-      ["Client", "Date", "Time", "Meeting", "Agenda", "Participants", "Status", "Notes", "Action items"],
+      ["Cliente", "Data", "Horário", "Reunião", "Pauta", "Participantes", "Status", "Observações", "Itens de ação"],
       meetings.map((m) => [clientName(clients, m.clientId), m.date, m.time, m.title, m.agenda, m.participants, m.status, m.notes, m.actionItems]),
     ),
   });
@@ -120,7 +128,7 @@ export function buildNotionFiles(input: NotionExportInput): { name: string; cont
   files.push({
     name: "databases/Deliverables.csv",
     content: toCSV(
-      ["Client", "File name", "Category", "Description", "Date", "Status", "Related project"],
+      ["Cliente", "Nome do arquivo", "Categoria", "Descrição", "Data", "Status", "Projeto relacionado"],
       deliverables.map((d) => [clientName(clients, d.clientId), d.name, d.category, d.description, d.date, d.status, d.relatedProject]),
     ),
   });
@@ -128,51 +136,51 @@ export function buildNotionFiles(input: NotionExportInput): { name: string; cont
   files.push({
     name: "databases/Finance.csv",
     content: toCSV(
-      ["Client", "Date", "Type", "Amount", "Category", "Description", "Status", "Due date", "Paid date"],
+      ["Cliente", "Data", "Tipo", "Valor", "Categoria", "Descrição", "Status", "Vencimento", "Data de pagamento"],
       finance.map((f) => [clientName(clients, f.clientId), f.date, f.type, f.amount, f.category, f.description, f.status, f.dueDate, f.paidDate]),
     ),
   });
 
-  // ---- Per-client pages -----------------------------------------------------
+  // ---- Páginas por cliente --------------------------------------------------
   for (const client of clients) {
     const folder = `clients/${slugify(client.name)}`;
     const clientContent = content.filter((c) => c.clientId === client.id);
 
     files.push({
-      name: `${folder}/Client.md`,
+      name: `${folder}/Cliente.md`,
       content: `# ${client.name}
 
-> ${client.packageName || "Client workspace"} · Status: **${client.status}**
+> ${client.packageName || "Espaço do cliente"} · Status: **${client.status}**
 
-## Contact
-- **Contact:** ${client.contactName || "—"}
-- **Email:** ${client.email || "—"}
-- **Phone:** ${client.phone || "—"}
-- **Website:** ${client.website || "—"}
-- **Industry:** ${client.industry || "—"}
-- **Client since:** ${client.startDate || "—"}
+## Contato
+- **Contato:** ${client.contactName || "—"}
+- **E-mail:** ${client.email || "—"}
+- **Telefone:** ${client.phone || "—"}
+- **Site:** ${client.website || "—"}
+- **Segmento:** ${client.industry || "—"}
+- **Cliente desde:** ${client.startDate || "—"}
 
-## Social accounts
+## Perfis sociais
 ${bulletList(Object.entries(client.socials).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`))}
 
-## Strategy
+## Estratégia
 ${client.strategy.map((s) => `### ${s.title}\n${bulletList(s.items)}`).join("\n\n") || "—"}
 
-## KPIs
-| KPI | Baseline | Target | Actual | Deadline |
+## Indicadores
+| Indicador | Linha de base | Meta | Real | Prazo |
 | --- | --- | --- | --- | --- |
 ${client.kpis.map((k) => `| ${k.name} | ${k.baseline} | ${k.target} | ${k.actual} | ${k.deadline} |`).join("\n") || "| — | — | — | — | — |"}
 
-## Internal notes (manager only)
+## Observações internas (somente para o gestor)
 ${client.notes || "—"}
 `,
     });
 
     files.push({
-      name: `${folder}/Content Calendar.md`,
-      content: `# ${client.name} — Content calendar
+      name: `${folder}/Calendário de Conteúdo.md`,
+      content: `# ${client.name} — Calendário de conteúdo
 
-| Date | Platform | Format | Topic | Status |
+| Data | Plataforma | Formato | Tema | Status |
 | --- | --- | --- | --- | --- |
 ${clientContent.map((c) => `| ${c.date} | ${c.platform} | ${c.format} | ${c.topic} | ${c.status} |`).join("\n") || "| — | — | — | — | — |"}
 `,
@@ -180,55 +188,55 @@ ${clientContent.map((c) => `| ${c.date} | ${c.platform} | ${c.format} | ${c.topi
 
     const clientRequests = requests.filter((r) => r.clientId === client.id);
     files.push({
-      name: `${folder}/Requests.md`,
-      content: `# ${client.name} — Requests
+      name: `${folder}/Solicitações.md`,
+      content: `# ${client.name} — Solicitações
 
-${clientRequests.map((r) => `- **${r.title}** (${r.category}, ${r.priority}) — ${r.status}, due ${r.dueDate}${r.comments ? ` — ${r.comments}` : ""}`).join("\n") || "- No open requests."}
+${clientRequests.map((r) => `- **${r.title}** (${r.category}, ${r.priority}) — ${r.status}, prazo ${r.dueDate}${r.comments ? ` — ${r.comments}` : ""}`).join("\n") || "- Nenhuma solicitação em aberto."}
 `,
     });
 
     const clientFiles = deliverables.filter((d) => d.clientId === client.id);
     files.push({
-      name: `${folder}/Files & Deliverables.md`,
-      content: `# ${client.name} — Files & deliverables
+      name: `${folder}/Arquivos e Entregas.md`,
+      content: `# ${client.name} — Arquivos e entregas
 
-${clientFiles.map((d) => `- **${d.name}** (${d.category}) — ${d.status}, ${d.date}${d.description ? ` — ${d.description}` : ""}`).join("\n") || "- Nothing shared yet."}
+${clientFiles.map((d) => `- **${d.name}** (${d.category}) — ${d.status}, ${d.date}${d.description ? ` — ${d.description}` : ""}`).join("\n") || "- Nada compartilhado ainda."}
 `,
     });
   }
 
-  // ---- Shared pages ---------------------------------------------------------
+  // ---- Páginas compartilhadas -----------------------------------------------
   files.push({
-    name: "Meetings.md",
-    content: `# Meetings — all clients
+    name: "Reuniões.md",
+    content: `# Reuniões — todos os clientes
 
 ${meetings
   .slice()
   .sort((a, b) => a.date.localeCompare(b.date))
-  .map((m) => `- **${m.date} ${m.time}** — ${m.title} (${clientName(clients, m.clientId)}) — ${m.status}${m.actionItems ? ` · Actions: ${m.actionItems}` : ""}`)
-  .join("\n") || "- No meetings logged."}
+  .map((m) => `- **${m.date} ${m.time}** — ${m.title} (${clientName(clients, m.clientId)}) — ${m.status}${m.actionItems ? ` · Ações: ${m.actionItems}` : ""}`)
+  .join("\n") || "- Nenhuma reunião registrada."}
 `,
   });
 
   files.push({
     name: "README.md",
-    content: `# ${profile.agency || "Manager workspace"} — Notion import package
+    content: `# ${profile.agency || "Espaço do gestor"} — pacote para importar no Notion
 
-Generated ${new Date().toISOString().slice(0, 10)} from Contentplane.
+Gerado em ${new Date().toISOString().slice(0, 10)} pelo Contentplane.
 
-## How to import
-1. In Notion: **Workspace → Import → CSV** for each file in \`databases/\` — each becomes a database.
-2. Create a page per markdown file; the \`clients/<name>/\` folders map to one page set per client.
-3. Link pages with \`@\` mentions, and group the **Content** database by Status for an approvals board.
+## Como importar
+1. No Notion: **Workspace → Import → CSV** para cada arquivo em \`databases/\` — cada um vira uma base.
+2. Crie uma página para cada arquivo markdown; as pastas \`clients/<nome>/\` correspondem a um conjunto de páginas por cliente.
+3. Ligue as páginas com menções \`@\` e agrupe a base **Content** por Status para ter um quadro de aprovações.
 
-## What's inside
-- \`databases/\` — Clients, Content, Tasks, Requests, Meetings, Deliverables, Finance (CSV).
-- \`clients/<name>/\` — one page set per client: Client (strategy + KPIs), Content Calendar, Requests, Files & Deliverables.
-- \`Meetings.md\` — all client meetings in one timeline.
+## O que vem aqui
+- \`databases/\` — Clientes, Conteúdo, Tarefas, Solicitações, Reuniões, Entregas e Financeiro (CSV).
+- \`clients/<nome>/\` — um conjunto de páginas por cliente: Cliente (estratégia + indicadores), Calendário de Conteúdo, Solicitações, Arquivos e Entregas.
+- \`Reuniões.md\` — todas as reuniões de clientes em uma linha do tempo.
 
-## Privacy note
-**Finance.csv**, the KPI tables and the "manager only" notes are business-internal. Remove them
-before sharing a client folder with the client.
+## Aviso de privacidade
+**Finance.csv**, as tabelas de indicadores e as observações "somente para o gestor" são de uso
+interno do negócio. Remova-os antes de compartilhar a pasta de um cliente com o próprio cliente.
 `,
   });
 

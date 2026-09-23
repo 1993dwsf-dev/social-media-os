@@ -1,5 +1,5 @@
-// The operational heart of the workspace: one calendar holding planned content
-// and tasks for every client, with client/platform/status filters.
+// O coração operacional do workspace: um calendário com o conteúdo planejado e
+// as tarefas de todos os clientes, com filtros de cliente/plataforma/status.
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -29,29 +29,29 @@ const SELECT_CLASS =
   "flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
 const CONTENT_FIELDS: FieldSpec[] = [
-  { key: "topic", label: "Topic", required: true, placeholder: "Cold brew vs iced latte" },
-  { key: "clientId", label: "Client", type: "client", required: true },
-  { key: "date", label: "Date", type: "date", required: true },
-  { key: "platform", label: "Platform", type: "select", options: PLATFORMS, required: true },
-  { key: "format", label: "Format", type: "select", options: CONTENT_FORMATS },
-  { key: "pillar", label: "Content pillar", type: "select", options: PILLARS },
+  { key: "topic", label: "Tema", required: true, placeholder: "Cold brew x café gelado" },
+  { key: "clientId", label: "Cliente", type: "client", required: true },
+  { key: "date", label: "Data", type: "date", required: true },
+  { key: "platform", label: "Plataforma", type: "select", options: PLATFORMS, required: true },
+  { key: "format", label: "Formato", type: "select", options: CONTENT_FORMATS },
+  { key: "pillar", label: "Pilar de conteúdo", type: "select", options: PILLARS },
   { key: "status", label: "Status", type: "select", options: WORKFLOW_STATUSES },
-  { key: "owner", label: "Owner" },
-  { key: "assetNote", label: "Asset required" },
-  { key: "caption", label: "Caption", type: "textarea" },
-  { key: "managerNotes", label: "Manager notes", type: "textarea" },
-  { key: "clientComments", label: "Client comments", type: "textarea" },
+  { key: "owner", label: "Responsável" },
+  { key: "assetNote", label: "Material necessário" },
+  { key: "caption", label: "Legenda", type: "textarea" },
+  { key: "managerNotes", label: "Observações do gestor", type: "textarea" },
+  { key: "clientComments", label: "Comentários do cliente", type: "textarea" },
 ];
 
 const TASK_FIELDS: FieldSpec[] = [
-  { key: "title", label: "Task", required: true, placeholder: "Shoot batch: 10 assets" },
-  { key: "clientId", label: "Client", type: "client", required: true },
-  { key: "dueDate", label: "Due date", type: "date", required: true },
+  { key: "title", label: "Tarefa", required: true, placeholder: "Gravar lote: 10 peças" },
+  { key: "clientId", label: "Cliente", type: "client", required: true },
+  { key: "dueDate", label: "Prazo", type: "date", required: true },
   { key: "status", label: "Status", type: "select", options: TASK_STATUSES },
-  { key: "priority", label: "Priority", type: "select", options: ["Low", "Medium", "High"] },
-  { key: "category", label: "Category", type: "select", options: TASK_CATEGORIES },
-  { key: "project", label: "Project / campaign" },
-  { key: "notes", label: "Notes", type: "textarea" },
+  { key: "priority", label: "Prioridade", type: "select", options: ["Low", "Medium", "High"] },
+  { key: "category", label: "Categoria", type: "select", options: TASK_CATEGORIES },
+  { key: "project", label: "Projeto / campanha" },
+  { key: "notes", label: "Observações", type: "textarea" },
 ];
 
 function iso(date: Date): string {
@@ -85,7 +85,7 @@ export function CalendarSection({
     [clientFilter],
   );
 
-  // Follow the workspace-wide client focus from the topbar.
+  // Acompanha o foco de cliente definido na barra superior.
   useEffect(() => {
     setClientFilter(focus.clientId || "all");
   }, [focus.clientId]);
@@ -124,8 +124,8 @@ export function CalendarSection({
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const weekdays =
     ws.profile.weekStart === "Sunday"
-      ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-      : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      ? ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+      : ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
   const todayIso = iso(new Date());
 
@@ -152,10 +152,10 @@ export function CalendarSection({
         },
         existing?.id,
       );
-      toast.success(existing ? "Content updated" : "Content added to the calendar");
+      toast.success(existing ? "Conteúdo atualizado" : "Conteúdo adicionado ao calendário");
       setContentDraft(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the content");
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o conteúdo");
     }
   };
 
@@ -178,28 +178,28 @@ export function CalendarSection({
         },
         existing?.id,
       );
-      toast.success(existing ? "Task updated" : "Task added to the calendar");
+      toast.success(existing ? "Tarefa atualizada" : "Tarefa adicionada ao calendário");
       setTaskDraft(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the task");
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar a tarefa");
     }
   };
 
-  const monthLabel = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const monthLabel = cursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   return (
     <div>
       <SectionHeader
-        title="Content calendar"
-        description="Planned posts and tasks for every client in one view. Click a day or an item to add and edit."
+        title="Calendário de conteúdo"
+        description="Posts planejados e tarefas de todos os clientes em uma só visão. Clique em um dia ou item para adicionar e editar."
       >
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => openTask(iso(new Date()))}>
           <ListChecks className="size-4" />
-          Add task
+          Adicionar tarefa
         </Button>
         <Button size="sm" className="gap-1.5" onClick={() => openContent(iso(new Date()))}>
           <Plus className="size-4" />
-          Add content
+          Adicionar conteúdo
         </Button>
       </SectionHeader>
 
@@ -209,7 +209,7 @@ export function CalendarSection({
             variant="ghost"
             size="icon"
             className="size-8"
-            aria-label="Previous month"
+            aria-label="Mês anterior"
             onClick={() => setCursor(new Date(year, month - 1, 1))}
           >
             <ChevronLeft className="size-4" />
@@ -219,23 +219,23 @@ export function CalendarSection({
             variant="ghost"
             size="icon"
             className="size-8"
-            aria-label="Next month"
+            aria-label="Próximo mês"
             onClick={() => setCursor(new Date(year, month + 1, 1))}
           >
             <ChevronRight className="size-4" />
           </Button>
         </div>
         <Button variant="outline" size="sm" onClick={() => setCursor(new Date())}>
-          Today
+          Hoje
         </Button>
 
         <select
           value={clientFilter}
           onChange={(e) => setClientFilter(e.target.value)}
           className={cn(SELECT_CLASS, "min-w-40")}
-          aria-label="Filter by client"
+          aria-label="Filtrar por cliente"
         >
-          <option value="all">All clients</option>
+          <option value="all">Todos os clientes</option>
           {ws.clients.map((client) => (
             <option key={client.id} value={client.id}>
               {client.name}
@@ -247,9 +247,9 @@ export function CalendarSection({
           value={platformFilter}
           onChange={(e) => setPlatformFilter(e.target.value)}
           className={cn(SELECT_CLASS, "min-w-32")}
-          aria-label="Filter by platform"
+          aria-label="Filtrar por plataforma"
         >
-          <option value="all">All platforms</option>
+          <option value="all">Todas as plataformas</option>
           {PLATFORMS.map((platform) => (
             <option key={platform} value={platform}>
               {platform}
@@ -264,7 +264,7 @@ export function CalendarSection({
             className="h-8 gap-1 px-2 text-xs"
             onClick={() => setShowContent((v) => !v)}
           >
-            <CalendarDays className="size-3.5" /> Content
+            <CalendarDays className="size-3.5" /> Conteúdo
           </Button>
           <Button
             variant={showTasks ? "secondary" : "ghost"}
@@ -272,7 +272,7 @@ export function CalendarSection({
             className="h-8 gap-1 px-2 text-xs"
             onClick={() => setShowTasks((v) => !v)}
           >
-            <ListChecks className="size-3.5" /> Tasks
+            <ListChecks className="size-3.5" /> Tarefas
           </Button>
         </div>
 
@@ -281,7 +281,7 @@ export function CalendarSection({
             variant={view === "month" ? "secondary" : "ghost"}
             size="icon"
             className="size-8"
-            aria-label="Month view"
+            aria-label="Visão mensal"
             onClick={() => setView("month")}
           >
             <Rows3 className="size-4" />
@@ -290,7 +290,7 @@ export function CalendarSection({
             variant={view === "list" ? "secondary" : "ghost"}
             size="icon"
             className="size-8"
-            aria-label="List view"
+            aria-label="Visão em lista"
             onClick={() => setView("list")}
           >
             <LayoutList className="size-4" />
@@ -340,7 +340,7 @@ export function CalendarSection({
                     </span>
                     <button
                       type="button"
-                      aria-label={`Add to ${date}`}
+                      aria-label={`Adicionar em ${date}`}
                       className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-primary focus:opacity-100 [div:hover>&]:opacity-100"
                       onClick={() => openContent(date)}
                     >
@@ -383,7 +383,7 @@ export function CalendarSection({
                     )}
                     {items.length > 3 ? (
                       <p className="px-1 text-[10px] text-muted-foreground">
-                        +{items.length - 3} more
+                        +{items.length - 3} mais
                       </p>
                     ) : null}
                   </div>
@@ -396,7 +396,7 @@ export function CalendarSection({
         <div className="space-y-3">
           {listDays.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border/80 bg-muted/30 px-6 py-10 text-center text-sm text-muted-foreground">
-              Nothing scheduled in {monthLabel} yet.
+              Nada agendado em {monthLabel} ainda.
             </div>
           ) : (
             listDays.map((date) => {
@@ -405,13 +405,13 @@ export function CalendarSection({
                 <div key={date} className="rounded-xl border border-border/70 bg-card p-3">
                   <div className="mb-2 flex items-center gap-2">
                     <p className="text-sm font-semibold">
-                      {new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+                      {new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", {
                         weekday: "short",
                         day: "numeric",
                         month: "short",
                       })}
                     </p>
-                    {date === todayIso ? <Badge variant="outline">Today</Badge> : null}
+                    {date === todayIso ? <Badge variant="outline">Hoje</Badge> : null}
                     <div className="ml-auto flex gap-1">
                       <Button
                         variant="ghost"
@@ -419,7 +419,7 @@ export function CalendarSection({
                         className="h-7 gap-1 px-2 text-xs"
                         onClick={() => openTask(date)}
                       >
-                        <Plus className="size-3.5" /> Task
+                        <Plus className="size-3.5" /> Tarefa
                       </Button>
                       <Button
                         variant="ghost"
@@ -427,7 +427,7 @@ export function CalendarSection({
                         className="h-7 gap-1 px-2 text-xs"
                         onClick={() => openContent(date)}
                       >
-                        <Plus className="size-3.5" /> Content
+                        <Plus className="size-3.5" /> Conteúdo
                       </Button>
                     </div>
                   </div>
@@ -475,15 +475,15 @@ export function CalendarSection({
           onOpenChange={(open) => {
             if (!open) setContentDraft(null);
           }}
-          title={contentDraft.item ? "Edit content" : "New content"}
+          title={contentDraft.item ? "Editar conteúdo" : "Novo conteúdo"}
           description={
             contentDraft.item
               ? `${ws.clientName(contentDraft.item.clientId)} · ${contentDraft.item.date}`
-              : `Planned for ${contentDraft.date}`
+              : `Planejado para ${contentDraft.date}`
           }
           fields={CONTENT_FIELDS}
           clients={ws.clients}
-          submitLabel={contentDraft.item ? "Save content" : "Add to calendar"}
+          submitLabel={contentDraft.item ? "Salvar conteúdo" : "Adicionar ao calendário"}
           initial={{
             topic: contentDraft.item?.topic ?? "",
             clientId:
@@ -510,15 +510,15 @@ export function CalendarSection({
           onOpenChange={(open) => {
             if (!open) setTaskDraft(null);
           }}
-          title={taskDraft.item ? "Edit task" : "New task"}
+          title={taskDraft.item ? "Editar tarefa" : "Nova tarefa"}
           description={
             taskDraft.item
-              ? `${ws.clientName(taskDraft.item.clientId)} · due ${taskDraft.item.dueDate}`
-              : `Due ${taskDraft.date}`
+              ? `${ws.clientName(taskDraft.item.clientId)} · prazo ${taskDraft.item.dueDate}`
+              : `Prazo ${taskDraft.date}`
           }
           fields={TASK_FIELDS}
           clients={ws.clients}
-          submitLabel={taskDraft.item ? "Save task" : "Add task"}
+          submitLabel={taskDraft.item ? "Salvar tarefa" : "Adicionar tarefa"}
           initial={{
             title: taskDraft.item?.title ?? "",
             clientId: taskDraft.item?.clientId ?? (clientFilter !== "all" ? clientFilter : ws.clients[0]?.id ?? ""),

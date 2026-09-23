@@ -20,7 +20,7 @@ const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 function RouteLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div className="animate-pulse text-muted-foreground">Carregando...</div>
     </div>
   );
 }
@@ -52,7 +52,7 @@ class RootErrorBoundary extends React.Component<
   static getDerivedStateFromError(error: Error) {
     return {
       hasError: true,
-      message: error.message || "Unknown runtime error",
+      message: error.message || "Erro de execução desconhecido",
       stack: error.stack || "",
     };
   }
@@ -64,7 +64,7 @@ class RootErrorBoundary extends React.Component<
       return (
         <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-6">
           <div className="max-w-lg text-center">
-            <p className="text-sm font-semibold">Preview runtime error</p>
+            <p className="text-sm font-semibold">Erro de execução na pré-visualização</p>
             <p className="mt-2 text-xs text-muted-foreground break-words">
               {this.state.message}
             </p>

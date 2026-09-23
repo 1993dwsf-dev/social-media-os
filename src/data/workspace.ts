@@ -1,8 +1,8 @@
-// Convex-backed workspace hook for the manager app.
+// Hook do workspace do gestor com dados do Convex.
 //
-// Every record is a reactive Convex query scoped to the signed-in account, so
-// opening the app on another device shows the same clients, calendar, tasks and
-// money. Writes go through the mutations in `src/convex/portal.ts`.
+// Cada registro é uma consulta reativa do Convex limitada à conta logada, então
+// abrir o app em outro dispositivo mostra os mesmos clientes, calendário,
+// tarefas e dinheiro. As escritas passam pelas mutations de `src/convex/portal.ts`.
 
 import { useCallback, useMemo } from "react";
 import { useMutation, useQuery } from "convex/react";
@@ -19,7 +19,7 @@ import type {
   WorkspaceProfile,
 } from "./types";
 
-/** Convex documents carry `_id`/`ownerId`; the UI model uses `id`. */
+/** Documentos do Convex trazem `_id`/`ownerId`; o modelo da UI usa `id`. */
 type Doc = { _id: string } & Record<string, unknown>;
 
 export interface WorkspaceData {
@@ -63,7 +63,7 @@ export const DEFAULT_PROFILE: WorkspaceProfile = {
   managerName: "",
   agency: "",
   email: "",
-  currency: "$",
+  currency: "R$",
   weekStart: "Monday",
   approvalTurnaroundDays: 3,
   notifyEmail: true,
@@ -214,7 +214,7 @@ export function useWorkspace(): Workspace {
       managerName: String(doc.managerName ?? ""),
       agency: String(doc.agency ?? ""),
       email: String(doc.email ?? ""),
-      currency: String(doc.currency ?? "$"),
+      currency: String(doc.currency ?? "R$"),
       weekStart: doc.weekStart === "Sunday" ? "Sunday" : "Monday",
       approvalTurnaroundDays: Number(doc.approvalTurnaroundDays ?? 3),
       notifyEmail: Boolean(doc.notifyEmail ?? true),
@@ -232,16 +232,16 @@ export function useWorkspace(): Workspace {
 
   const clientOf = useCallback((id?: string) => (id ? byId.get(id) : undefined), [byId]);
   const clientName = useCallback(
-    (id?: string) => (id ? byId.get(id)?.name ?? "Unknown client" : "—"),
+    (id?: string) => (id ? byId.get(id)?.name ?? "Cliente não encontrado" : "—"),
     [byId],
   );
   const money = useCallback(
     (amount: number) =>
-      `${profile.currency}${amount.toLocaleString("en-US", { maximumFractionDigits: 2 })}`,
+      `${profile.currency}${amount.toLocaleString("pt-BR", { maximumFractionDigits: 2 })}`,
     [profile.currency],
   );
 
-  /** Strip an empty clientId so optional relations stay truly optional. */
+  /** Remove o clientId vazio para que relações opcionais continuem opcionais. */
   const withClient = <T extends { clientId?: string }>(data: T) => ({
     ...data,
     clientId: data.clientId ? data.clientId : undefined,
@@ -274,7 +274,7 @@ export function useWorkspace(): Workspace {
     async (file: File) => {
       const parsed = JSON.parse(await file.text()) as Record<string, unknown>;
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        throw new Error("Not a valid Contentplane backup (JSON object expected).");
+        throw new Error("Backup do Contentplane inválido (esperado um objeto JSON).");
       }
       const idMap = new Map<string, string>();
       for (const client of (parsed.clients as ClientRecord[]) ?? []) {

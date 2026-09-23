@@ -1,4 +1,4 @@
-// simple logo dropdown component that can be used to go to the landing page or sign out for the user
+// Menu suspenso do logo: leva à página inicial ou encerra a sessão do usuário.
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,7 @@ export function LogoDropdown() {
       await signOut();
       navigate("/");
     } catch (error) {
-      console.error("Sign out error:", error);
+      console.error("Erro ao sair:", error);
     }
   };
 
@@ -36,7 +36,7 @@ export function LogoDropdown() {
         <Button variant="ghost" size="icon" className="h-10 w-10">
           <img
             src={logo}
-            alt="Logo"
+            alt="Logotipo"
             width={32}
             height={32}
             className="rounded-lg"
@@ -46,7 +46,7 @@ export function LogoDropdown() {
       <DropdownMenuContent align="start" className="w-48">
         <DropdownMenuItem onClick={handleGoHome} className="cursor-pointer">
           <Home className="mr-2 h-4 w-4" />
-          Landing Page
+          Página inicial
         </DropdownMenuItem>
         {isAuthenticated && (
           <>
@@ -56,7 +56,7 @@ export function LogoDropdown() {
               className="cursor-pointer text-destructive focus:text-destructive"
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+              Sair
             </DropdownMenuItem>
           </>
         )}

@@ -1,5 +1,5 @@
-// Manager dashboard: the whole book of business at a glance — clients, work in
-// flight, money in and out, and what needs attention today.
+// Painel do gestor: toda a carteira em um só olhar — clientes, trabalho em
+// andamento, dinheiro que entra e sai, e o que precisa de atenção hoje.
 
 import { useMemo } from "react";
 import {
@@ -106,65 +106,65 @@ export function DashboardSection({
   return (
     <div>
       <SectionHeader
-        title={`Hello${ws.profile.managerName ? `, ${ws.profile.managerName.split(" ")[0]}` : ""}`}
-        description={`${metrics.activeClients.length} active client${metrics.activeClients.length === 1 ? "" : "s"} · ${metrics.monthContent.length} posts planned this month · ${metrics.openTasks.length} open tasks.`}
+        title={`Olá${ws.profile.managerName ? `, ${ws.profile.managerName.split(" ")[0]}` : ""}`}
+        description={`${metrics.activeClients.length} cliente${metrics.activeClients.length === 1 ? "" : "s"} ativo${metrics.activeClients.length === 1 ? "" : "s"} · ${metrics.monthContent.length} posts planejados no mês · ${metrics.openTasks.length} tarefas abertas.`}
       >
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("clients")}>
-          <Plus className="size-4" /> New client
+          <Plus className="size-4" /> Novo cliente
         </Button>
         <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("tasks")}>
-          <ListChecks className="size-4" /> Add task
+          <ListChecks className="size-4" /> Adicionar tarefa
         </Button>
         <Button size="sm" className="gap-1.5" onClick={() => navigate("calendar")}>
-          <CalendarPlus className="size-4" /> Add content
+          <CalendarPlus className="size-4" /> Adicionar conteúdo
         </Button>
       </SectionHeader>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Active clients"
+          label="Clientes ativos"
           value={String(metrics.activeClients.length)}
-          delta={`${ws.clients.length} total`}
+          delta={`${ws.clients.length} no total`}
           icon={<Users className="size-4" />}
         />
         <KpiCard
-          label="Awaiting approval"
+          label="Aguardando aprovação"
           value={String(metrics.waiting.length)}
           icon={<CheckSquare className="size-4" />}
         />
         <KpiCard
-          label="Open tasks"
+          label="Tarefas abertas"
           value={String(metrics.openTasks.length)}
-          delta={metrics.overdue.length > 0 ? `-${metrics.overdue.length} overdue` : undefined}
+          delta={metrics.overdue.length > 0 ? `-${metrics.overdue.length} atrasadas` : undefined}
           icon={<ListChecks className="size-4" />}
         />
         <KpiCard
-          label="Income this month"
+          label="Receita do mês"
           value={ws.money(metrics.income)}
-          delta={metrics.awaitingPayment > 0 ? `${ws.money(metrics.awaitingPayment)} to collect` : undefined}
+          delta={metrics.awaitingPayment > 0 ? `${ws.money(metrics.awaitingPayment)} a receber` : undefined}
           icon={<ArrowUpRight className="size-4" />}
         />
       </div>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Expenses this month"
+          label="Despesas do mês"
           value={ws.money(metrics.expenses)}
           icon={<Wallet className="size-4" />}
         />
         <KpiCard
-          label="Net this month"
+          label="Resultado do mês"
           value={ws.money(metrics.income - metrics.expenses)}
           icon={<Wallet className="size-4" />}
         />
         <KpiCard
-          label="Posts planned"
+          label="Posts planejados"
           value={String(metrics.monthContent.length)}
-          delta={`${metrics.monthContent.filter((c) => c.status === "Published").length} published`}
+          delta={`${metrics.monthContent.filter((c) => c.status === "Published").length} publicados`}
           icon={<CalendarPlus className="size-4" />}
         />
         <KpiCard
-          label="Overdue tasks"
+          label="Tarefas atrasadas"
           value={String(metrics.overdue.length)}
           icon={<AlertTriangle className="size-4" />}
         />
@@ -174,8 +174,8 @@ export function DashboardSection({
         <section className="rounded-xl border border-border/70 bg-card">
           <header className="flex items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
             <div>
-              <h2 className="text-sm font-semibold">Next 7 days</h2>
-              <p className="text-[11px] text-muted-foreground">Content going out, tasks due and calls</p>
+              <h2 className="text-sm font-semibold">Próximos 7 dias</h2>
+              <p className="text-[11px] text-muted-foreground">Conteúdos no ar, prazos e chamadas</p>
             </div>
             <Badge variant="outline" className="tabular">
               {agenda.length}
@@ -183,7 +183,7 @@ export function DashboardSection({
           </header>
           {agenda.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Nothing due in the next week.
+              Nada previsto para a próxima semana.
             </p>
           ) : (
             <ul className="divide-y divide-border/60">
@@ -202,7 +202,7 @@ export function DashboardSection({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm">{entry.title}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      {entry.kind === "content" ? "Content" : entry.kind === "task" ? "Task" : "Meeting"}
+                      {entry.kind === "content" ? "Conteúdo" : entry.kind === "task" ? "Tarefa" : "Reunião"}
                       {entry.extra ? ` · ${entry.extra}` : ""}
                     </p>
                   </div>
@@ -218,12 +218,12 @@ export function DashboardSection({
 
         <section className="rounded-xl border border-border/70 bg-card">
           <header className="border-b border-border/70 px-4 py-3">
-            <h2 className="text-sm font-semibold">Needs attention</h2>
-            <p className="text-[11px] text-muted-foreground">Overdue work and money to collect</p>
+            <h2 className="text-sm font-semibold">Precisa de atenção</h2>
+            <p className="text-[11px] text-muted-foreground">Trabalho atrasado e valores a receber</p>
           </header>
           <div className="space-y-3 p-4">
             {metrics.overdue.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No overdue tasks. Nice.</p>
+              <p className="text-sm text-muted-foreground">Nenhuma tarefa atrasada. Ótimo.</p>
             ) : (
               <ul className="space-y-1.5">
                 {metrics.overdue.slice(0, 6).map((task) => (
@@ -240,13 +240,14 @@ export function DashboardSection({
             )}
             {metrics.awaitingPayment > 0 ? (
               <p className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                {ws.money(metrics.awaitingPayment)} in income is still marked unpaid.{" "}
+                {ws.money(metrics.awaitingPayment)} em receitas ainda estão marcados como não
+                pagos.{" "}
                 <button
                   type="button"
                   className="font-medium underline"
                   onClick={() => navigate("finance")}
                 >
-                  Review finance
+                  Revisar financeiro
                 </button>
               </p>
             ) : null}
@@ -257,31 +258,31 @@ export function DashboardSection({
       <section className="mt-6 rounded-xl border border-border/70 bg-card">
         <header className="flex items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
           <div>
-            <h2 className="text-sm font-semibold">Clients this month</h2>
+            <h2 className="text-sm font-semibold">Clientes neste mês</h2>
             <p className="text-[11px] text-muted-foreground">
-              Planned posts, open work and net result per client
+              Posts planejados, trabalho em aberto e resultado por cliente
             </p>
           </div>
           <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => navigate("clients")}>
-            Manage clients <ArrowUpRight className="size-3.5" />
+            Gerenciar clientes <ArrowUpRight className="size-3.5" />
           </Button>
         </header>
         {perClient.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-            Add your first client to see this table.
+            Adicione seu primeiro cliente para ver esta tabela.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Client</TableHead>
+                  <TableHead>Cliente</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Planned</TableHead>
-                  <TableHead className="text-right">Published</TableHead>
-                  <TableHead className="text-right">Open tasks</TableHead>
-                  <TableHead className="text-right">Overdue</TableHead>
-                  <TableHead className="text-right">Net this month</TableHead>
+                  <TableHead className="text-right">Planejados</TableHead>
+                  <TableHead className="text-right">Publicados</TableHead>
+                  <TableHead className="text-right">Tarefas abertas</TableHead>
+                  <TableHead className="text-right">Atrasadas</TableHead>
+                  <TableHead className="text-right">Resultado do mês</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -290,7 +291,7 @@ export function DashboardSection({
                     <TableCell className="font-medium">
                       <span className="block">{row.client.name}</span>
                       <span className="text-[11px] font-normal text-muted-foreground">
-                        {row.client.packageName || "No package"}
+                        {row.client.packageName || "Sem pacote"}
                       </span>
                     </TableCell>
                     <TableCell>

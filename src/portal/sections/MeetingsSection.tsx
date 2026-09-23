@@ -1,4 +1,4 @@
-// Meetings with clients: agenda before, notes and action items after.
+// Reuniões com clientes: pauta antes, anotações e itens de ação depois.
 
 import { toast } from "sonner";
 
@@ -10,15 +10,15 @@ import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
-  { key: "title", label: "Meeting", required: true, placeholder: "Monthly planning call" },
-  { key: "clientId", label: "Client", type: "client", required: true },
-  { key: "date", label: "Date", type: "date" },
-  { key: "time", label: "Time", type: "time" },
+  { key: "title", label: "Reunião", required: true, placeholder: "Chamada de planejamento mensal" },
+  { key: "clientId", label: "Cliente", type: "client", required: true },
+  { key: "date", label: "Data", type: "date" },
+  { key: "time", label: "Horário", type: "time" },
   { key: "status", label: "Status", type: "select", options: ["Scheduled", "Completed", "Cancelled"] },
-  { key: "participants", label: "Participants" },
-  { key: "agenda", label: "Agenda", type: "textarea", compact: true },
-  { key: "notes", label: "Notes", type: "textarea", compact: true },
-  { key: "actionItems", label: "Action items", type: "textarea", compact: true },
+  { key: "participants", label: "Participantes" },
+  { key: "agenda", label: "Pauta", type: "textarea", compact: true },
+  { key: "notes", label: "Observações", type: "textarea", compact: true },
+  { key: "actionItems", label: "Itens de ação", type: "textarea", compact: true },
 ];
 
 export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
@@ -29,11 +29,11 @@ export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
   return (
     <div>
       <SectionHeader
-        title="Meetings"
+        title="Reuniões"
         description={
           next
-            ? `Next up: ${next.title} with ${ws.clientName(next.clientId)} on ${next.date} at ${next.time}.`
-            : "Calls and reviews with your clients, with agendas and follow-ups attached."
+            ? `Próximo compromisso: ${next.title} com ${ws.clientName(next.clientId)} em ${next.date} às ${next.time}.`
+            : "Chamadas e revisões com seus clientes, com pauta e acompanhamentos anexados."
         }
       />
 
@@ -46,12 +46,12 @@ export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
         searchText={(row) =>
           [row.title, row.agenda, row.notes, row.participants, ws.clientName(row.clientId)].join(" ")
         }
-        addLabel="New meeting"
-        entityName="Meetings"
+        addLabel="Nova reunião"
+        entityName="Reuniões"
         statusKey="status"
         focusClientId={focus.clientId}
-        emptyTitle="No meetings yet"
-        emptyHint="Schedule a call and keep the agenda, notes and follow-ups in one place."
+        emptyTitle="Nenhuma reunião ainda"
+        emptyHint="Agende uma conversa e mantenha pauta, anotações e acompanhamentos em um só lugar."
         defaults={{
           status: "Scheduled",
           date: todayISO(),
@@ -74,14 +74,14 @@ export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
               },
               id,
             );
-            toast.success(id ? "Meeting updated" : "Meeting scheduled");
+            toast.success(id ? "Reunião atualizada" : "Reunião agendada");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Could not save the meeting");
+            toast.error(error instanceof Error ? error.message : "Não foi possível salvar a reunião");
           }
         }}
         onDelete={async (id) => {
           await ws.remove("meeting", id);
-          toast.success("Meeting deleted");
+          toast.success("Reunião excluída");
         }}
       />
     </div>

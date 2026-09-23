@@ -4,8 +4,8 @@ import { RandomReader, generateRandomString } from "@oslojs/crypto/random";
 
 export const emailOtp = Email({
   id: "email-otp",
-  maxAge: 60 * 15, // 15 minutes
-  // This function can be asynchronous
+  maxAge: 60 * 15, // 15 minutos
+  // Esta função pode ser assíncrona
   async generateVerificationToken() {
     const random: RandomReader = {
       read(bytes: Uint8Array) {
@@ -22,7 +22,7 @@ export const emailOtp = Email({
         {
           to: email,
           otp: token,
-          appName: process.env.VLY_APP_NAME || "a freebuff.com application",
+          appName: process.env.VLY_APP_NAME || "um aplicativo freebuff.com",
         },
         {
           headers: {

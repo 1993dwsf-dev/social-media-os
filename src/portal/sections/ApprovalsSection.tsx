@@ -1,5 +1,5 @@
-// Approvals: the manager records what the client decided about each piece of
-// content, so the pipeline always reflects reality.
+// Aprovações: o gestor registra o que o cliente decidiu sobre cada conteúdo,
+// para que o fluxo sempre reflita a realidade.
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, Clock, MessageSquare, Send, Sparkles } from "lucide-react";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ClientChip, EmptyState, PlatformChip, SectionHeader, StatusChip } from "@/components/portal/Shared";
 import { formatDate, todayISO } from "@/data/constants";
+import { label } from "@/data/labels";
 import type { ContentItem, ContentStatus } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
@@ -18,20 +19,20 @@ import { cn } from "@/lib/utils";
 const COLUMNS: { key: string; title: string; hint: string; statuses: ContentStatus[] }[] = [
   {
     key: "review",
-    title: "Waiting on the client",
-    hint: "Sent and awaiting a decision",
+    title: "Aguardando o cliente",
+    hint: "Enviado e esperando decisão",
     statuses: ["In Review"],
   },
   {
     key: "changes",
-    title: "Changes requested",
-    hint: "Rework, then send it back",
+    title: "Alterações solicitadas",
+    hint: "Ajuste e envie de volta",
     statuses: ["Changes Requested"],
   },
   {
     key: "ready",
-    title: "Approved & scheduled",
-    hint: "Cleared to publish",
+    title: "Aprovado e agendado",
+    hint: "Liberado para publicar",
     statuses: ["Approved", "Scheduled"],
   },
 ];
@@ -47,7 +48,7 @@ export function ApprovalsSection({
   const [editing, setEditing] = useState<ContentItem | null>(null);
   const [showPublished, setShowPublished] = useState(false);
 
-  // Follow the workspace-wide client focus from the topbar.
+  // Acompanha o foco de cliente definido na barra superior.
   useEffect(() => {
     setClientFilter(focus.clientId || "all");
   }, [focus.clientId]);
@@ -65,9 +66,9 @@ export function ApprovalsSection({
   const setStatus = async (item: ContentItem, status: ContentStatus) => {
     try {
       await ws.saveContent({ ...item, status } as Omit<ContentItem, "id">, item.id);
-      toast.success(`“${item.topic}” marked ${status.toLowerCase()}`);
+      toast.success(`“${item.topic}” marcado como ${label(status).toLowerCase()}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not update the item");
+      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o item");
     }
   };
 
@@ -79,16 +80,16 @@ export function ApprovalsSection({
   return (
     <div>
       <SectionHeader
-        title="Approvals"
-        description={`${waiting} piece${waiting === 1 ? "" : "s"} of content still moving through review. Record each client decision here and the calendar updates automatically.`}
+        title="Aprovações"
+        description={`${waiting} conteúdo${waiting === 1 ? "" : "s"} ainda em análise. Registre aqui a decisão de cada cliente e o calendário se atualiza sozinho.`}
       >
         <select
           value={clientFilter}
           onChange={(e) => setClientFilter(e.target.value)}
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          aria-label="Filter by client"
+          aria-label="Filtrar por cliente"
         >
-          <option value="all">All clients</option>
+          <option value="all">Todos os clientes</option>
           {ws.clients.map((client) => (
             <option key={client.id} value={client.id}>
               {client.name}
@@ -116,7 +117,7 @@ export function ApprovalsSection({
               <div className="space-y-2 p-2.5">
                 {items.length === 0 ? (
                   <p className="rounded-lg border border-dashed border-border/70 px-3 py-6 text-center text-xs text-muted-foreground">
-                    Nothing here.
+                    Nada por aqui.
                   </p>
                 ) : (
                   items.map((item) => (
@@ -154,7 +155,7 @@ export function ApprovalsSection({
                             className="h-7 gap-1 px-2 text-[11px]"
                             onClick={() => void setStatus(item, "Approved")}
                           >
-                            <Check className="size-3" /> Approved
+                            <Check className="size-3" /> Aprovar
                           </Button>
                         ) : null}
                         {(item.status === "In Review" || item.status === "Approved") && (
@@ -164,7 +165,7 @@ export function ApprovalsSection({
                             className="h-7 gap-1 px-2 text-[11px]"
                             onClick={() => void setStatus(item, "Changes Requested")}
                           >
-                            <MessageSquare className="size-3" /> Changes
+                            <MessageSquare className="size-3" /> Alterações
                           </Button>
                         )}
                         {item.status === "Approved" ? (
@@ -174,7 +175,7 @@ export function ApprovalsSection({
                             className="h-7 gap-1 px-2 text-[11px]"
                             onClick={() => void setStatus(item, "Scheduled")}
                           >
-                            <Clock className="size-3" /> Scheduled
+                            <Clock className="size-3" /> Agendar
                           </Button>
                         ) : null}
                         {item.status === "Approved" || item.status === "Scheduled" ? (
@@ -183,7 +184,7 @@ export function ApprovalsSection({
                             className="h-7 gap-1 px-2 text-[11px]"
                             onClick={() => void setStatus(item, "Published")}
                           >
-                            <Send className="size-3" /> Published
+                            <Send className="size-3" /> Publicar
                           </Button>
                         ) : null}
                         <Button
@@ -192,7 +193,7 @@ export function ApprovalsSection({
                           className="h-7 gap-1 px-2 text-[11px] text-muted-foreground"
                           onClick={() => setEditing(item)}
                         >
-                          <Sparkles className="size-3" /> Feedback
+                          <Sparkles className="size-3" /> Retorno
                         </Button>
                       </div>
                     </article>
@@ -213,17 +214,17 @@ export function ApprovalsSection({
           )}
         >
           <span>
-            <span className="text-sm font-semibold">Published</span>
+            <span className="text-sm font-semibold">Publicados</span>
             <span className="ml-2 text-xs text-muted-foreground">
-              {published.length} piece{published.length === 1 ? "" : "s"} live
+              {published.length} no ar
             </span>
           </span>
-          <Badge variant="outline">{showPublished ? "Hide" : "Show"}</Badge>
+          <Badge variant="outline">{showPublished ? "Ocultar" : "Mostrar"}</Badge>
         </button>
         {showPublished ? (
           published.length === 0 ? (
             <div className="mt-3">
-              <EmptyState title="Nothing published yet" hint="Mark items published as they go live." />
+              <EmptyState title="Nada publicado ainda" hint="Marque os itens como publicados conforme forem ao ar." />
             </div>
           ) : (
             <ul className="mt-3 space-y-1.5">
@@ -242,7 +243,7 @@ export function ApprovalsSection({
                     className="h-7 px-2 text-[11px]"
                     onClick={() => void setStatus(item, "Approved")}
                   >
-                    Reopen
+                    Reabrir
                   </Button>
                 </li>
               ))}
@@ -257,20 +258,20 @@ export function ApprovalsSection({
           onOpenChange={(open) => {
             if (!open) setEditing(null);
           }}
-          title="Client feedback"
+          title="Retorno do cliente"
           description={`${editing.topic} · ${ws.clientName(editing.clientId)}`}
           clients={ws.clients}
           fields={[
-            { key: "status", label: "Approval status", type: "select", options: ["In Review", "Changes Requested", "Approved", "Scheduled", "Published"] },
-            { key: "clientComments", label: "What the client said", type: "textarea" },
-            { key: "managerNotes", label: "My notes", type: "textarea" },
+            { key: "status", label: "Status de aprovação", type: "select", options: ["In Review", "Changes Requested", "Approved", "Scheduled", "Published"] },
+            { key: "clientComments", label: "O que o cliente disse", type: "textarea" },
+            { key: "managerNotes", label: "Minhas observações", type: "textarea" },
           ]}
           initial={{
             status: editing.status,
             clientComments: editing.clientComments,
             managerNotes: editing.managerNotes,
           }}
-          submitLabel="Save feedback"
+          submitLabel="Salvar retorno"
           onSubmit={async (values) => {
             try {
               await ws.saveContent(
@@ -283,10 +284,10 @@ export function ApprovalsSection({
                 } as Omit<ContentItem, "id">,
                 editing.id,
               );
-              toast.success("Feedback saved");
+              toast.success("Retorno salvo");
               setEditing(null);
             } catch (error) {
-              toast.error(error instanceof Error ? error.message : "Could not save the feedback");
+              toast.error(error instanceof Error ? error.message : "Não foi possível salvar o retorno");
             }
           }}
         />

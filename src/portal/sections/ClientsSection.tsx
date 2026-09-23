@@ -1,5 +1,5 @@
-// Client registry: company data, package, social handles and a notes space.
-// This is the entry point of the workspace — everything else hangs off a client.
+// Cadastro de clientes: dados da empresa, pacote, perfis sociais e espaço de
+// anotações. É a porta de entrada do workspace — todo o resto parte de um cliente.
 
 import { useMemo, useState } from "react";
 import {
@@ -34,6 +34,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ClientChip, EmptyState, SectionHeader, StatusChip } from "@/components/portal/Shared";
 import { formatDate, todayISO } from "@/data/constants";
+import { label } from "@/data/labels";
 import { CLIENT_STATUSES, PLATFORMS } from "@/data/types";
 import type { ClientRecord, Platform, SectionId } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
@@ -162,7 +163,7 @@ export function ClientsSection({
 
   const submit = async () => {
     if (!form.name.trim()) {
-      toast.error("Give the client a name first.");
+      toast.error("Dê um nome ao cliente primeiro.");
       return;
     }
     setSaving(true);
@@ -190,11 +191,11 @@ export function ClientsSection({
         payload.createdAt = Date.now();
       }
       await ws.saveClient(payload, editing?.id);
-      toast.success(editing ? "Client updated" : `${payload.name} added`);
+      toast.success(editing ? "Cliente atualizado" : `${payload.name} adicionado`);
       setOpen(false);
       setEditing(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the client");
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o cliente");
     } finally {
       setSaving(false);
     }
@@ -203,9 +204,9 @@ export function ClientsSection({
   const remove = async (client: ClientRecord) => {
     try {
       await ws.deleteClient(client.id);
-      toast.success(`${client.name} and its records were removed`);
+      toast.success(`${client.name} e seus registros foram excluídos`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not remove the client");
+      toast.error(error instanceof Error ? error.message : "Não foi possível excluir o cliente");
     } finally {
       setConfirmId(null);
     }
@@ -214,12 +215,12 @@ export function ClientsSection({
   return (
     <div>
       <SectionHeader
-        title="Clients"
-        description="Every company you run social media for. Company details, package, handles and private notes — the rest of the workspace is organised around these."
+        title="Clientes"
+        description="Cada empresa para a qual você cuida das redes sociais. Dados da empresa, pacote, perfis e anotações privadas — o resto do espaço se organiza em torno disso."
       >
         <Button size="sm" className="gap-1.5" onClick={startCreate}>
           <Plus className="size-4" />
-          New client
+          Novo cliente
         </Button>
       </SectionHeader>
 
@@ -229,7 +230,7 @@ export function ClientsSection({
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search clients, contacts, industries…"
+            placeholder="Buscar clientes, contatos, segmentos…"
             className="h-9 pl-8"
           />
         </div>
@@ -237,12 +238,12 @@ export function ClientsSection({
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className={cn(SELECT_CLASS, "h-9 w-auto min-w-36")}
-          aria-label="Filter by status"
+          aria-label="Filtrar por status"
         >
-          <option value="all">All statuses</option>
+          <option value="all">Todos os status</option>
           {CLIENT_STATUSES.map((status) => (
             <option key={status} value={status}>
-              {status}
+              {label(status)}
             </option>
           ))}
         </select>
@@ -250,11 +251,11 @@ export function ClientsSection({
 
       {ws.clients.length === 0 ? (
         <EmptyState
-          title="No clients yet"
-          hint="Add your first client to start planning content, tasks and invoices."
+          title="Nenhum cliente ainda"
+          hint="Adicione seu primeiro cliente para começar a planejar conteúdo, tarefas e faturas."
         />
       ) : visible.length === 0 ? (
-        <EmptyState title="No client matches this filter" hint="Try another status or search term." />
+        <EmptyState title="Nenhum cliente corresponde a este filtro" hint="Tente outro status ou termo de busca." />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((client) => {
@@ -268,7 +269,7 @@ export function ClientsSection({
                   <div className="min-w-0">
                     <h2 className="truncate text-sm font-semibold tracking-tight">{client.name}</h2>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {client.industry || "No industry set"}
+                      {client.industry || "Sem segmento definido"}
                     </p>
                   </div>
                   <StatusChip status={client.status} />
@@ -302,7 +303,7 @@ export function ClientsSection({
                   {client.startDate ? (
                     <div className="flex items-center gap-1.5">
                       <CalendarClock className="size-3.5" />
-                      <span>Started {formatDate(client.startDate)}</span>
+                      <span>Cliente desde {formatDate(client.startDate)}</span>
                     </div>
                   ) : null}
                 </dl>
@@ -325,13 +326,13 @@ export function ClientsSection({
                   <div>
                     <p className="tabular text-sm font-semibold">{stat.planned}</p>
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      Planned
+                      Planejados
                     </p>
                   </div>
                   <div>
                     <p className="tabular text-sm font-semibold">{stat.openTasks}</p>
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      Open tasks
+                      Tarefas abertas
                     </p>
                   </div>
                   <div>
@@ -344,7 +345,7 @@ export function ClientsSection({
                       {stat.overdue}
                     </p>
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                      Overdue
+                      Atrasadas
                     </p>
                   </div>
                 </div>
@@ -353,7 +354,7 @@ export function ClientsSection({
                   <div className="mt-3 flex items-center justify-between gap-2 text-xs">
                     <span className="truncate text-muted-foreground">{client.packageName || "—"}</span>
                     <Badge variant="outline" className="tabular whitespace-nowrap">
-                      {ws.money(client.monthlyFee)}/mo
+                      {ws.money(client.monthlyFee)}/mês
                     </Badge>
                   </div>
                 ) : null}
@@ -368,7 +369,7 @@ export function ClientsSection({
                   {confirmId === client.id ? (
                     <>
                       <span className="mr-auto text-xs text-muted-foreground">
-                        Delete client + all records?
+                        Excluir o cliente e todos os registros?
                       </span>
                       <Button
                         variant="destructive"
@@ -376,7 +377,7 @@ export function ClientsSection({
                         className="h-7 gap-1 px-2 text-xs"
                         onClick={() => void remove(client)}
                       >
-                        <Check className="size-3.5" /> Delete
+                        <Check className="size-3.5" /> Excluir
                       </Button>
                       <Button
                         variant="ghost"
@@ -384,7 +385,7 @@ export function ClientsSection({
                         className="h-7 gap-1 px-2 text-xs"
                         onClick={() => setConfirmId(null)}
                       >
-                        <X className="size-3.5" /> Keep
+                        <X className="size-3.5" /> Manter
                       </Button>
                     </>
                   ) : (
@@ -395,7 +396,7 @@ export function ClientsSection({
                         className="h-7 gap-1 px-2 text-xs"
                         onClick={() => startEdit(client)}
                       >
-                        <Pencil className="size-3.5" /> Edit
+                        <Pencil className="size-3.5" /> Editar
                       </Button>
                       <Button
                         variant="ghost"
@@ -403,7 +404,7 @@ export function ClientsSection({
                         className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
                         onClick={() => setConfirmId(client.id)}
                       >
-                        <Trash2 className="size-3.5" /> Delete
+                        <Trash2 className="size-3.5" /> Excluir
                       </Button>
                       <Button
                         variant="ghost"
@@ -414,7 +415,7 @@ export function ClientsSection({
                           navigate("strategy");
                         }}
                       >
-                        Open <ArrowRight className="size-3.5" />
+                        Abrir <ArrowRight className="size-3.5" />
                       </Button>
                     </>
                   )}
@@ -430,21 +431,21 @@ export function ClientsSection({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="size-4" />
-              {editing ? editing.name : "New client"}
+              {editing ? editing.name : "Novo cliente"}
             </DialogTitle>
             <DialogDescription>
-              Company details and private notes. Only you see this workspace.
+              Dados da empresa e anotações privadas. Só você vê este espaço de trabalho.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5 sm:col-span-2">
-              <Label htmlFor="client-name">Company name *</Label>
+              <Label htmlFor="client-name">Nome da empresa *</Label>
               <Input
                 id="client-name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Northwind Coffee Roasters"
+                placeholder="Torrefação Vento Norte"
               />
             </div>
             <div className="grid gap-1.5">
@@ -457,68 +458,68 @@ export function ClientsSection({
               >
                 {CLIENT_STATUSES.map((status) => (
                   <option key={status} value={status}>
-                    {status}
+                    {label(status)}
                   </option>
                 ))}
               </select>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="client-industry">Industry / niche</Label>
+              <Label htmlFor="client-industry">Segmento / nicho</Label>
               <Input
                 id="client-industry"
                 value={form.industry}
                 onChange={(e) => setForm({ ...form, industry: e.target.value })}
-                placeholder="Specialty coffee roastery"
+                placeholder="Torrefação de cafés especiais"
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="client-contact">Main contact</Label>
+              <Label htmlFor="client-contact">Contato principal</Label>
               <Input
                 id="client-contact"
                 value={form.contactName}
                 onChange={(e) => setForm({ ...form, contactName: e.target.value })}
-                placeholder="Maya Okafor"
+                placeholder="Marina Okada"
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="client-email">Email</Label>
+              <Label htmlFor="client-email">E-mail</Label>
               <Input
                 id="client-email"
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="maya@company.com"
+                placeholder="marina@empresa.com.br"
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="client-phone">Phone</Label>
+              <Label htmlFor="client-phone">Telefone</Label>
               <Input
                 id="client-phone"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                placeholder="+1 (555) 555-0142"
+                placeholder="+55 (11) 99999-0142"
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="client-website">Website</Label>
+              <Label htmlFor="client-website">Site</Label>
               <Input
                 id="client-website"
                 value={form.website}
                 onChange={(e) => setForm({ ...form, website: e.target.value })}
-                placeholder="company.com"
+                placeholder="empresa.com.br"
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="client-package">Package / plan</Label>
+              <Label htmlFor="client-package">Pacote / plano</Label>
               <Input
                 id="client-package"
                 value={form.packageName}
                 onChange={(e) => setForm({ ...form, packageName: e.target.value })}
-                placeholder="Retainer — 12 posts/month"
+                placeholder="Mensalidade — 12 posts/mês"
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="client-fee">Monthly fee</Label>
+              <Label htmlFor="client-fee">Mensalidade</Label>
               <Input
                 id="client-fee"
                 type="number"
@@ -529,7 +530,7 @@ export function ClientsSection({
               />
             </div>
             <div className="grid gap-1.5 sm:col-span-2">
-              <Label htmlFor="client-start">Service start date</Label>
+              <Label htmlFor="client-start">Data de início do serviço</Label>
               <Input
                 id="client-start"
                 type="date"
@@ -541,7 +542,7 @@ export function ClientsSection({
 
           <div className="mt-4">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Social handles
+              Perfis sociais
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {PLATFORMS.map((platform) => (
@@ -561,7 +562,7 @@ export function ClientsSection({
                 </div>
               ))}
               <div className="grid gap-1.5">
-                <Label htmlFor="social-other">Other</Label>
+                <Label htmlFor="social-other">Outro</Label>
                 <Input
                   id="social-other"
                   value={form.socials.other ?? ""}
@@ -573,22 +574,22 @@ export function ClientsSection({
           </div>
 
           <div className="mt-4 grid gap-1.5">
-            <Label htmlFor="client-notes">Notes</Label>
+            <Label htmlFor="client-notes">Observações</Label>
             <Textarea
               id="client-notes"
               rows={4}
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder="Preferences, restrictions, key people, invoicing details…"
+              placeholder="Preferências, restrições, pessoas-chave, dados de faturamento…"
             />
           </div>
 
           <DialogFooter className="pt-2">
             <Button variant="ghost" onClick={() => setOpen(false)}>
-              Cancel
+              Cancelar
             </Button>
             <Button onClick={() => void submit()} disabled={saving}>
-              {saving ? "Saving…" : editing ? "Save changes" : "Add client"}
+              {saving ? "Salvando…" : editing ? "Salvar alterações" : "Adicionar cliente"}
             </Button>
           </DialogFooter>
         </DialogContent>

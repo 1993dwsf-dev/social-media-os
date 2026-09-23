@@ -1,5 +1,5 @@
-// Client onboarding checklist — the intake you fill in once per client.
-// Progress is simply how many steps have content.
+// Checklist de integração do cliente — o cadastro que você preenche uma vez
+// por cliente. O progresso é simplesmente quantas etapas têm conteúdo.
 
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Circle, Save } from "lucide-react";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { EmptyState, SectionHeader, StatusChip } from "@/components/portal/Shared";
 import { formatDate } from "@/data/constants";
+import { label } from "@/data/labels";
 import { ONBOARDING_STEPS } from "@/data/types";
 import type { OnboardingStep } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
@@ -17,7 +18,7 @@ import type { ClientFocus } from "../useClientFocus";
 import { cn } from "@/lib/utils";
 
 export function OnboardingSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
-  // Follows the workspace-wide focus; falls back to the first client.
+  // Segue o foco do workspace; sem foco, usa o primeiro cliente.
   const client = ws.clientOf(focus.clientId) ?? ws.clients[0];
 
   const [answers, setAnswers] = useState<Partial<Record<OnboardingStep, string>>>({});
@@ -39,10 +40,10 @@ export function OnboardingSection({ ws, focus }: { ws: Workspace; focus: ClientF
   if (!client) {
     return (
       <div>
-        <SectionHeader title="Onboarding" description="Intake for each client." />
+        <SectionHeader title="Integração" description="Cadastro de entrada de cada cliente." />
         <EmptyState
-          title="Add a client first"
-          hint="Onboarding answers are stored on the client record."
+          title="Adicione um cliente primeiro"
+          hint="As respostas de integração ficam salvas no cadastro do cliente."
         />
       </div>
     );
@@ -53,9 +54,9 @@ export function OnboardingSection({ ws, focus }: { ws: Workspace; focus: ClientF
     try {
       await ws.saveClient({ onboarding: answers }, client.id);
       setDirty(false);
-      toast.success(`Onboarding saved for ${client.name}`);
+      toast.success(`Integração salva para ${client.name}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the onboarding");
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar a integração");
     } finally {
       setSaving(false);
     }
@@ -64,14 +65,14 @@ export function OnboardingSection({ ws, focus }: { ws: Workspace; focus: ClientF
   return (
     <div>
       <SectionHeader
-        title="Onboarding"
-        description="Everything you need from a new client, in one place — so nothing gets asked twice."
+        title="Integração"
+        description="Tudo o que você precisa de um cliente novo em um só lugar — para nada ser perguntado duas vezes."
       >
         <select
           value={focus.clientId || client.id}
           onChange={(e) => focus.setFocus(e.target.value)}
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          aria-label="Client"
+          aria-label="Cliente"
         >
           {ws.clients.map((option) => (
             <option key={option.id} value={option.id}>
@@ -81,7 +82,7 @@ export function OnboardingSection({ ws, focus }: { ws: Workspace; focus: ClientF
         </select>
         <Button size="sm" className="gap-1.5" disabled={!dirty || saving} onClick={() => void save()}>
           <Save className="size-4" />
-          {saving ? "Saving…" : dirty ? "Save answers" : "Saved"}
+          {saving ? "Salvando…" : dirty ? "Salvar respostas" : "Salvo"}
         </Button>
       </SectionHeader>
 
@@ -90,7 +91,7 @@ export function OnboardingSection({ ws, focus }: { ws: Workspace; focus: ClientF
           <div className="min-w-52">
             <p className="text-sm font-semibold">{client.name}</p>
             <p className="text-xs text-muted-foreground">
-              {client.industry || "No industry"} · started {formatDate(client.startDate)}
+              {client.industry || "Sem segmento"} · cliente desde {formatDate(client.startDate)}
             </p>
           </div>
           <StatusChip status={client.status} />
@@ -98,7 +99,7 @@ export function OnboardingSection({ ws, focus }: { ws: Workspace; focus: ClientF
           <div className="ml-auto min-w-56">
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">
-                {done} of {ONBOARDING_STEPS.length} steps answered
+                {done} de {ONBOARDING_STEPS.length} etapas respondidas
               </span>
               <span className="tabular font-medium">{progress}%</span>
             </div>
@@ -126,13 +127,13 @@ export function OnboardingSection({ ws, focus }: { ws: Workspace; focus: ClientF
                 ) : (
                   <Circle className="size-4 text-muted-foreground/50" />
                 )}
-                <h2 className="text-sm font-semibold">{step}</h2>
+                <h2 className="text-sm font-semibold">{label(step)}</h2>
               </div>
               <Textarea
                 className="mt-2"
                 rows={3}
                 value={answers[step] ?? ""}
-                placeholder={`Write what you know about ${step.toLowerCase()}…`}
+                placeholder={`Escreva o que você sabe sobre ${label(step).toLowerCase()}…`}
                 onChange={(e) => {
                   setAnswers((prev) => ({ ...prev, [step]: e.target.value }));
                   setDirty(true);

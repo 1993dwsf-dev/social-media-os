@@ -1,6 +1,6 @@
-// Reusable CRUD table used by Tasks, Content list, Requests, Meetings and Files.
-// Field specs drive both the table columns and the add/edit dialog, so each
-// section only describes its own data.
+// Tabela CRUD reutilizável para Tarefas, Conteúdo, Solicitações, Reuniões e
+// Arquivos. As especificações de campo alimentam tanto as colunas quanto o
+// diálogo de criar/editar, então cada seção descreve apenas os próprios dados.
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
@@ -27,6 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDate } from "@/data/constants";
+import { label } from "@/data/labels";
 import type { ClientRecord } from "@/data/types";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +40,7 @@ export interface FieldSpec {
   options?: readonly string[];
   placeholder?: string;
   required?: boolean;
-  /** Long-form fields are edited in the dialog but skipped in the table. */
+  /** Campos longos são editados no diálogo e omitidos na tabela. */
   compact?: boolean;
 }
 
@@ -58,7 +59,7 @@ interface EntityTableProps<T extends { id: string }> {
   emptyHint?: string;
   statusKey?: string;
   defaults?: Record<string, string>;
-  /** Workspace-wide client focus (topbar); "" means all clients. */
+  /** Foco de cliente do workspace (barra superior); "" significa todos. */
   focusClientId?: string;
 }
 
@@ -128,7 +129,7 @@ export function EntityTable<T extends { id: string }>({
   const statusField = fields.find((f) => f.key === statusKey);
   const statusOptions = statusField?.options ?? [];
 
-  // Follow the workspace-wide client focus from the topbar.
+  // Acompanha o foco de cliente definido na barra superior.
   useEffect(() => {
     setClientFilter(focusClientId || "all");
   }, [focusClientId]);
@@ -168,7 +169,7 @@ export function EntityTable<T extends { id: string }>({
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Search ${entityName.toLowerCase()}…`}
+            placeholder={`Buscar em ${entityName.toLowerCase()}…`}
             className="h-9 pl-8"
           />
         </div>
@@ -177,9 +178,9 @@ export function EntityTable<T extends { id: string }>({
             value={clientFilter}
             onChange={(e) => setClientFilter(e.target.value)}
             className={cn(SELECT_CLASS, "h-9 w-auto min-w-40")}
-            aria-label="Filter by client"
+            aria-label="Filtrar por cliente"
           >
-            <option value="all">All clients</option>
+            <option value="all">Todos os clientes</option>
             {clients.map((client) => (
               <option key={client.id} value={client.id}>
                 {client.name}
@@ -192,12 +193,12 @@ export function EntityTable<T extends { id: string }>({
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className={cn(SELECT_CLASS, "h-9 w-auto min-w-36")}
-            aria-label="Filter by status"
+            aria-label="Filtrar por status"
           >
-            <option value="all">All statuses</option>
+            <option value="all">Todos os status</option>
             {statusOptions.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {label(option)}
               </option>
             ))}
           </select>
@@ -210,8 +211,8 @@ export function EntityTable<T extends { id: string }>({
 
       {filtered.length === 0 ? (
         <EmptyState
-          title={rows.length === 0 ? emptyTitle : "Nothing matches these filters"}
-          hint={rows.length === 0 ? emptyHint : "Try a different client, status, or search term."}
+          title={rows.length === 0 ? emptyTitle : "Nada corresponde a estes filtros"}
+          hint={rows.length === 0 ? emptyHint : "Tente outro cliente, status ou termo de busca."}
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border/70 bg-card">
@@ -223,7 +224,7 @@ export function EntityTable<T extends { id: string }>({
                     {field.label}
                   </TableHead>
                 ))}
-                <TableHead className="w-24 text-right">Actions</TableHead>
+                <TableHead className="w-24 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -246,7 +247,9 @@ export function EntityTable<T extends { id: string }>({
                           ) : isChipValue(raw) ? (
                             <StatusChip status={raw as never} />
                           ) : field.key === statusKey || field.key === "priority" ? (
-                            <span className="text-sm">{raw || "—"}</span>
+                            <span className="text-sm">{raw ? label(raw) : "—"}</span>
+                          ) : field.options?.includes(raw) ? (
+                            <span className="text-sm">{label(raw)}</span>
                           ) : (
                             <span
                               className={cn(
@@ -268,7 +271,7 @@ export function EntityTable<T extends { id: string }>({
                             variant="destructive"
                             size="icon"
                             className="size-7"
-                            aria-label="Confirm delete"
+                            aria-label="Confirmar exclusão"
                             onClick={async () => {
                               await onDelete(row.id);
                               setConfirmId(null);
@@ -280,7 +283,7 @@ export function EntityTable<T extends { id: string }>({
                             variant="ghost"
                             size="icon"
                             className="size-7"
-                            aria-label="Cancel delete"
+                            aria-label="Cancelar exclusão"
                             onClick={() => setConfirmId(null)}
                           >
                             <X className="size-3.5" />
@@ -292,7 +295,7 @@ export function EntityTable<T extends { id: string }>({
                             variant="ghost"
                             size="icon"
                             className="size-7"
-                            aria-label={`Edit ${rowTitle(row)}`}
+                            aria-label={`Editar ${rowTitle(row)}`}
                             onClick={() => {
                               setCreating(false);
                               setEditing(row);
@@ -304,7 +307,7 @@ export function EntityTable<T extends { id: string }>({
                             variant="ghost"
                             size="icon"
                             className="size-7 text-muted-foreground hover:text-destructive"
-                            aria-label={`Delete ${rowTitle(row)}`}
+                            aria-label={`Excluir ${rowTitle(row)}`}
                             onClick={() => setConfirmId(row.id)}
                           >
                             <Trash2 className="size-3.5" />
@@ -321,8 +324,7 @@ export function EntityTable<T extends { id: string }>({
       )}
 
       <p className="text-xs text-muted-foreground">
-        {filtered.length} of {rows.length} {entityName.toLowerCase()}
-        {filtered.length === 1 ? "" : ""}
+        {filtered.length} de {rows.length} {entityName.toLowerCase()}
       </p>
 
       <Dialog
@@ -336,9 +338,9 @@ export function EntityTable<T extends { id: string }>({
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? `Edit ${entityName}` : addLabel}</DialogTitle>
+            <DialogTitle>{editing ? `Editar ${entityName}` : addLabel}</DialogTitle>
             <DialogDescription>
-              {editing ? rowTitle(editing) : `Add a new ${entityName.toLowerCase()}.`}
+              {editing ? rowTitle(editing) : `Adicionar em ${entityName.toLowerCase()}.`}
             </DialogDescription>
           </DialogHeader>
           <form
@@ -381,7 +383,7 @@ export function EntityTable<T extends { id: string }>({
                   >
                     {field.type === "client" ? (
                       <>
-                        <option value="">— No client —</option>
+                        <option value="">— Sem cliente —</option>
                         {clients.map((client) => (
                           <option key={client.id} value={client.id}>
                             {client.name}
@@ -390,10 +392,10 @@ export function EntityTable<T extends { id: string }>({
                       </>
                     ) : (
                       <>
-                        {!field.required ? <option value="">— None —</option> : null}
+                        {!field.required ? <option value="">— Nenhum —</option> : null}
                         {(field.options ?? []).map((option) => (
                           <option key={option} value={option}>
-                            {option}
+                            {label(option)}
                           </option>
                         ))}
                       </>
@@ -426,10 +428,10 @@ export function EntityTable<T extends { id: string }>({
                   setEditing(null);
                 }}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button type="submit" disabled={saving}>
-                {saving ? "Saving…" : editing ? "Save changes" : "Create"}
+                {saving ? "Salvando…" : editing ? "Salvar alterações" : "Criar"}
               </Button>
             </DialogFooter>
           </form>

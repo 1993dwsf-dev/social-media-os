@@ -1,7 +1,7 @@
-// Field-spec driven form dialog.
+// Diálogo de formulário guiado por especificação de campos.
 //
-// Mount it conditionally ({draft ? <RecordDialog …/> : null}) so defaults are
-// always fresh for the record being edited.
+// Monte-o condicionalmente ({draft ? <RecordDialog …/> : null}) para que os
+// valores padrão estejam sempre atualizados para o registro em edição.
 
 import { useState } from "react";
 
@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { label } from "@/data/labels";
 import type { ClientRecord } from "@/data/types";
 
 import type { FieldSpec } from "./EntityTable";
@@ -32,7 +33,7 @@ export function RecordDialog({
   fields,
   clients,
   initial,
-  submitLabel = "Save",
+  submitLabel = "Salvar",
   onSubmit,
 }: {
   open: boolean;
@@ -91,7 +92,7 @@ export function RecordDialog({
                 >
                   {field.type === "client" ? (
                     <>
-                      <option value="">— No client —</option>
+                      <option value="">— Sem cliente —</option>
                       {clients.map((client) => (
                         <option key={client.id} value={client.id}>
                           {client.name}
@@ -100,10 +101,10 @@ export function RecordDialog({
                     </>
                   ) : (
                     <>
-                      {!field.required ? <option value="">— None —</option> : null}
+                      {!field.required ? <option value="">— Nenhum —</option> : null}
                       {(field.options ?? []).map((option) => (
                         <option key={option} value={option}>
-                          {option}
+                          {label(option)}
                         </option>
                       ))}
                     </>
@@ -132,10 +133,10 @@ export function RecordDialog({
           ))}
           <DialogFooter className="pt-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
+              Cancelar
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Saving…" : submitLabel}
+              {saving ? "Salvando…" : submitLabel}
             </Button>
           </DialogFooter>
         </form>

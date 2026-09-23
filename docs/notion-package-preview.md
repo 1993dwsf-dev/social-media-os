@@ -1,58 +1,58 @@
-# Notion package — what gets exported
+# Pacote para o Notion — o que é exportado
 
-Clicking **Notion package** on the portal Dashboard (or in Settings) downloads the
-markdown pages and CSV databases below, generated from the same data model the portal
-renders, so statuses, categories and client names match 1:1.
+Ao clicar em **Pacote para o Notion** em Configurações, são baixadas as páginas em
+markdown e as bases em CSV listadas abaixo, geradas a partir do mesmo modelo de dados
+que o portal renderiza — então status, categorias e nomes de clientes batem 1:1.
 
 ```
-README.md                     ← how to import + privacy note
-Meetings.md                   ← every client's meetings in one timeline
+README.md                          ← como importar + aviso de privacidade
+Reuniões.md                        ← as reuniões de todos os clientes em uma linha do tempo
 databases/
-├── Clients.csv               ← Client, Contact, Email, Phone, Website, Industry,
-│                                Package, Monthly fee, Start date, Status,
-│                                Instagram, TikTok, LinkedIn, YouTube, Facebook,
-│                                Pinterest, Other, Notes
-├── Content.csv               ← Client, Date, Platform, Format, Pillar, Topic, Status
-├── Tasks.csv                 ← Client, Task, Project, Category, Priority, Status,
-│                                Start date, Due date, Notes
-├── Requests.csv              ← Client, Request, Category, Priority, Submitted,
-│                                Status, Assigned to, Due date, Comments
-├── Meetings.csv              ← Client, Date, Time, Meeting, Agenda, Participants,
-│                                Status, Notes, Action items
-├── Deliverables.csv          ← Client, File name, Category, Description, Date,
-│                                Status, Related project
-└── Finance.csv               ← Client, Date, Type, Amount, Category, Description,
-                                 Status, Due date, Paid date
-clients/<client-slug>/
-├── Client.md                 ← contact, social accounts, strategy, KPIs,
-│                                internal notes (manager only)
-├── Content Calendar.md       ← that client's content rows
-├── Requests.md               ← that client's requests
-└── Files & Deliverables.md   ← that client's files
+├── Clients.csv                    ← Cliente, Contato, E-mail, Telefone, Site, Segmento,
+│                                     Pacote, Mensalidade, Data de início, Status,
+│                                     Instagram, TikTok, LinkedIn, YouTube, Facebook,
+│                                     Pinterest, Outro, Observações
+├── Content.csv                    ← Cliente, Data, Plataforma, Formato, Pilar, Tema, Status
+├── Tasks.csv                      ← Cliente, Tarefa, Projeto, Categoria, Prioridade, Status,
+│                                     Data de início, Prazo, Observações
+├── Requests.csv                   ← Cliente, Solicitação, Categoria, Prioridade,
+│                                     Solicitado em, Status, Responsável, Prazo, Comentários
+├── Meetings.csv                   ← Cliente, Data, Horário, Reunião, Pauta, Participantes,
+│                                     Status, Observações, Itens de ação
+├── Deliverables.csv               ← Cliente, Nome do arquivo, Categoria, Descrição, Data,
+│                                     Status, Projeto relacionado
+└── Finance.csv                    ← Cliente, Data, Tipo, Valor, Categoria, Descrição,
+                                      Status, Vencimento, Data de pagamento
+clients/<slug-do-cliente>/
+├── Cliente.md                     ← contato, perfis sociais, estratégia, indicadores,
+│                                     observações internas (somente para o gestor)
+├── Calendário de Conteúdo.md      ← as linhas de conteúdo daquele cliente
+├── Solicitações.md                ← as solicitações daquele cliente
+└── Arquivos e Entregas.md         ← os arquivos daquele cliente
 ```
 
-One page set is generated per client, using the client's slug as the folder name
-(e.g. `northwind-coffee-roasters/`).
+É gerado um conjunto de páginas por cliente, usando o slug do cliente como nome da pasta
+(ex.: `northwind-coffee-roasters/`).
 
-## Importing into Notion
+## Importando no Notion
 
-1. **Import the CSVs** — Notion → Workspace → Import → CSV. Each file becomes a
-   database; Notion auto-detects dates, numbers, and select-like text.
-2. **Create the pages** — paste (or import) each markdown file as a page under a
-   top-level page named after your client.
-3. **Connect everything** — `Clients` is the parent database; add relations from
-   `Content`, `Tasks`, `Requests`, `Meetings`, `Deliverables` and `Finance` back to
-   it via their `Client` column, and a `Content ↔ Deliverables` relation through
-   `Related project`.
-4. **Build the approval board** — on the `Content` database add a board view grouped
-   by **Status**. `In Review` = needs a decision; `Changes Requested` = rework.
-5. **Add calendar views** — `Content` database: calendar by **Date**, board by
-   **Platform**.
+1. **Importe os CSVs** — Notion → Workspace → Import → CSV. Cada arquivo vira uma base;
+   o Notion detecta automaticamente datas, números e textos no estilo de seleção.
+2. **Crie as páginas** — cole (ou importe) cada arquivo markdown como uma página dentro de
+   uma página principal com o nome do cliente.
+3. **Conecte tudo** — `Clients` é a base principal; adicione relações de `Content`,
+   `Tasks`, `Requests`, `Meetings`, `Deliverables` e `Finance` de volta para ela pela
+   coluna `Cliente`, e uma relação `Content ↔ Deliverables` via `Projeto relacionado`.
+4. **Monte o quadro de aprovações** — na base `Content`, adicione uma visão de quadro
+   agrupada por **Status**. `In Review` = precisa de decisão; `Changes Requested` =
+   refazer.
+5. **Adicione visões de calendário** — base `Content`: calendário por **Data** e quadro
+   por **Plataforma**.
 
-## Privacy note
+## Aviso de privacidade
 
-`Finance.csv` and the KPI tables plus the "internal notes (manager only)" section of
-`Client.md` are business-internal. Remove them before sharing a client folder with the
-client. The package never contains social-platform metrics — the workspace has no
-platform API connections, so it only tracks what the manager controls (delivery,
-approvals and money).
+`Finance.csv`, as tabelas de indicadores e a seção "observações internas (somente para o
+gestor)" de `Cliente.md` são de uso interno do negócio. Remova-os antes de compartilhar a
+pasta de um cliente com o próprio cliente. O pacote nunca contém métricas de redes sociais
+— o espaço de trabalho não tem conexão com APIs de plataformas, então ele acompanha apenas
+o que o gestor controla (entrega, aprovações e dinheiro).

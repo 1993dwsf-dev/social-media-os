@@ -1,19 +1,20 @@
-// Tiny spreadsheet formula engine for the Manager Workbook.
+// Motor de fórmulas de planilha para a Planilha do Gestor.
 //
-// Workbook sheets store formulas as text — for example
-// `=SUMIF(Finance!G2:G1000,"<>Paid",Finance!C2:C1000)`. This module evaluates
-// the subset of functions the workbook actually uses so the viewer shows a
-// computed value instead of the raw formula:
+// As abas guardam fórmulas como texto — por exemplo
+// `=SUMIF(Financeiro!G2:G1000,"<>Pago",Financeiro!C2:C1000)`. Este módulo
+// avalia o subconjunto de funções que a planilha realmente usa, para que o
+// visualizador mostre o valor calculado em vez da fórmula crua:
 //
 //   COUNTA, COUNTIF, COUNTIFS, SUM, SUMIF, SUMIFS, TODAY, EOMONTH, TEXT
 //
-// plus `&` concatenation and `+` / `-` arithmetic. Dates are day serial numbers
-// (1 = 1970-01-01) and `TEXT(serial, "YYYY-MM-DD")` renders them back to ISO,
-// which is what lets criteria like `">="&TEXT(EOMONTH(TODAY(),-1)+1,"YYYY-MM-DD")`
-// compare against the ISO date strings stored in the sheets.
+// além da concatenação com `&` e da aritmética de `+` / `-`. As datas são
+// números de série de dias (1 = 1970-01-01) e `TEXT(serial, "YYYY-MM-DD")` as
+// devolve em ISO, o que permite que critérios como
+// `">="&TEXT(EOMONTH(TODAY(),-1)+1,"YYYY-MM-DD")` sejam comparados com as
+// strings de data ISO guardadas nas abas.
 //
-// Anything unsupported resolves to "#ERROR" instead of throwing, so one bad
-// formula can never blank the whole preview.
+// Qualquer coisa não suportada vira "#ERROR" em vez de lançar exceção, então
+// uma fórmula ruim nunca apaga a pré-visualização inteira.
 
 import type { SheetDef } from "./workbook";
 
@@ -31,7 +32,7 @@ function isRange(value: Value): value is RangeValue {
   return typeof value === "object" && value !== null && "__range" in value;
 }
 
-// ---- date helpers ---------------------------------------------------------
+// ---- auxiliares de data ---------------------------------------------------
 
 function todaySerial(now = new Date()): number {
   return serialFromISO(now.toISOString().slice(0, 10));

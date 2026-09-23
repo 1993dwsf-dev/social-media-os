@@ -1,4 +1,4 @@
-// Client requests: what they asked for, when it is due, and where it stands.
+// Solicitações dos clientes: o que pediram, qual o prazo e em que ponto está.
 
 import { toast } from "sonner";
 
@@ -12,15 +12,15 @@ import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
-  { key: "title", label: "Request", required: true, placeholder: "Add a second Reel this week" },
-  { key: "clientId", label: "Client", type: "client", required: true },
-  { key: "category", label: "Category", type: "select", options: REQUEST_CATEGORIES },
-  { key: "priority", label: "Priority", type: "select", options: ["Low", "Medium", "High"] },
+  { key: "title", label: "Solicitação", required: true, placeholder: "Adicionar um segundo Reel esta semana" },
+  { key: "clientId", label: "Cliente", type: "client", required: true },
+  { key: "category", label: "Categoria", type: "select", options: REQUEST_CATEGORIES },
+  { key: "priority", label: "Prioridade", type: "select", options: ["Low", "Medium", "High"] },
   { key: "status", label: "Status", type: "select", options: REQUEST_STATUSES },
-  { key: "dateSubmitted", label: "Requested on", type: "date" },
-  { key: "dueDate", label: "Due date", type: "date" },
-  { key: "assignedTo", label: "Assigned to" },
-  { key: "comments", label: "Comments", type: "textarea", compact: true },
+  { key: "dateSubmitted", label: "Solicitado em", type: "date" },
+  { key: "dueDate", label: "Prazo", type: "date" },
+  { key: "assignedTo", label: "Responsável" },
+  { key: "comments", label: "Comentários", type: "textarea", compact: true },
 ];
 
 export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
@@ -29,8 +29,8 @@ export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
   return (
     <div>
       <SectionHeader
-        title="Requests"
-        description={`Asks coming in from clients. ${open} still open across ${ws.clients.length} client${ws.clients.length === 1 ? "" : "s"}.`}
+        title="Solicitações"
+        description={`Pedidos vindos dos clientes. ${open} em aberto entre ${ws.clients.length} cliente${ws.clients.length === 1 ? "" : "s"}.`}
       />
 
       <EntityTable<RequestItem>
@@ -42,12 +42,12 @@ export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
         searchText={(row) =>
           [row.title, row.category, row.comments, row.assignedTo, ws.clientName(row.clientId)].join(" ")
         }
-        addLabel="New request"
-        entityName="Requests"
+        addLabel="Nova solicitação"
+        entityName="Solicitações"
         statusKey="status"
         focusClientId={focus.clientId}
-        emptyTitle="No requests logged"
-        emptyHint="Log what the client asks for so nothing slips between calls."
+        emptyTitle="Nenhuma solicitação registrada"
+        emptyHint="Registre o que o cliente pede para nada se perder entre as conversas."
         defaults={{
           status: "New",
           priority: "Medium",
@@ -71,14 +71,14 @@ export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
               },
               id,
             );
-            toast.success(id ? "Request updated" : "Request logged");
+            toast.success(id ? "Solicitação atualizada" : "Solicitação registrada");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Could not save the request");
+            toast.error(error instanceof Error ? error.message : "Não foi possível salvar a solicitação");
           }
         }}
         onDelete={async (id) => {
           await ws.remove("request", id);
-          toast.success("Request deleted");
+          toast.success("Solicitação excluída");
         }}
       />
     </div>

@@ -1,5 +1,5 @@
-// Workspace settings: who the manager is, how the workspace behaves, and the
-// data tools (backup, demo data, Notion export, reset).
+// Configurações do workspace: quem é o gestor, como o espaço se comporta e as
+// ferramentas de dados (backup, dados de exemplo, exportação para Notion, reset).
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { SectionHeader } from "@/components/portal/Shared";
+import { label } from "@/data/labels";
 import { exportNotionPackage } from "@/data/notion-export";
 import type { WorkspaceProfile } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
@@ -47,9 +48,9 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
     try {
       await ws.saveProfile(form);
       setDirty(false);
-      toast.success("Settings saved");
+      toast.success("Configurações salvas");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the settings");
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar as configurações");
     } finally {
       setSaving(false);
     }
@@ -66,48 +67,48 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
       deliverables: ws.deliverables,
       finance: ws.finance,
     });
-    toast.success("Notion package downloading", {
-      description: "Markdown pages and CSV databases — check your downloads.",
+    toast.success("Baixando o pacote para o Notion", {
+      description: "Páginas em Markdown e bases em CSV — confira seus downloads.",
     });
   };
 
   return (
     <div>
       <SectionHeader
-        title="Settings"
-        description="Your profile, workspace preferences and data tools. Everything is stored in your account, so it follows you between devices."
+        title="Configurações"
+        description="Seu perfil, preferências do espaço e ferramentas de dados. Tudo fica salvo na sua conta, então acompanha você entre dispositivos."
       >
         <Button size="sm" className="gap-1.5" disabled={!dirty || saving} onClick={() => void save()}>
-          {saving ? "Saving…" : dirty ? "Save settings" : "Saved"}
+          {saving ? "Salvando…" : dirty ? "Salvar configurações" : "Salvo"}
         </Button>
       </SectionHeader>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-xl border border-border/70 bg-card p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <UserRound className="size-4" /> Manager profile
+            <UserRound className="size-4" /> Perfil do gestor
           </h2>
           <div className="mt-3 grid gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="manager-name">Your name</Label>
+              <Label htmlFor="manager-name">Seu nome</Label>
               <Input
                 id="manager-name"
                 value={form.managerName}
                 onChange={(e) => patch({ managerName: e.target.value })}
-                placeholder="Alex Moreno"
+                placeholder="Ana Moreira"
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="manager-agency">Business / agency name</Label>
+              <Label htmlFor="manager-agency">Nome do negócio / agência</Label>
               <Input
                 id="manager-agency"
                 value={form.agency}
                 onChange={(e) => patch({ agency: e.target.value })}
-                placeholder="Marrow Social"
+                placeholder="Moreira Social"
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="manager-email">Contact email</Label>
+              <Label htmlFor="manager-email">E-mail de contato</Label>
               <Input
                 id="manager-email"
                 type="email"
@@ -120,31 +121,31 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
         </section>
 
         <section className="rounded-xl border border-border/70 bg-card p-4">
-          <h2 className="text-sm font-semibold">Preferences</h2>
+          <h2 className="text-sm font-semibold">Preferências</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
-              <Label htmlFor="currency">Currency symbol</Label>
+              <Label htmlFor="currency">Símbolo da moeda</Label>
               <Input
                 id="currency"
                 value={form.currency}
                 onChange={(e) => patch({ currency: e.target.value.slice(0, 3) })}
-                placeholder="$"
+                placeholder="R$"
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="week-start">Week starts on</Label>
+              <Label htmlFor="week-start">A semana começa em</Label>
               <select
                 id="week-start"
                 value={form.weekStart}
                 onChange={(e) => patch({ weekStart: e.target.value as WorkspaceProfile["weekStart"] })}
                 className={SELECT_CLASS}
               >
-                <option value="Monday">Monday</option>
-                <option value="Sunday">Sunday</option>
+                <option value="Monday">{label("Monday")}</option>
+                <option value="Sunday">{label("Sunday")}</option>
               </select>
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="turnaround">Approval turnaround (days)</Label>
+              <Label htmlFor="turnaround">Prazo de aprovação (dias)</Label>
               <Input
                 id="turnaround"
                 type="number"
@@ -154,24 +155,24 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="density">Table density</Label>
+              <Label htmlFor="density">Densidade das tabelas</Label>
               <select
                 id="density"
                 value={form.density}
                 onChange={(e) => patch({ density: e.target.value as WorkspaceProfile["density"] })}
                 className={SELECT_CLASS}
               >
-                <option value="comfortable">Comfortable</option>
-                <option value="compact">Compact</option>
+                <option value="comfortable">{label("comfortable")}</option>
+                <option value="compact">{label("compact")}</option>
               </select>
             </div>
           </div>
 
           <div className="mt-4 space-y-3 border-t border-border/60 pt-4">
             {[
-              { key: "notifyEmail" as const, label: "Email notifications" },
-              { key: "notifyApprovals" as const, label: "Remind me about pending approvals" },
-              { key: "notifyFinance" as const, label: "Track unpaid invoices and expenses" },
+              { key: "notifyEmail" as const, label: "Notificações por e-mail" },
+              { key: "notifyApprovals" as const, label: "Lembrar de aprovações pendentes" },
+              { key: "notifyFinance" as const, label: "Acompanhar faturas e despesas em aberto" },
             ].map((row) => (
               <div key={row.key} className="flex items-center justify-between gap-3">
                 <span className="text-sm">{row.label}</span>
@@ -186,15 +187,15 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
 
         <section className="rounded-xl border border-border/70 bg-card p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <FileJson className="size-4" /> Backup & data
+            <FileJson className="size-4" /> Backup e dados
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Your workspace lives in your account. Export a JSON backup any time, or import one to
-            move everything into another account.
+            Seu espaço de trabalho fica na sua conta. Exporte um backup em JSON a qualquer momento
+            ou importe um para levar tudo para outra conta.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button variant="outline" size="sm" className="gap-1.5" onClick={ws.exportJSON}>
-              <Download className="size-4" /> Export JSON
+              <Download className="size-4" /> Exportar JSON
             </Button>
             <Button
               variant="outline"
@@ -202,7 +203,7 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
               className="gap-1.5"
               onClick={() => fileRef.current?.click()}
             >
-              <Upload className="size-4" /> Import backup
+              <Upload className="size-4" /> Importar backup
             </Button>
             <input
               ref={fileRef}
@@ -214,27 +215,27 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
                 if (!file) return;
                 try {
                   await ws.importJSON(file);
-                  toast.success("Backup imported");
+                  toast.success("Backup importado");
                 } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Import failed");
+                  toast.error(error instanceof Error ? error.message : "Falha na importação");
                 } finally {
                   event.target.value = "";
                 }
               }}
             />
             <Button variant="outline" size="sm" className="gap-1.5" onClick={notion}>
-              <Sparkles className="size-4" /> Notion package
+              <Sparkles className="size-4" /> Pacote para o Notion
             </Button>
           </div>
         </section>
 
         <section className="rounded-xl border border-border/70 bg-card p-4">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <Sparkles className="size-4" /> Demo data & reset
+            <Sparkles className="size-4" /> Dados de exemplo e reset
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            The demo loads four fictional clients with content, tasks, meetings and finances so you
-            can explore the workspace. Loading it replaces what is here now.
+            O exemplo carrega quatro clientes fictícios com conteúdo, tarefas, reuniões e finanças
+            para você explorar o espaço. Carregá-lo substitui o que está aqui agora.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
@@ -244,9 +245,9 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
               onClick={async () => {
                 try {
                   await ws.seedDemo();
-                  toast.success("Demo workspace loaded");
+                  toast.success("Espaço de exemplo carregado");
                 } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Could not load the demo");
+                  toast.error(error instanceof Error ? error.message : "Não foi possível carregar o exemplo");
                 }
               }}
             >
@@ -261,18 +262,18 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
                   onClick={async () => {
                     try {
                       await ws.clearWorkspace();
-                      toast.success("Workspace cleared");
+                      toast.success("Espaço de trabalho limpo");
                     } catch (error) {
-                      toast.error(error instanceof Error ? error.message : "Could not clear");
+                      toast.error(error instanceof Error ? error.message : "Não foi possível limpar");
                     } finally {
                       setConfirmReset(false);
                     }
                   }}
                 >
-                  <Trash2 className="size-4" /> Yes, delete everything
+                  <Trash2 className="size-4" /> Sim, excluir tudo
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setConfirmReset(false)}>
-                  Cancel
+                  Cancelar
                 </Button>
               </span>
             ) : (
@@ -282,7 +283,7 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
                 className={cn("gap-1.5 text-muted-foreground hover:text-destructive")}
                 onClick={() => setConfirmReset(true)}
               >
-                <Trash2 className="size-4" /> Clear workspace
+                <Trash2 className="size-4" /> Limpar espaço de trabalho
               </Button>
             )}
           </div>

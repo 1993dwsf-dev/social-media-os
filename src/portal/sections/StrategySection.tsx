@@ -1,5 +1,5 @@
-// Strategy, per client: objectives, audience, pillars, voice and the KPIs the
-// manager and client agreed on.
+// Estratégia por cliente: objetivos, público, pilares, voz e os indicadores
+// combinados entre gestor e cliente.
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Save, Sparkles, Trash2 } from "lucide-react";
@@ -15,14 +15,14 @@ import type { ClientFocus } from "../useClientFocus";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_SECTIONS: { key: string; title: string }[] = [
-  { key: "business", title: "Business objective" },
-  { key: "social", title: "Social media objectives" },
-  { key: "audience", title: "Target audience" },
-  { key: "pillars", title: "Content pillars" },
-  { key: "voice", title: "Brand voice" },
-  { key: "positioning", title: "Positioning" },
-  { key: "messages", title: "Key messages" },
-  { key: "campaigns", title: "Campaign themes" },
+  { key: "business", title: "Objetivo de negócio" },
+  { key: "social", title: "Objetivos de social media" },
+  { key: "audience", title: "Público-alvo" },
+  { key: "pillars", title: "Pilares de conteúdo" },
+  { key: "voice", title: "Voz da marca" },
+  { key: "positioning", title: "Posicionamento" },
+  { key: "messages", title: "Mensagens-chave" },
+  { key: "campaigns", title: "Temas de campanha" },
 ];
 
 function normalize(client: ClientRecord): StrategyBlock[] {
@@ -33,8 +33,8 @@ function normalize(client: ClientRecord): StrategyBlock[] {
 }
 
 export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
-  // The section follows the workspace-wide focus; when no client is focused,
-  // fall back to the first client so the editor still has a target.
+  // A seção segue o foco do workspace; sem cliente em foco, usa o primeiro
+  // cliente para que o editor ainda tenha um destino.
   const client = ws.clientOf(focus.clientId) ?? ws.clients[0];
 
   const [blocks, setBlocks] = useState<StrategyBlock[]>([]);
@@ -70,10 +70,10 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
   if (!client) {
     return (
       <div>
-        <SectionHeader title="Strategy" description="The plan behind each client's content." />
+        <SectionHeader title="Estratégia" description="O plano por trás do conteúdo de cada cliente." />
         <EmptyState
-          title="Add a client first"
-          hint="Strategy lives inside each client record — create a client and come back."
+          title="Adicione um cliente primeiro"
+          hint="A estratégia fica dentro de cada cliente — crie um cliente e volte aqui."
         />
       </div>
     );
@@ -84,9 +84,9 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
     try {
       await ws.saveClient({ strategy: blocks, kpis }, client.id);
       setDirty(false);
-      toast.success(`Strategy saved for ${client.name}`);
+      toast.success(`Estratégia salva para ${client.name}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save the strategy");
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar a estratégia");
     } finally {
       setSaving(false);
     }
@@ -95,14 +95,14 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
   return (
     <div>
       <SectionHeader
-        title="Strategy"
-        description="Objectives, audience, pillars and KPIs per client — the reference you can pull up before writing a single caption."
+        title="Estratégia"
+        description="Objetivos, público, pilares e indicadores por cliente — a referência para consultar antes de escrever qualquer legenda."
       >
         <select
           value={focus.clientId || client.id}
           onChange={(e) => focus.setFocus(e.target.value)}
           className="h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-          aria-label="Client"
+          aria-label="Cliente"
         >
           {ws.clients.map((option) => (
             <option key={option.id} value={option.id}>
@@ -117,19 +117,20 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
           onClick={() => void save()}
         >
           <Save className="size-4" />
-          {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}
+          {saving ? "Salvando…" : dirty ? "Salvar alterações" : "Salvo"}
         </Button>
       </SectionHeader>
 
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-muted/30 px-4 py-3">
         <Sparkles className="size-4 text-primary" />
         <p className="text-xs text-muted-foreground">
-          {totals.filled} strateg{String(totals.filled) === "1" ? "y" : "y"} line
-          {totals.filled === 1 ? "" : "s"} filled · {kpis.length} KPI{kpis.length === 1 ? "" : "s"} tracked
+          {totals.filled} linha{totals.filled === 1 ? "" : "s"} de estratégia preenchida
+          {totals.filled === 1 ? "" : "s"} · {kpis.length} indicador{kpis.length === 1 ? "" : "es"} acompanhado
+          {kpis.length === 1 ? "" : "s"}
         </p>
         {kpis.length > 0 ? (
           <span className="ml-auto text-xs font-medium">
-            Average progress: {totals.completion}%
+            Progresso médio: {totals.completion}%
           </span>
         ) : null}
       </div>
@@ -140,7 +141,7 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
             <h2 className="text-sm font-semibold">{block.title}</h2>
             <div className="mt-3 space-y-2">
               {block.items.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nothing added yet.</p>
+                <p className="text-xs text-muted-foreground">Nada adicionado ainda.</p>
               ) : null}
               {block.items.map((item, index) => (
                 <div key={`${block.key}-${index}`} className="flex items-center gap-2">
@@ -151,14 +152,14 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
                       next[index] = e.target.value;
                       updateBlock(block.key, next);
                     }}
-                    placeholder="Write a line…"
+                    placeholder="Escreva uma linha…"
                     className="h-9"
                   />
                   <Button
                     variant="ghost"
                     size="icon"
                     className="size-8 text-muted-foreground hover:text-destructive"
-                    aria-label="Remove line"
+                    aria-label="Remover linha"
                     onClick={() =>
                       updateBlock(
                         block.key,
@@ -176,7 +177,7 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
                 className="gap-1.5"
                 onClick={() => updateBlock(block.key, [...block.items, ""])}
               >
-                <Plus className="size-3.5" /> Add line
+                <Plus className="size-3.5" /> Adicionar linha
               </Button>
             </div>
           </section>
@@ -186,9 +187,9 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
       <section className="mt-6 rounded-xl border border-border/70 bg-card p-4">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 className="text-sm font-semibold">KPIs</h2>
+            <h2 className="text-sm font-semibold">Indicadores</h2>
             <p className="text-[11px] text-muted-foreground">
-              Whatever the two of you agreed to measure — not platform metrics.
+              O que vocês dois combinaram medir — não métricas de plataforma.
             </p>
           </div>
           <Button
@@ -203,12 +204,12 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
               setDirty(true);
             }}
           >
-            <Plus className="size-3.5" /> Add KPI
+            <Plus className="size-3.5" /> Adicionar indicador
           </Button>
         </div>
 
         {kpis.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">No KPIs defined yet.</p>
+          <p className="mt-4 text-sm text-muted-foreground">Nenhum indicador definido ainda.</p>
         ) : (
           <div className="mt-4 space-y-3">
             {kpis.map((kpi, index) => {
@@ -225,16 +226,16 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
                 <div key={index} className="rounded-lg border border-border/60 p-3">
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
                     <div className="grid gap-1 lg:col-span-2">
-                      <Label className="text-[11px]">KPI</Label>
+                      <Label className="text-[11px]">Indicador</Label>
                       <Input
                         value={kpi.name}
                         onChange={(e) => patch({ name: e.target.value })}
                         className="h-8"
-                        placeholder="Posts published / month"
+                        placeholder="Posts publicados / mês"
                       />
                     </div>
                     <div className="grid gap-1">
-                      <Label className="text-[11px]">Baseline</Label>
+                      <Label className="text-[11px]">Linha de base</Label>
                       <Input
                         value={kpi.baseline}
                         onChange={(e) => patch({ baseline: e.target.value })}
@@ -242,7 +243,7 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
                       />
                     </div>
                     <div className="grid gap-1">
-                      <Label className="text-[11px]">Target</Label>
+                      <Label className="text-[11px]">Meta</Label>
                       <Input
                         value={kpi.target}
                         onChange={(e) => patch({ target: e.target.value })}
@@ -250,7 +251,7 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
                       />
                     </div>
                     <div className="grid gap-1">
-                      <Label className="text-[11px]">Actual</Label>
+                      <Label className="text-[11px]">Real</Label>
                       <Input
                         value={kpi.actual}
                         onChange={(e) => patch({ actual: e.target.value })}
@@ -258,7 +259,7 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
                       />
                     </div>
                     <div className="grid gap-1">
-                      <Label className="text-[11px]">Unit</Label>
+                      <Label className="text-[11px]">Unidade</Label>
                       <Input
                         value={kpi.unit}
                         onChange={(e) => patch({ unit: e.target.value })}
@@ -290,7 +291,7 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
                       variant="ghost"
                       size="icon"
                       className="size-8 text-muted-foreground hover:text-destructive"
-                      aria-label="Remove KPI"
+                      aria-label="Remover indicador"
                       onClick={() => {
                         setKpis((prev) => prev.filter((_, i) => i !== index));
                         setDirty(true);

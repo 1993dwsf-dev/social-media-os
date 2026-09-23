@@ -19,10 +19,10 @@ export default function Dashboard() {
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              Authenticated workspace
+              Área autenticada
             </p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight">
-              Welcome{user?.name ? `, ${user.name}` : ""}
+              Bem-vindo{user?.name ? `, ${user.name}` : ""}
             </h1>
           </div>
           <Button
@@ -32,7 +32,7 @@ export default function Dashboard() {
             onClick={handleSignOut}
           >
             <LogOut className="size-4" />
-            Sign out
+            Sair
           </Button>
         </header>
 
@@ -41,12 +41,11 @@ export default function Dashboard() {
             <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <LayoutDashboard className="size-5" />
             </div>
-            <CardTitle>Your dashboard is ready</CardTitle>
+            <CardTitle>Seu painel está pronto</CardTitle>
           </CardHeader>
           <CardContent className="text-sm leading-6 text-muted-foreground">
-            Replace this starter content with the product&apos;s authenticated
-            experience. The route is protected and sign-in returns here by
-            default.
+            Substitua este conteúdo inicial pela experiência autenticada do
+            produto. A rota é protegida e o login retorna para cá por padrão.
           </CardContent>
         </Card>
       </div>

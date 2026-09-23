@@ -1,4 +1,4 @@
-// Task list for every client — what has to happen, for whom, and by when.
+// Lista de tarefas de todos os clientes — o que precisa acontecer, para quem e até quando.
 
 import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
@@ -14,17 +14,17 @@ import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
-  { key: "title", label: "Task", required: true, placeholder: "Shoot batch: 10 assets" },
-  { key: "clientId", label: "Client", type: "client", required: true },
-  { key: "project", label: "Project / campaign" },
-  { key: "category", label: "Category", type: "select", options: TASK_CATEGORIES },
-  { key: "priority", label: "Priority", type: "select", options: ["Low", "Medium", "High"] },
+  { key: "title", label: "Tarefa", required: true, placeholder: "Gravar lote: 10 peças" },
+  { key: "clientId", label: "Cliente", type: "client", required: true },
+  { key: "project", label: "Projeto / campanha" },
+  { key: "category", label: "Categoria", type: "select", options: TASK_CATEGORIES },
+  { key: "priority", label: "Prioridade", type: "select", options: ["Low", "Medium", "High"] },
   { key: "status", label: "Status", type: "select", options: TASK_STATUSES },
-  { key: "dueDate", label: "Due date", type: "date" },
-  { key: "startDate", label: "Start date", type: "date", compact: true },
-  { key: "completedAt", label: "Completed", type: "date", compact: true },
-  { key: "dependsOn", label: "Depends on", compact: true },
-  { key: "notes", label: "Notes", type: "textarea", compact: true },
+  { key: "dueDate", label: "Prazo", type: "date" },
+  { key: "startDate", label: "Data de início", type: "date", compact: true },
+  { key: "completedAt", label: "Concluído em", type: "date", compact: true },
+  { key: "dependsOn", label: "Depende de", compact: true },
+  { key: "notes", label: "Observações", type: "textarea", compact: true },
 ];
 
 export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
@@ -43,28 +43,28 @@ export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
   return (
     <div>
       <SectionHeader
-        title="Tasks"
-        description="Everything on your plate across all clients — deadlines, priorities and progress in one list."
+        title="Tarefas"
+        description="Tudo o que está na sua mesa em todos os clientes — prazos, prioridades e progresso em uma única lista."
       />
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Open tasks"
+          label="Tarefas abertas"
           value={String(summary.open.length)}
           icon={<Clock className="size-4" />}
         />
         <KpiCard
-          label="Due within 7 days"
+          label="Vencem em até 7 dias"
           value={String(summary.week.length)}
           icon={<Clock className="size-4" />}
         />
         <KpiCard
-          label="Overdue"
+          label="Atrasadas"
           value={String(summary.overdue.length)}
           icon={<AlertTriangle className="size-4" />}
         />
         <KpiCard
-          label="Completed"
+          label="Concluídas"
           value={String(summary.done.length)}
           icon={<CheckCircle2 className="size-4" />}
         />
@@ -79,12 +79,12 @@ export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
         searchText={(row) =>
           [row.title, row.project, row.category, row.notes, ws.clientName(row.clientId)].join(" ")
         }
-        addLabel="New task"
-        entityName="Tasks"
+        addLabel="Nova tarefa"
+        entityName="Tarefas"
         statusKey="status"
         focusClientId={focus.clientId}
-        emptyTitle="No tasks yet"
-        emptyHint="Add a task to keep the work for each client moving."
+        emptyTitle="Nenhuma tarefa ainda"
+        emptyHint="Adicione uma tarefa para manter o trabalho de cada cliente em andamento."
         defaults={{
           status: "Backlog",
           priority: "Medium",
@@ -111,14 +111,14 @@ export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
               },
               id,
             );
-            toast.success(id ? "Task updated" : "Task added");
+            toast.success(id ? "Tarefa atualizada" : "Tarefa adicionada");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Could not save the task");
+            toast.error(error instanceof Error ? error.message : "Não foi possível salvar a tarefa");
           }
         }}
         onDelete={async (id) => {
           await ws.remove("task", id);
-          toast.success("Task deleted");
+          toast.success("Tarefa excluída");
         }}
       />
     </div>

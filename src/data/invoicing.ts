@@ -1,5 +1,5 @@
-// Pure invoice-planning logic, shared by the Convex `generateInvoices`
-// mutation and its tests. Nothing here touches a database or the network.
+// Lógica pura de planejamento de faturas, compartilhada pela mutation
+// `generateInvoices` do Convex e pelos testes. Nada aqui acessa banco ou rede.
 
 export interface InvoiceClient {
   id: string;
@@ -16,15 +16,15 @@ export interface FinanceLike {
 
 export interface PlannedInvoice {
   clientId: string;
-  month: string; // ISO yyyy-mm-dd, first day of the month
+  month: string; // ISO aaaa-mm-dd, primeiro dia do mês
   amount: number;
   description: string;
-  dueDate: string; // ISO yyyy-mm-dd
+  dueDate: string; // ISO aaaa-mm-dd
 }
 
 export const INVOICE_DUE_DAY = 10;
 
-/** First day of the month `offset` months from now (ISO yyyy-mm-dd). */
+/** Primeiro dia do mês `offset` meses à frente (ISO aaaa-mm-dd). */
 export function monthStart(offset: number, now = new Date()): string {
   const d = new Date(now);
   d.setHours(12, 0, 0, 0);
@@ -34,9 +34,9 @@ export function monthStart(offset: number, now = new Date()): string {
 }
 
 /**
- * Which invoices should exist for a billing run: one per month in the window
- * for every Active client with a monthly fee, minus months already invoiced.
- * Idempotent by construction — re-running with the same inputs yields [].
+ * Quais faturas devem existir em um faturamento: uma por mês da janela para
+ * cada cliente ativo com mensalidade, menos os meses já faturados.
+ * Idempotente por construção — repetir com as mesmas entradas devolve [].
  */
 export function planInvoices(
   clients: InvoiceClient[],
@@ -68,7 +68,7 @@ export function planInvoices(
         clientId: client.id,
         month,
         amount: fee,
-        description: `Monthly retainer — ${client.name}`,
+        description: `Mensalidade — ${client.name}`,
         dueDate: `${month}-${String(INVOICE_DUE_DAY).padStart(2, "0")}`,
       });
     }
