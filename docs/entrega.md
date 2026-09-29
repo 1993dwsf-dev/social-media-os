@@ -155,6 +155,28 @@ Deixe esses limites explícitos na entrega — eles evitam cobrança de suporte 
 
 ---
 
+## 8.1 Rotação de chaves e segredos
+
+Auditoria feita em 29/09/2026. O produto tem uma superfície de segredos **pequena por decisão de
+projeto** — sem integrações com redes sociais, pagamentos ou armazenamento externo, não há chaves
+de terceiros em uso.
+
+| Item | Onde | Situação | Ação |
+| --- | --- | --- | --- |
+| `x-api-key` do envio de e-mail OTP (`auth.freebuff.app`) | `src/convex/auth/emailOtp.ts` | Chave **da plataforma Freebuff**, embrulhada no scaffolding de autenticação do template. Não é credencial do usuário e não pode ser rotacionada por ele. | Nenhuma enquanto o app for hospedado no Freebuff. Se um dia o projeto sair da plataforma (self-host ou código compartilhado), substituir o remetente por um provedor próprio (ex.: Resend) e remover a chave. |
+| `VLY_INTEGRATION_KEY` (formato `sk_*`) | Gerida pela plataforma (`.env.keys`, fora do repositório) | Registrada em `integrations.md`, mas **nenhum código do projeto consome** — não há actions Convex em `"use node"`. | Nenhuma. Não versionar nem colar em chat/e-mail. |
+| `VITE_CONVEX_URL`, `CONVEX_SITE_URL`, `VLY_CONVEX_AUTH_ISSUER`, `VLY_APP_NAME` | Aba Keys | URLs e identificadores, não são segredos (o `VITE_*` vai no bundle por natureza). | Nenhuma. |
+| `.env.local` / `.env.keys` | Raiz do projeto | `.env.local` já estava no `.gitignore`; **`.env.keys` não estava** — corrigido. | Se o projeto for exportado ou publicado em repositório, conferir que os dois arquivos não vão junto. |
+| Sessões / tokens | Convex Auth | OTP de 6 dígitos expira em 15 min; nenhum token de longa duração no código. | Nenhuma. |
+
+**Regra prática de rotação:** hoje o usuário não possui nenhuma chave própria — não há nada para
+rotacionar. A necessidade aparece apenas em dois gatilhos: (1) o projeto passar a consumir um
+serviço de terceiro (e-mail em massa, pagamento, IA) — nesse caso a chave nasce na aba Keys,
+nunca no código; (2) suspeita de vazamento do repositório — nesse caso rotacionar a chave
+comprometida no provedor e atualizar na aba Keys, sem tocar em código.
+
+---
+
 ## 9. Roteiro de demonstração (5 minutos)
 
 1. Abra a **landing** e mostre a proposta (planejamento → produção → aprovação → resultado).
