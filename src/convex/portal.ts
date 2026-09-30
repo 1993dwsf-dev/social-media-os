@@ -58,8 +58,20 @@ async function listOwned(ctx: Ctx, ownerId: Owner, table: OwnedTable) {
     .collect()) as any[];
 }
 
-async function getOwned(ctx: Ctx, ownerId: Owner, id: string) {
-  const doc = await db(ctx).get(id);
+/**
+ * Busca um registro **do dono**. O `normalizeId` confere antes se o id é mesmo
+ * daquela tabela: um id de outra tabela (ou um id inválido) vira `null` em vez
+ * de estourar um erro do runtime, e o dono é comparado depois da leitura.
+ */
+async function getOwned(
+  ctx: Ctx,
+  ownerId: Owner,
+  table: OwnedTable,
+  id: string,
+) {
+  const normalized = ctx.db.normalizeId(table, id);
+  if (!normalized) return null;
+  const doc = await db(ctx).get(normalized);
   if (!doc || doc.ownerId !== ownerId) return null;
   return doc;
 }
@@ -67,7 +79,7 @@ async function getOwned(ctx: Ctx, ownerId: Owner, id: string) {
 /** Rejeita gravações que apontem para um cliente de outra pessoa. */
 async function assertOwnedClient(ctx: Ctx, ownerId: Owner, clientId?: string) {
   if (!clientId) return;
-  const client = await getOwned(ctx, ownerId, clientId);
+  const client = await getOwned(ctx, ownerId, "clients", clientId);
   if (!client) throw new Error("Cliente não encontrado neste espaço de trabalho");
 }
 
@@ -139,7 +151,7 @@ export const updateClient = mutation({
   args: { id: v.string(), patch: v.any() },
   handler: async (ctx, { id, patch }) => {
     const ownerId = await requireOwner(ctx);
-    const doc = await getOwned(ctx, ownerId, id);
+    const doc = await getOwned(ctx, ownerId, "clients", id);
     if (!doc) throw new Error("Cliente não encontrado neste espaço de trabalho");
     await ctx.db.patch(doc._id, sanitize(patch));
   },
@@ -149,7 +161,7 @@ export const removeClient = mutation({
   args: { id: v.string() },
   handler: async (ctx, { id }) => {
     const ownerId = await requireOwner(ctx);
-    const doc = await getOwned(ctx, ownerId, id);
+    const doc = await getOwned(ctx, ownerId, "clients", id);
     if (!doc) throw new Error("Cliente não encontrado neste espaço de trabalho");
     // Remove tudo que pertence ao cliente para não sobrar registro órfão.
     for (const table of OWNED_TABLES.filter((t): t is PerClientTable => t !== "clients")) {
@@ -188,16 +200,19 @@ function perClientApi(table: PerClientTable) {
       args: { id: v.string(), patch: v.any() },
       handler: async (ctx, { id, patch }) => {
         const ownerId = await requireOwner(ctx);
-        const doc = await getOwned(ctx, ownerId, id);
+        const doc = await getOwned(ctx, ownerId, table, id);
         if (!doc) throw new Error("Registro não encontrado neste espaço de trabalho");
-        await ctx.db.patch(doc._id, sanitize(patch));
+        const record = sanitize(patch);
+        // Um patch não pode reapontar o registro para o cliente de outra pessoa.
+        await assertOwnedClient(ctx, ownerId, record.clientId as string | undefined);
+        await ctx.db.patch(doc._id, record);
       },
     }),
     remove: mutation({
       args: { id: v.string() },
       handler: async (ctx, { id }) => {
         const ownerId = await requireOwner(ctx);
-        const doc = await getOwned(ctx, ownerId, id);
+        const doc = await getOwned(ctx, ownerId, table, id);
         if (!doc) throw new Error("Registro não encontrado neste espaço de trabalho");
         await ctx.db.delete(doc._id);
       },
@@ -262,6 +277,8 @@ export const generateInvoices = mutation({
   },
   handler: async (ctx, { months = 1, clientId }) => {
     const ownerId = await requireOwner(ctx);
+    // O filtro opcional também precisa ser do dono (defesa em profundidade).
+    await assertOwnedClient(ctx, ownerId, clientId);
     const clients = (await listOwned(ctx, ownerId, "clients")) as any[];
     const existing = (await db(ctx)
       .query("finance")
@@ -294,7 +311,7 @@ export const markFinancePaid = mutation({
   args: { id: v.string() },
   handler: async (ctx, { id }) => {
     const ownerId = await requireOwner(ctx);
-    const doc = await getOwned(ctx, ownerId, id);
+    const doc = await getOwned(ctx, ownerId, "finance", id);
     if (!doc) throw new Error("Registro não encontrado neste espaço de trabalho");
     await ctx.db.patch(doc._id, { status: "Paid", paidDate: new Date().toISOString().slice(0, 10) });
   },

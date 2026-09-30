@@ -219,6 +219,37 @@ pt-BR na tela.
 
 ---
 
+## 8.3 Isolamento entre contas (auditoria de 30/09/2026)
+
+**Regra do produto:** cada conta é um espaço de trabalho fechado. Não existe (e não deve existir)
+nenhuma tela ou função que leia dados de outra conta.
+
+**Como isso é garantido no código** — todo registro gravado tem `ownerId`, e toda função do Convex
+começa resolvendo a conta logada com `getAuthUserId`:
+
+| Tipo | O que faz |
+| --- | --- |
+| Consultas (`list*`, `getWorkspace`, `users.currentUser`) | Sem sessão devolvem lista vazia (ou `null`); com sessão filtram pelo índice `by_owner` da conta logada. |
+| Escritas (`create*`, `update*`, `remove*`, `markFinancePaid`, `clearWorkspace`) | Sem sessão lançam "Não autenticado". Antes de tocar no registro, conferem que ele existe **e** pertence à conta (`normalizeId` + comparação de `ownerId`) — id de outra tabela ou de outra conta vira "não encontrado". |
+| Campos sensíveis | `ownerId`, `_id` e `_creationTime` são removidos de qualquer payload vindo do cliente, então um patch não consegue trocar o dono nem forjar um id. |
+| Tabela `turnstileGrants` | Sem dado de usuário; as funções são **internas** (inacessíveis pelo cliente). `turnstile.getTurnstileStatus` devolve só um booleano de configuração do servidor. |
+| Dados de exemplo / limpeza | `demo.seedDemo` e `clearWorkspace` apagam e inserem **apenas** linhas com o `ownerId` de quem chamou. |
+
+**O que a auditoria encontrou e corrigiu** (dois furos de integridade, ambos sem exposição de leitura):
+
+1. Um `update` de conteúdo/tarefa/solicitação/reunião/entrega/finança aceitava trocar o `clientId` do
+   registro para o **cliente de outra conta** (a linha continuava aparecendo só para o dono, mas
+   ficava apontando para um cliente alheio). Agora o `clientId` do patch também passa pela checagem
+   de propriedade.
+2. `generateInvoices` aceitava um `clientId` de outra conta (não gerava nada, mas silenciosamente).
+   Agora recusa com "Cliente não encontrado neste espaço de trabalho".
+
+**Prova automatizada:** `tests/tenancy.test.ts` roda as funções Convex de verdade em memória
+(`convex-test`) com duas contas e verifica leitura, escrita, troca de dono, reapontamento de
+`clientId`, faturas, dados de exemplo e limpeza — **14 testes**, todos passando.
+
+---
+
 ## 9. Changelog de preparação para lançamento (30/09/2026)
 
 Varredura completa de código e funcionalidades antes do lançamento oficial:
@@ -239,11 +270,18 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 - 15 testes novos cobrindo normalização do e-mail, validade das autorizações, o `siteverify`
   (sucesso, recusa, HTTP ruim, rede fora) e as chaves de teste oficiais.
 
+**Isolamento entre contas**
+- Auditoria de todas as consultas e mutations: nenhuma leitura cruza contas; ver §8.3.
+- Corrigido: um `update` podia reapontar um registro para o cliente de outra conta.
+- Corrigido: `generateInvoices` aceitava um `clientId` de outra conta.
+- 14 testes de isolamento com duas contas (`convex-test`), incluindo tentativas de invasão.
+
 **Qualidade**
 - ESLint: 18 erros → 0 (padrão de estado-durante-render recomendado pelo React nas seções;
   omissões `_id`/`ownerId` padronizadas; falsos positivos de shadcn/ui suprimidos com
   justificativa).
-- 36 testes passando (planilha, fórmulas, faturas e anti-robô do login), `tsc` limpo, funções Convex publicadas.
+- 50 testes passando (planilha, fórmulas, faturas, anti-robô do login e isolamento entre contas),
+  `tsc` limpo, funções Convex publicadas.
 
 **Polimento visual**
 - Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis
