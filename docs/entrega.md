@@ -244,9 +244,29 @@ começa resolvendo a conta logada com `getAuthUserId`:
 2. `generateInvoices` aceitava um `clientId` de outra conta (não gerava nada, mas silenciosamente).
    Agora recusa com "Cliente não encontrado neste espaço de trabalho".
 
-**Prova automatizada:** `tests/tenancy.test.ts` roda as funções Convex de verdade em memória
-(`convex-test`) com duas contas e verifica leitura, escrita, troca de dono, reapontamento de
-`clientId`, faturas, dados de exemplo e limpeza — **14 testes**, todos passando.
+**Rotas sem sessão (as únicas portas abertas):**
+
+| Rota | Tipo | Devolve |
+| --- | --- | --- |
+| `turnstile:getTurnstileStatus` | query | `{ enforced: boolean }` — configuração do servidor, nenhum dado de usuário. |
+| `turnstile:verifyTurnstile` | action | Valida o captcha antes do login; sem chave secreta não grava nada. |
+| `auth:signIn` | action | O próprio login/cadastro (por e-mail ou visitante). |
+| `auth:isAuthenticated` | query | `true`/`false` conforme a sessão. |
+| `auth:signOut` | action | Encerra a sessão atual (sem sessão, não faz nada). |
+
+As rotas HTTP são só duas, ambas públicas e de leitura: `/.well-known/openid-configuration` e
+`/.well-known/jwks.json`. As rotas `/api/auth/*` só existem quando há OAuth configurado — não é o
+caso deste produto.
+
+**Prova automatizada:**
+
+- `tests/tenancy.test.ts` roda as funções Convex de verdade em memória (`convex-test`) com duas contas
+  e verifica leitura, escrita, troca de dono, reapontamento de `clientId`, faturas, dados de exemplo e
+  limpeza — **14 testes**.
+- `tests/no-session.test.ts` atualiza o inventário de rotas a cada execução (toda função nova precisa
+  ser classificada, senão a suíte falha), chama **todas** as rotas sem sessão com um espaço marcado
+  (`SEGREDO-DA-CONTA`) e confere que nenhuma leitura devolve dado de usuário e que nenhuma escrita
+  passa — **7 testes**.
 
 ---
 
@@ -274,14 +294,15 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 - Auditoria de todas as consultas e mutations: nenhuma leitura cruza contas; ver §8.3.
 - Corrigido: um `update` podia reapontar um registro para o cliente de outra conta.
 - Corrigido: `generateInvoices` aceitava um `clientId` de outra conta.
-- 14 testes de isolamento com duas contas (`convex-test`), incluindo tentativas de invasão.
+- Inventário de rotas documentado: das 43 funções, 3 são internas e só 5 respondem sem sessão.
+- 14 testes de isolamento com duas contas e 7 testes das portas abertas (`convex-test`).
 
 **Qualidade**
 - ESLint: 18 erros → 0 (padrão de estado-durante-render recomendado pelo React nas seções;
   omissões `_id`/`ownerId` padronizadas; falsos positivos de shadcn/ui suprimidos com
   justificativa).
-- 50 testes passando (planilha, fórmulas, faturas, anti-robô do login e isolamento entre contas),
-  `tsc` limpo, funções Convex publicadas.
+- 57 testes passando (planilha, fórmulas, faturas, anti-robô do login, isolamento entre contas e
+  rotas sem sessão), `tsc` limpo, funções Convex publicadas.
 
 **Polimento visual**
 - Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis
