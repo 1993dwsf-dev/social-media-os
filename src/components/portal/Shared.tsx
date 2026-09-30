@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { label } from "@/data/labels";
+import { Facebook, Instagram, Linkedin, Music2, Pin, Youtube } from "lucide-react";
 import {
   CLIENT_CHIP,
   FILE_CHIP,
@@ -68,6 +69,21 @@ export function StatusChip({
   );
 }
 
+// Ícone por plataforma: mais escaneável que códigos ("IG/TT") nas células do
+// calendário e nas listas. TikTok/Pinterest não existem no lucide; usamos
+// aproximados visuais (Music2 e Pin).
+const PLATFORM_ICONS: Record<
+  keyof typeof PLATFORM_META,
+  React.ComponentType<{ className?: string }>
+> = {
+  Instagram,
+  TikTok: Music2,
+  LinkedIn: Linkedin,
+  YouTube: Youtube,
+  Facebook,
+  Pinterest: Pin,
+};
+
 export function PlatformChip({
   platform,
   className,
@@ -76,15 +92,18 @@ export function PlatformChip({
   className?: string;
 }) {
   const meta = PLATFORM_META[platform];
+  const Icon = PLATFORM_ICONS[platform];
   return (
     <span
+      title={platform}
       className={cn(
-        "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-semibold tracking-wide",
+        "inline-flex items-center justify-center rounded-md border p-1",
         meta.className,
         className,
       )}
     >
-      {meta.short}
+      <Icon className="size-3" />
+      <span className="sr-only">{platform}</span>
     </span>
   );
 }
@@ -163,15 +182,59 @@ export function ClientChip({ name, className }: { name: string; className?: stri
   );
 }
 
+// Tons determinísticos derivados do nome: o mesmo cliente sempre recebe a mesma cor,
+// em qualquer lista, sem cadastro de imagem.
+const AVATAR_TINTS = [
+  "bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-200",
+  "bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-200",
+  "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-200",
+  "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-200",
+  "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-200",
+  "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200",
+];
+
+export function ClientAvatar({ name, className }: { name: string; className?: string }) {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+  const hash = [...name].reduce((acc, ch) => acc + (ch.codePointAt(0) ?? 0), 0);
+  const tint = AVATAR_TINTS[hash % AVATAR_TINTS.length];
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex size-8 shrink-0 select-none items-center justify-center rounded-full text-[11px] font-semibold",
+        tint,
+        className,
+      )}
+    >
+      {initials || "\u2014"}
+    </span>
+  );
+}
+
 export function EmptyState({
   title,
   hint,
+  icon,
 }: {
   title: string;
   hint?: string;
+  icon?: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-dashed border-border/80 bg-muted/30 px-6 py-10 text-center">
+      {icon ? (
+        <div
+          aria-hidden
+          className="mx-auto mb-3 flex size-10 items-center justify-center rounded-full bg-card text-muted-foreground/60 ring-1 ring-border/60"
+        >
+          {icon}
+        </div>
+      ) : null}
       <p className="text-sm font-medium text-foreground">{title}</p>
       {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
     </div>

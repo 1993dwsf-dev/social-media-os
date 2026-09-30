@@ -1,5 +1,6 @@
 // Reuniões com clientes: pauta antes, anotações e itens de ação depois.
 
+import { Video } from "lucide-react";
 import { toast } from "sonner";
 
 import { EntityTable, type FieldSpec } from "@/components/portal/EntityTable";
@@ -52,6 +53,7 @@ export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
         focusClientId={focus.clientId}
         emptyTitle="Nenhuma reunião ainda"
         emptyHint="Agende uma conversa e mantenha pauta, anotações e acompanhamentos em um só lugar."
+        emptyIcon={<Video className="size-4" />}
         defaults={{
           status: "Scheduled",
           date: todayISO(),

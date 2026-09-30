@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
+import { ClientAvatar } from "@/components/portal/Shared";
 import { todayISO } from "@/data/constants";
 import type { SectionId } from "@/data/types";
 import { SECTIONS } from "@/data/types";
@@ -146,6 +147,11 @@ export default function Portal() {
           {ws.profile.agency || ws.profile.managerName || "Espaço do gestor"}
         </p>
       </div>
+      {ws.profile.managerName ? (
+        <span className="ml-auto hidden sm:inline">
+          <ClientAvatar name={ws.profile.managerName} className="size-7 text-[10px]" />
+        </span>
+      ) : null}
     </div>
   );
 

@@ -32,7 +32,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ClientChip, EmptyState, SectionHeader, StatusChip } from "@/components/portal/Shared";
+import { ClientAvatar, ClientChip, EmptyState, SectionHeader, StatusChip } from "@/components/portal/Shared";
 import { formatDate, todayISO } from "@/data/constants";
 import { label } from "@/data/labels";
 import { CLIENT_STATUSES, PLATFORMS } from "@/data/types";
@@ -266,11 +266,14 @@ export function ClientsSection({
                 className="card-lift card-lift-hover flex flex-col rounded-xl border border-border/70 bg-card p-4"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h2 className="truncate text-sm font-semibold tracking-tight">{client.name}</h2>
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {client.industry || "Sem segmento definido"}
-                    </p>
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <ClientAvatar name={client.name} />
+                    <div className="min-w-0">
+                      <h2 className="truncate text-sm font-semibold tracking-tight">{client.name}</h2>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {client.industry || "Sem segmento definido"}
+                      </p>
+                    </div>
                   </div>
                   <StatusChip status={client.status} />
                 </div>

@@ -104,11 +104,12 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="relative flex min-h-screen flex-col">
+      {/* Textura de marca, a mesma da landing page. */}
+      <div className="grid-paper pointer-events-none absolute inset-0" />
 
-      
       {/* Conteúdo de autenticação */}
-      <div className="flex-1 flex items-center justify-center">
+      <div className="relative flex-1 flex items-center justify-center">
         <div className="flex items-center justify-center h-full flex-col">
         <Card className="min-w-[350px] pb-0 border shadow-md">
           {step === "signIn" ? (

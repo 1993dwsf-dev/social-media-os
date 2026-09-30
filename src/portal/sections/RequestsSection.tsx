@@ -1,5 +1,6 @@
 // Solicitações dos clientes: o que pediram, qual o prazo e em que ponto está.
 
+import { Inbox } from "lucide-react";
 import { toast } from "sonner";
 
 import { EntityTable, type FieldSpec } from "@/components/portal/EntityTable";
@@ -48,6 +49,7 @@ export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
         focusClientId={focus.clientId}
         emptyTitle="Nenhuma solicitação registrada"
         emptyHint="Registre o que o cliente pede para nada se perder entre as conversas."
+        emptyIcon={<Inbox className="size-4" />}
         defaults={{
           status: "New",
           priority: "Medium",

@@ -11,6 +11,7 @@ import {
   PiggyBank,
   Repeat,
   Wallet,
+  WalletCards,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -341,6 +342,7 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
         statusKey="status"
         emptyTitle="Nenhum lançamento financeiro ainda"
         emptyHint="Registre mensalidades, projetos e seus custos fixos para ver sua margem."
+        emptyIcon={<WalletCards className="size-4" />}
         defaults={{
           date: todayISO(),
           type: "Income",

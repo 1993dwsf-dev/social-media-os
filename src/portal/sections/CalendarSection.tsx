@@ -361,7 +361,7 @@ export function CalendarSection({
                           title={`${entry.item.topic} · ${ws.clientName(entry.item.clientId)}`}
                         >
                           <span className="mr-1 inline-flex align-middle">
-                            <PlatformChip platform={entry.item.platform} className="px-1 py-0 text-[9px]" />
+                            <PlatformChip platform={entry.item.platform} className="px-1 py-0" />
                           </span>
                           <span className="align-middle">{entry.item.topic}</span>
                         </button>

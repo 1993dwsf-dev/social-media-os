@@ -1,5 +1,6 @@
 // Arquivos e entregas por cliente — o que foi produzido, compartilhado e arquivado.
 
+import { FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 
 import { EntityTable, type FieldSpec } from "@/components/portal/EntityTable";
@@ -52,6 +53,7 @@ export function FilesSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
         focusClientId={focus.clientId}
         emptyTitle="Nenhum arquivo registrado"
         emptyHint="Acompanhe cada entrega para saber sempre o que foi enviado e quando."
+        emptyIcon={<FolderOpen className="size-4" />}
         defaults={{
           status: "In progress",
           category: "Graphics",

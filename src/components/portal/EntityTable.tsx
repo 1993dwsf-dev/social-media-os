@@ -57,6 +57,8 @@ interface EntityTableProps<T extends { id: string }> {
   entityName: string;
   emptyTitle: string;
   emptyHint?: string;
+  /** Ícone opcional exibido no estado vazio. */
+  emptyIcon?: React.ReactNode;
   statusKey?: string;
   defaults?: Record<string, string>;
   /** Foco de cliente do workspace (barra superior); "" significa todos. */
@@ -113,6 +115,7 @@ export function EntityTable<T extends { id: string }>({
   entityName,
   emptyTitle,
   emptyHint,
+  emptyIcon,
   statusKey = "status",
   defaults = {},
   focusClientId = "",
@@ -217,6 +220,7 @@ export function EntityTable<T extends { id: string }>({
         <EmptyState
           title={rows.length === 0 ? emptyTitle : "Nada corresponde a estes filtros"}
           hint={rows.length === 0 ? emptyHint : "Tente outro cliente, status ou termo de busca."}
+          icon={emptyIcon}
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border/70 bg-card">

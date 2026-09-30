@@ -1,7 +1,7 @@
 // Lista de tarefas de todos os clientes — o que precisa acontecer, para quem e até quando.
 
 import { useMemo } from "react";
-import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 
 import { EntityTable, type FieldSpec } from "@/components/portal/EntityTable";
@@ -85,6 +85,7 @@ export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
         focusClientId={focus.clientId}
         emptyTitle="Nenhuma tarefa ainda"
         emptyHint="Adicione uma tarefa para manter o trabalho de cada cliente em andamento."
+        emptyIcon={<ListChecks className="size-4" />}
         defaults={{
           status: "Backlog",
           priority: "Medium",
