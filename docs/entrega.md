@@ -177,7 +177,37 @@ comprometida no provedor e atualizar na aba Keys, sem tocar em código.
 
 ---
 
-## 9. Roteiro de demonstração (5 minutos)
+## 9. Changelog de preparação para lançamento (30/09/2026)
+
+Varredura completa de código e funcionalidades antes do lançamento oficial:
+
+**Defeitos corrigidos**
+- Financeiro: o resumo "Sem cliente / custos do negócio" tratava receita avulsa como custo
+  negativo (lucro errado na linha); agora receita e despesa são somadas separadamente.
+- Financeiro: rótulo do mês trocado de um `slice` frágil para formatação pt-BR consistente.
+- Configurações: botão "Load demo data" traduzido ("Carregar dados de exemplo").
+- Auth: `console.log` de debug removidos (mantidos apenas erros legítimos).
+- Código morto removido: página de dashboard do template (nunca roteada) e lista de seções
+  duplicada em `main.tsx`.
+
+**Qualidade**
+- ESLint: 18 erros → 0 (padrão de estado-durante-render recomendado pelo React nas seções;
+  omissões `_id`/`ownerId` padronizadas; falsos positivos de shadcn/ui suprimidos com
+  justificativa).
+- 21 testes passando (planilha, fórmulas, faturas), `tsc` limpo, funções Convex publicadas.
+
+**Polimento visual**
+- Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis
+  no calendário e nas aprovações.
+- Estados vazios com ícone contextual por seção (tarefas, solicitações, reuniões, arquivos,
+  financeiro).
+- Avatares de cliente com iniciais e cor determinística nos cartões e no cabeçalho do portal.
+- Página 404 redesenhada no tema do produto (grid-paper, marca, CTAs para painel e home).
+- Textura `grid-paper` da landing aplicada também ao `/auth`, unificando as superfícies públicas.
+
+---
+
+## 10. Roteiro de demonstração (5 minutos)
 
 1. Abra a **landing** e mostre a proposta (planejamento → produção → aprovação → resultado).
 2. Entre com um e-mail de demonstração e carregue os **dados de exemplo**.
