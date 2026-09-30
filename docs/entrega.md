@@ -168,12 +168,54 @@ de terceiros em uso.
 | `VITE_CONVEX_URL`, `CONVEX_SITE_URL`, `VLY_CONVEX_AUTH_ISSUER`, `VLY_APP_NAME` | Aba Keys | URLs e identificadores, não são segredos (o `VITE_*` vai no bundle por natureza). | Nenhuma. |
 | `.env.local` / `.env.keys` | Raiz do projeto | `.env.local` já estava no `.gitignore`; **`.env.keys` não estava** — corrigido. | Se o projeto for exportado ou publicado em repositório, conferir que os dois arquivos não vão junto. |
 | Sessões / tokens | Convex Auth | OTP de 6 dígitos expira em 15 min; nenhum token de longa duração no código. | Nenhuma. |
+| `TURNSTILE_SECRET_KEY` (Cloudflare Turnstile) | Aba Keys, lida no servidor (`src/lib/turnstile-server.ts`) | Opcional: sem ela o captcha fica desligado e o login funciona como antes. | Se a chave vazar ou for trocada no painel da Cloudflare, atualizar na aba Keys — não há nada no código a mudar. |
 
 **Regra prática de rotação:** hoje o usuário não possui nenhuma chave própria — não há nada para
 rotacionar. A necessidade aparece apenas em dois gatilhos: (1) o projeto passar a consumir um
 serviço de terceiro (e-mail em massa, pagamento, IA) — nesse caso a chave nasce na aba Keys,
 nunca no código; (2) suspeita de vazamento do repositório — nesse caso rotacionar a chave
 comprometida no provedor e atualizar na aba Keys, sem tocar em código.
+
+---
+
+## 8.2 Anti-robô no login (Cloudflare Turnstile)
+
+O `/auth` tem duas portas de entrada — o **código por e-mail** (login e cadastro são o mesmo fluxo) e
+**"Continuar como visitante"**. As duas passam pelo Cloudflare Turnstile quando ele está configurado.
+
+**Como ligar (aba Keys, as duas chaves juntas):**
+
+| Variável | Onde vale | Para que serve |
+| --- | --- | --- |
+| `VITE_TURNSTILE_SITE_KEY` | front (widget no `/auth`) | Chave pública do site, criada no painel da Cloudflare (Turnstile → Add site). Sem ela o widget não aparece. |
+| `TURNSTILE_SECRET_KEY` | servidor (funções Convex) | Chave secreta. É ela que **liga** a exigência: sem ela a verificação é pulada e o login continua funcionando. |
+
+Configure **as duas** ou nenhuma. Só a secreta deixa o servidor exigindo um token que o widget não
+tem como produzir — a própria tela de login avisa quando esse descompasso acontece.
+
+**Como funciona por dentro** (chaves em `src/lib/turnstile-server.ts`, funções em `src/convex/turnstile.ts`):
+
+1. O widget resolve o desafio e devolve um token de uso único.
+2. A action `turnstile.verifyTurnstile` valida o token em `siteverify` e grava uma **autorização**
+   de 10 minutos para aquele e-mail (tabela `turnstileGrants`).
+3. O envio do código por e-mail (`src/convex/auth/emailOtp.ts`) só acontece se a autorização existir
+   — e ela é consumida na hora, então cada código custa um desafio resolvido.
+4. O acesso visitante (`src/convex/auth/guest.ts`) valida o token antes de criar a conta anônima.
+
+**Degradação graciosa:** sem as chaves, nada muda no produto. Se o Cloudflare ficar inacessível
+(erro de rede ou HTTP inesperado), o login **passa** e o erro é registrado no log — preferimos não
+trancar todo mundo fora por causa de indisponibilidade de terceiro. Token ausente ou recusado
+continua barrado.
+
+**Chaves de teste oficiais da Cloudflare** (para validar a integração sem domínio próprio):
+
+- site key que **sempre passa**: `1x00000000000000000000AA` (visível) ou `1x00000000000000000000BB` (invisível);
+- site key que **sempre bloqueia**: `2x00000000000000000000AB`;
+- secret que **sempre passa**: `1x0000000000000000000000000000000AA`.
+
+Referência: `developers.cloudflare.com/turnstile/troubleshooting/testing/`. Com o secret que sempre
+passa + o site key que sempre bloqueia dá para ver a recusa acontecer de verdade, com a mensagem em
+pt-BR na tela.
 
 ---
 
@@ -190,11 +232,18 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 - Código morto removido: página de dashboard do template (nunca roteada) e lista de seções
   duplicada em `main.tsx`.
 
+**Anti-robô no login**
+- Cloudflare Turnstile integrado ao `/auth` (e-mail e "Continuar como visitante"), com verificação
+  no servidor antes de enviar o código ou criar conta — ver §8.2.
+- Sem as chaves configuradas a verificação fica desligada; o login não depende do Cloudflare.
+- 15 testes novos cobrindo normalização do e-mail, validade das autorizações, o `siteverify`
+  (sucesso, recusa, HTTP ruim, rede fora) e as chaves de teste oficiais.
+
 **Qualidade**
 - ESLint: 18 erros → 0 (padrão de estado-durante-render recomendado pelo React nas seções;
   omissões `_id`/`ownerId` padronizadas; falsos positivos de shadcn/ui suprimidos com
   justificativa).
-- 21 testes passando (planilha, fórmulas, faturas), `tsc` limpo, funções Convex publicadas.
+- 36 testes passando (planilha, fórmulas, faturas e anti-robô do login), `tsc` limpo, funções Convex publicadas.
 
 **Polimento visual**
 - Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis

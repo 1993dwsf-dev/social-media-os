@@ -187,6 +187,18 @@ const schema = defineSchema(
       .index("by_owner", ["ownerId"])
       .index("by_client", ["clientId"]),
 
+    // ---- Contentplane: anti-robô do /auth ---------------------------------
+    // Criada quando o visitante resolve o captcha (Cloudflare Turnstile).
+    // Cada linha libera **um** envio de código para um e-mail e expira em
+    // poucos minutos — ver `src/convex/turnstile.ts`.
+    turnstileGrants: defineTable({
+      identifier: v.string(), // e-mail normalizado
+      token: v.string(), // token do widget (auditoria)
+      createdAt: v.number(),
+      expiresAt: v.number(),
+      usedAt: v.optional(v.number()),
+    }).index("by_identifier", ["identifier"]),
+
     workspaces: defineTable({
       ownerId: v.id("users"),
       managerName: v.string(),
