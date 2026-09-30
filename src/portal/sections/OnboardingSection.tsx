@@ -1,7 +1,7 @@
 // Checklist de integração do cliente — o cadastro que você preenche uma vez
 // por cliente. O progresso é simplesmente quantas etapas têm conteúdo.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, Circle, Save } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,11 +25,15 @@ export function OnboardingSection({ ws, focus }: { ws: Workspace; focus: ClientF
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!client) return;
-    setAnswers(client.onboarding ?? {});
+  // Ao trocar de cliente, recarrega o formulário a partir do registro: ajusta o
+  // estado durante o render quando `client` muda (padrão recomendado pelo
+  // React) em vez de sincronizar via efeito.
+  const [lastClient, setLastClient] = useState(client);
+  if (client !== lastClient) {
+    setLastClient(client);
+    setAnswers(client?.onboarding ?? {});
     setDirty(false);
-  }, [client]);
+  }
 
   const done = useMemo(
     () => ONBOARDING_STEPS.filter((step) => (answers[step] ?? "").trim().length > 0).length,

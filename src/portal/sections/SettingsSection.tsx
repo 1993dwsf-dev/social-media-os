@@ -1,7 +1,7 @@
 // Configurações do workspace: quem é o gestor, como o espaço se comporta e as
 // ferramentas de dados (backup, dados de exemplo, reset).
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   Download,
   FileJson,
@@ -32,10 +32,15 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  // Quando o perfil salvo muda (ex.: outra aba editou), recarrega o formulário:
+  // ajusta o estado durante o render (padrão recomendado pelo React) em vez de
+  // sincronizar via efeito.
+  const [lastProfile, setLastProfile] = useState(ws.profile);
+  if (lastProfile !== ws.profile) {
+    setLastProfile(ws.profile);
     setForm(ws.profile);
     setDirty(false);
-  }, [ws.profile]);
+  }
 
   const patch = (values: Partial<WorkspaceProfile>) => {
     setForm((prev) => ({ ...prev, ...values }));
@@ -231,7 +236,7 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
                 }
               }}
             >
-              <Sparkles className="size-4" /> Load demo data
+              <Sparkles className="size-4" /> Carregar dados de exemplo
             </Button>
             {confirmReset ? (
               <span className="inline-flex items-center gap-2">

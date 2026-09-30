@@ -2,7 +2,7 @@
 // Arquivos. As especificações de campo alimentam tanto as colunas quanto o
 // diálogo de criar/editar, então cada seção descreve apenas os próprios dados.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -125,14 +125,18 @@ export function EntityTable<T extends { id: string }>({
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Acompanha o foco de cliente definido na barra superior: se mudou desde o
+  // último render, ajusta o estado durante o render (padrão recomendado pelo
+  // React para estado derivado de props) e re-renderiza imediatamente.
+  const [lastFocus, setLastFocus] = useState(focusClientId);
+  if (lastFocus !== focusClientId) {
+    setLastFocus(focusClientId);
+    setClientFilter(focusClientId || "all");
+  }
+
   const clientSelectField = fields.find((f) => f.type === "client");
   const statusField = fields.find((f) => f.key === statusKey);
   const statusOptions = statusField?.options ?? [];
-
-  // Acompanha o foco de cliente definido na barra superior.
-  useEffect(() => {
-    setClientFilter(focusClientId || "all");
-  }, [focusClientId]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();

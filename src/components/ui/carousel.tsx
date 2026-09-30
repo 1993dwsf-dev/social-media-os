@@ -93,6 +93,7 @@ function Carousel({
 
   React.useEffect(() => {
     if (!api) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- código shadcn/ui: sincroniza com a API do embla ao montar
     onSelect(api)
     api.on("reInit", onSelect)
     api.on("select", onSelect)

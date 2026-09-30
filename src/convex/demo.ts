@@ -5,7 +5,6 @@
 // "hoje" para que calendário, painel e visão financeira já apareçam populados.
 
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
 
 import { mutation } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";

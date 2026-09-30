@@ -1,7 +1,7 @@
 // Estratégia por cliente: objetivos, público, pilares, voz e os indicadores
 // combinados entre gestor e cliente.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,12 +42,16 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (!client) return;
-    setBlocks(normalize(client));
-    setKpis(client.kpis ?? []);
+  // Ao trocar de cliente, recarrega o editor a partir do registro: ajusta o
+  // estado durante o render quando `client` muda (padrão recomendado pelo
+  // React) em vez de sincronizar via efeito.
+  const [lastClient, setLastClient] = useState(client);
+  if (client !== lastClient) {
+    setLastClient(client);
+    setBlocks(client ? normalize(client) : []);
+    setKpis(client?.kpis ?? []);
     setDirty(false);
-  }, [client]);
+  }
 
   const totals = useMemo(() => {
     const filled = blocks.reduce((sum, block) => sum + block.items.filter((i) => i.trim()).length, 0);

@@ -106,21 +106,6 @@ function RouteSyncer() {
   return null;
 }
 
-const SECTIONS = [
-  "dashboard",
-  "clients",
-  "calendar",
-  "tasks",
-  "approvals",
-  "finance",
-  "requests",
-  "meetings",
-  "files",
-  "strategy",
-  "onboarding",
-  "settings",
-];
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <RootErrorBoundary>

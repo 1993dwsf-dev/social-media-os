@@ -79,9 +79,6 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     try {
       const formData = new FormData(event.currentTarget);
       await signIn("email-otp", formData);
-
-      console.log("sessão iniciada");
-
       navigate(redirect);
     } catch (error) {
       console.error("Erro na verificação do código:", error);
@@ -97,13 +94,10 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     setIsLoading(true);
     setError(null);
     try {
-      console.log("Tentando entrar como visitante...");
       await signIn("anonymous");
-      console.log("Entrada como visitante concluída");
       navigate(redirect);
     } catch (error) {
       console.error("Erro ao entrar como visitante:", error);
-      console.error("Detalhes do erro:", JSON.stringify(error, null, 2));
       setError(`Não foi possível entrar como visitante: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       setIsLoading(false);
     }

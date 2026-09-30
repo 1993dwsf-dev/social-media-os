@@ -1,7 +1,7 @@
 // O coração operacional do workspace: um calendário com o conteúdo planejado e
 // as tarefas de todos os clientes, com filtros de cliente/plataforma/status.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronLeft,
@@ -85,10 +85,13 @@ export function CalendarSection({
     [clientFilter],
   );
 
-  // Acompanha o foco de cliente definido na barra superior.
-  useEffect(() => {
+  // Acompanha o foco de cliente da barra superior: ajusta o estado durante o
+  // render quando a prop muda (padrão recomendado pelo React) em vez de efeito.
+  const [lastFocus, setLastFocus] = useState(focus.clientId);
+  if (lastFocus !== focus.clientId) {
+    setLastFocus(focus.clientId);
     setClientFilter(focus.clientId || "all");
-  }, [focus.clientId]);
+  }
 
   const monthContent = useMemo(
     () =>

@@ -46,7 +46,8 @@ async function requireOwner(ctx: Ctx): Promise<Owner> {
 /** Nunca deixe um payload sobrescrever campos de identidade/sistema. */
 function sanitize(patch: unknown): Record<string, unknown> {
   if (!patch || typeof patch !== "object") return {};
-  const { ownerId: _o, _id: _i, _creationTime: _c, ...rest } = patch as Record<string, unknown>;
+  const { ownerId: _ownerId, _id: _docId, _creationTime: _createdAt, ...rest } =
+    patch as Record<string, unknown>;
   return rest;
 }
 

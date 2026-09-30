@@ -73,11 +73,11 @@ export const DEFAULT_PROFILE: WorkspaceProfile = {
 };
 
 function strip(doc: Doc): Record<string, unknown> & { id: string } {
-  const { _id, _creationTime, ownerId: _ownerId, ...rest } = doc as Doc & {
+  const { _id: docId, _creationTime: _createdAt, ownerId: _ownerId, ...rest } = doc as Doc & {
     _creationTime?: number;
     ownerId?: string;
   };
-  return { id: _id, ...rest };
+  return { id: docId, ...rest };
 }
 
 function sortBy<T>(rows: T[], key: (row: T) => string, direction: "asc" | "desc" = "asc"): T[] {
@@ -284,7 +284,7 @@ export function useWorkspace(): Workspace {
       }
       const remap = (rows: unknown) =>
         ((rows as unknown[]) ?? []).map((row) => {
-          const { id: _id, clientId, ...rest } = row as Record<string, unknown>;
+          const { id: _rowId, clientId, ...rest } = row as Record<string, unknown>;
           return { ...rest, clientId: idMap.get(String(clientId)) };
         });
       for (const row of remap(parsed.content)) await contentApi.create({ data: withClient(row) });

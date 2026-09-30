@@ -220,7 +220,7 @@ export default function Workbook() {
               </SelectContent>
             </Select>
             <div className="scrollbar-thin flex flex-1 gap-1 overflow-x-auto pb-1">
-              {filteredSheets.map((s, i) => {
+              {filteredSheets.map((s) => {
                 const isActive = s.id === sheet.id;
                 return (
                   <button

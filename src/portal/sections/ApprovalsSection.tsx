@@ -1,7 +1,7 @@
 // Aprovações: o gestor registra o que o cliente decidiu sobre cada conteúdo,
 // para que o fluxo sempre reflita a realidade.
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Check, Clock, MessageSquare, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,10 +48,13 @@ export function ApprovalsSection({
   const [editing, setEditing] = useState<ContentItem | null>(null);
   const [showPublished, setShowPublished] = useState(false);
 
-  // Acompanha o foco de cliente definido na barra superior.
-  useEffect(() => {
+  // Acompanha o foco de cliente da barra superior: ajusta o estado durante o
+  // render quando a prop muda (padrão recomendado pelo React) em vez de efeito.
+  const [lastFocus, setLastFocus] = useState(focus.clientId);
+  if (lastFocus !== focus.clientId) {
+    setLastFocus(focus.clientId);
     setClientFilter(focus.clientId || "all");
-  }, [focus.clientId]);
+  }
 
   const scoped = useMemo(
     () =>

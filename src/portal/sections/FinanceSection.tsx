@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { EntityTable, type FieldSpec } from "@/components/portal/EntityTable";
 import { Button } from "@/components/ui/button";
 import { KpiCard, SectionHeader } from "@/components/portal/Shared";
-import { formatDate, todayISO } from "@/data/constants";
+import { todayISO } from "@/data/constants";
 import { FINANCE_CATEGORIES } from "@/data/types";
 import type { FinanceEntry } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
@@ -40,6 +40,13 @@ const FIELDS: FieldSpec[] = [
 
 function monthKey(iso: string): string {
   return iso.slice(0, 7);
+}
+
+function monthLabel(key: string): string {
+  return new Date(`${key}-01T00:00:00`).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
@@ -114,14 +121,21 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
         .reduce((s, f) => s + f.amount, 0);
       return { client, income, cost, net: income - cost };
     });
+    // Linha "Sem cliente": receitas avulsas do negócio e custos fixos —
+    // receita entra como receita, despesa como custo (sem sinal invertido).
     const unassigned = scoped.filter((f) => !f.clientId);
     if (unassigned.length > 0) {
-      const cost = unassigned.reduce((s, f) => s + (f.type === "Expense" ? f.amount : -f.amount), 0);
+      const income = unassigned
+        .filter((f) => f.type === "Income")
+        .reduce((s, f) => s + f.amount, 0);
+      const cost = unassigned
+        .filter((f) => f.type === "Expense")
+        .reduce((s, f) => s + f.amount, 0);
       rows.push({
         client: { id: "none", name: "Sem cliente / custos do negócio" } as never,
-        income: 0,
+        income,
         cost,
-        net: -cost,
+        net: income - cost,
       });
     }
     return rows.sort((a, b) => b.net - a.net);
@@ -144,10 +158,7 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
           <option value="all">Todo o período</option>
           {months.map((key) => (
             <option key={key} value={key}>
-              {new Date(`${key}-01T00:00:00`).toLocaleDateString("pt-BR", {
-                month: "long",
-                year: "numeric",
-              })}
+              {monthLabel(key)}
             </option>
           ))}
         </select>
@@ -280,7 +291,7 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
 
         <div className="rounded-xl border border-border/70 bg-card p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Por cliente — {month === "all" ? "todo o período" : formatDate(`${month}-01`).slice(0, -6)}
+            Por cliente — {month === "all" ? "todo o período" : monthLabel(month)}
           </p>
           <ul className="mt-3 space-y-3">
             {perClient.map((row) => (
