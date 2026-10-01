@@ -175,6 +175,45 @@ async function expectRefusal(promise: Promise<unknown>, expected: string) {
   expect(message).toContain(expected);
 }
 
+/** Sessão atual da conta com este e-mail (cada login cria uma sessão nova). */
+async function sessionOfEmail(t: TestConvex, email: string) {
+  return await t.run(async (ctx) => {
+    const user = (await ctx.db.query("users").collect()).find(
+      (row) => row.email === email,
+    );
+    if (!user) return null;
+    const session = await ctx.db
+      .query("authSessions")
+      .withIndex("userId", (q) => q.eq("userId", user._id))
+      .first();
+    return session ? { userId: user._id, sessionId: session._id } : null;
+  });
+}
+
+/**
+ * Roda o caminho até o código ter sido "enviado" e devolve o código em claro.
+ * Pode ser chamado mais de uma vez (cada chamada pede um novo desafio).
+ */
+async function startedFlow(t: TestConvex) {
+  process.env.TURNSTILE_SECRET_KEY = "sempre-passa";
+  mockCloudflare(() => cloudflareSays(true));
+
+  const verify = await t.action(api.turnstile.verifyTurnstile, {
+    email: EMAIL,
+    token: "token-do-widget",
+  });
+  expect(verify).toEqual({ ok: true, message: "" });
+
+  const before = sentOtps.length;
+  const started = await t.action(api.auth.signIn, {
+    provider: "email-otp",
+    params: { email: EMAIL },
+  });
+  expect(started).toEqual({ started: true });
+  expect(sentOtps).toHaveLength(before + 1);
+  return sentOtps[before].otp;
+}
+
 // ---- 1. caminho feliz ------------------------------------------------------
 
 describe("login por e-mail com captcha — caminho completo", () => {
@@ -242,17 +281,7 @@ describe("login por e-mail com captcha — caminho completo", () => {
     expect(codesAfter).toEqual([]);
 
     // A sessão enxerga só a própria conta — que nasce vazia, como as demais.
-    const session = await t.run(async (ctx) => {
-      const user = (await ctx.db.query("users").collect()).find(
-        (row) => row.email === EMAIL,
-      );
-      if (!user) return null;
-      const authSession = await ctx.db
-        .query("authSessions")
-        .withIndex("userId", (q) => q.eq("userId", user._id))
-        .first();
-      return authSession ? { userId: user._id, sessionId: authSession._id } : null;
-    });
+    const session = await sessionOfEmail(t, EMAIL);
     expect(session).not.toBeNull();
 
     const asUser = t.withIdentity({
@@ -268,26 +297,6 @@ describe("login por e-mail com captcha — caminho completo", () => {
 // ---- 2. verificação do código ----------------------------------------------
 
 describe("login por e-mail com captcha — verificação do código", () => {
-  /** Roda o caminho até o código ter sido "enviado" e devolve o código em claro. */
-  async function startedFlow(t: TestConvex) {
-    process.env.TURNSTILE_SECRET_KEY = "sempre-passa";
-    mockCloudflare(() => cloudflareSays(true));
-
-    const verify = await t.action(api.turnstile.verifyTurnstile, {
-      email: EMAIL,
-      token: "token-do-widget",
-    });
-    expect(verify).toEqual({ ok: true, message: "" });
-
-    const started = await t.action(api.auth.signIn, {
-      provider: "email-otp",
-      params: { email: EMAIL },
-    });
-    expect(started).toEqual({ started: true });
-    expect(sentOtps).toHaveLength(1);
-    return sentOtps[0].otp;
-  }
-
   test("código errado é recusado, não consome o código certo e não cria sessão", async () => {
     const t = convexTest(schema, modules);
     const otp = await startedFlow(t);
@@ -457,5 +466,82 @@ describe("login por e-mail com captcha — token recusado e degradação", () =>
     expect(started).toEqual({ started: true });
     expect(sentOtps).toHaveLength(1);
     expect(sentOtps[0].otp).toMatch(/^\d{6}$/);
+  });
+});
+
+// ---- 5. logout da sessão por e-mail ----------------------------------------
+
+describe("logout da sessão por e-mail", () => {
+  test("signOut encerra a sessão, mata o refresh e o espaço continua no próximo login", async () => {
+    const t = convexTest(schema, modules);
+
+    // Login completo: captcha → código → sessão.
+    const otp = await startedFlow(t);
+    const signedIn = (await t.action(api.auth.signIn, {
+      provider: "email-otp",
+      params: { email: EMAIL, code: otp },
+    })) as unknown as {
+      tokens?: { token?: string; refreshToken?: string } | null;
+    };
+    const refreshToken = signedIn.tokens?.refreshToken ?? "";
+    expect(refreshToken.length).toBeGreaterThan(0);
+
+    const session = await sessionOfEmail(t, EMAIL);
+    expect(session).not.toBeNull();
+    const asUser = t.withIdentity({
+      subject: `${session!.userId}|${session!.sessionId}`,
+    });
+
+    // A sessão cria um cliente no próprio espaço.
+    await asUser.mutation(api.portal.createClient, {
+      data: { name: "Cliente da gestora" },
+    });
+    expect((await asUser.query(api.portal.listClients)).map((row) => row.name)).toEqual([
+      "Cliente da gestora",
+    ]);
+
+    // Logout: a sessão e os tokens de refresh saem do banco.
+    expect(await asUser.action(api.auth.signOut, {})).toBeNull();
+
+    const afterLogout = await t.run(async (ctx) => ({
+      sessions: await ctx.db.query("authSessions").collect(),
+      refreshTokens: await ctx.db.query("authRefreshTokens").collect(),
+      clients: await ctx.db.query("clients").collect(),
+    }));
+    expect(afterLogout.sessions).toEqual([]);
+    expect(afterLogout.refreshTokens).toEqual([]);
+    // O espaço continua no banco: o logout não apaga dados.
+    expect(afterLogout.clients.map((row) => row.name)).toEqual(["Cliente da gestora"]);
+
+    // O refresh token antigo não ressuscita a sessão...
+    expect(await t.action(api.auth.signIn, { refreshToken })).toEqual({
+      tokens: null,
+    });
+
+    // ...e o cliente deslogado não lê nem escreve.
+    expect(await t.query(api.portal.listClients)).toEqual([]);
+    expect(await t.query(api.portal.getWorkspace)).toBeNull();
+    await expectRefusal(
+      t.mutation(api.portal.createClient, { data: { name: "Invasor" } }),
+      "Não autenticado",
+    );
+
+    // Entrando de novo com o mesmo e-mail, o espaço está lá.
+    const otp2 = await startedFlow(t);
+    const again = (await t.action(api.auth.signIn, {
+      provider: "email-otp",
+      params: { email: EMAIL, code: otp2 },
+    })) as unknown as { tokens?: { token?: string } | null };
+    expect(typeof again.tokens?.token).toBe("string");
+
+    const relogin = await sessionOfEmail(t, EMAIL);
+    expect(relogin).not.toBeNull();
+    const asUserAgain = t.withIdentity({
+      subject: `${relogin!.userId}|${relogin!.sessionId}`,
+    });
+    expect((await asUserAgain.query(api.portal.listClients)).map((row) => row.name)).toEqual([
+      "Cliente da gestora",
+    ]);
+    expect(await t.run(async (ctx) => ctx.db.query("authSessions").collect())).toHaveLength(1);
   });
 });

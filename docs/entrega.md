@@ -222,7 +222,8 @@ pt-BR na tela.
 código enviado → login com o código — com o Cloudflare e o envio de e-mail dublados no teste. Ele
 verifica que a autorização é de uso único, que o código nunca é gravado em claro, que sem captcha o
 código não sai e nenhuma sessão nasce, que código errado ou expirado é recusado sem consumir o
-código certo nem criar sessão, e a degradação quando o Cloudflare cai — **7 testes**.
+código certo nem criar sessão, que o logout encerra a sessão sem apagar o espaço (e o refresh antigo
+morre) e a degradação quando o Cloudflare cai — **8 testes**.
 
 ---
 
@@ -279,8 +280,9 @@ caso deste produto.
 - `tests/anonymous.test.ts` exercita o fluxo real de entrada como visitante (`auth:signIn` com o
   provider "anonymous") e prova o isolamento da sessão anônima: espaço próprio começa vazio, o
   visitante não lê nem altera registros de contas com e-mail, a conta com e-mail não alcança o espaço
-  do visitante, dois visitantes não se veem e o captcha exigido recusa a entrada sem gravar nada —
-  **13 testes**.
+  do visitante, dois visitantes não se veem, o captcha exigido recusa a entrada sem gravar nada e o
+  logout encerra a sessão (sessão e refresh apagados, leituras vazias, escrita recusada) — **14
+  testes**.
 
 ---
 
@@ -303,9 +305,10 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 - Sem as chaves configuradas a verificação fica desligada; o login não depende do Cloudflare.
 - 15 testes novos cobrindo normalização do e-mail, validade das autorizações, o `siteverify`
   (sucesso, recusa, HTTP ruim, rede fora) e as chaves de teste oficiais.
-- 7 testes do fluxo completo do login por e-mail com captcha (Cloudflare e envio de e-mail
+- 8 testes do fluxo completo do login por e-mail com captcha (Cloudflare e envio de e-mail
   dublados): autorização de uso único, código só com captcha, login concluído com o código, recusa
-  de código errado/expirado sem criar sessão e degradação quando o Cloudflare está fora do ar.
+  de código errado/expirado sem criar sessão, logout com o espaço preservado para o próximo login e
+  degradação quando o Cloudflare está fora do ar.
 
 **Isolamento entre contas**
 - Auditoria de todas as consultas e mutations: nenhuma leitura cruza contas; ver §8.3.
@@ -313,16 +316,15 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 - Corrigido: `generateInvoices` aceitava um `clientId` de outra conta.
 - Inventário de rotas documentado: das 43 funções, 3 são internas e só 5 respondem sem sessão.
 - 14 testes de isolamento com duas contas e 7 testes das portas abertas (`convex-test`).
-- 13 testes de isolamento da sessão anônima (visitante), do `signIn` real ao recorte de dados dos
-  dois lados — ver §8.3.
+- 14 testes de isolamento da sessão anônima (visitante), do `signIn` real ao logout — ver §8.3.
 
 **Qualidade**
 - ESLint: 18 erros → 0 (padrão de estado-durante-render recomendado pelo React nas seções;
   omissões `_id`/`ownerId` padronizadas; falsos positivos de shadcn/ui suprimidos com
   justificativa).
-- 77 testes passando (planilha, fórmulas, faturas, anti-robô do login — incluindo o fluxo completo
-  de OTP —, isolamento entre contas, isolamento da sessão anônima e rotas sem sessão), `tsc` limpo,
-  funções Convex publicadas.
+- 79 testes passando (planilha, fórmulas, faturas, anti-robô do login — incluindo o fluxo completo
+  de OTP —, isolamento entre contas, isolamento da sessão anônima, logout e rotas sem sessão), `tsc`
+  limpo, funções Convex publicadas.
 
 **Polimento visual**
 - Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis

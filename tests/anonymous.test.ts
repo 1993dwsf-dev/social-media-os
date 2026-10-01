@@ -690,7 +690,79 @@ describe("isolamento da sessão anônima", () => {
   });
 });
 
-// ---- 3. anti-robô na entrada como visitante --------------------------------
+// ---- 3. logout da sessão anônima -------------------------------------------
+
+describe("logout da sessão anônima", () => {
+  test("depois de signOut, a sessão some, o refresh não volta e o cliente deslogado não lê nem escreve", async () => {
+    const t = convexTest(schema, modules);
+    const visitor = await signInVisitor(t);
+    const refreshToken = visitor.tokens?.refreshToken ?? "";
+    expect(refreshToken.length).toBeGreaterThan(0);
+
+    const client = await visitor.asVisitor.mutation(api.portal.createClient, {
+      data: clientRow(visitor.visitorId, "Cliente do visitante"),
+    });
+    await visitor.asVisitor.mutation(api.portal.createTask, {
+      data: taskRow(visitor.visitorId, client, "Tarefa do visitante"),
+    });
+
+    // O logout roda com a sessão do visitante.
+    expect(await visitor.asVisitor.action(api.auth.signOut, {})).toBeNull();
+
+    // No servidor, a sessão e os tokens de refresh foram apagados...
+    const state = await t.run(async (ctx) => ({
+      sessions: await ctx.db.query("authSessions").collect(),
+      refreshTokens: await ctx.db.query("authRefreshTokens").collect(),
+      clients: await ctx.db.query("clients").collect(),
+      tasks: await ctx.db.query("tasks").collect(),
+    }));
+    expect(state.sessions).toEqual([]);
+    expect(state.refreshTokens).toEqual([]);
+    // ...e os dados do visitante continuam no banco: o logout não apaga nada.
+    expect(state.clients).toHaveLength(1);
+    expect(state.tasks).toHaveLength(1);
+
+    // O refresh token emitido no login não recria a sessão encerrada.
+    expect(await t.action(api.auth.signIn, { refreshToken })).toEqual({
+      tokens: null,
+    });
+
+    // O cliente deslogado (sem credenciais) não vê mais nada...
+    expect(await t.query(api.auth.isAuthenticated)).toBe(false);
+    expect(await t.query(api.portal.listClients)).toEqual([]);
+    expect(await t.query(api.portal.listContent)).toEqual([]);
+    expect(await t.query(api.portal.listTasks)).toEqual([]);
+    expect(await t.query(api.portal.listRequests)).toEqual([]);
+    expect(await t.query(api.portal.listMeetings)).toEqual([]);
+    expect(await t.query(api.portal.listDeliverables)).toEqual([]);
+    expect(await t.query(api.portal.listFinance)).toEqual([]);
+    expect(await t.query(api.portal.getWorkspace)).toBeNull();
+    expect(await t.query(api.users.currentUser)).toBeNull();
+
+    // ...e nenhuma escrita passa.
+    await expectRefusal(
+      t.mutation(api.portal.createClient, {
+        data: clientRow(visitor.visitorId, "Invasor"),
+      }),
+      "Não autenticado",
+    );
+    await expectRefusal(
+      t.mutation(api.portal.clearWorkspace, {}),
+      "Não autenticado",
+    );
+    await expectRefusal(t.mutation(api.demo.seedDemo, {}), "Não autenticado");
+
+    // Nada do espaço abandonado foi tocado.
+    const after = await t.run(async (ctx) => ({
+      clients: await ctx.db.query("clients").collect(),
+      tasks: await ctx.db.query("tasks").collect(),
+    }));
+    expect(after.clients).toHaveLength(1);
+    expect(after.tasks).toHaveLength(1);
+  });
+});
+
+// ---- 4. anti-robô na entrada como visitante --------------------------------
 
 describe("anti-robô na entrada como visitante", () => {
   test("com captcha exigido, visitante sem token é recusado e nada é gravado", async () => {
