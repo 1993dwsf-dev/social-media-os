@@ -283,7 +283,15 @@ export default function Landing() {
           <img src={logo} alt="" className="size-5 rounded" />
           <span className="font-medium text-foreground">Contentplane</span>
           <span>· Sistema operacional para gestores de social media</span>
-          <span className="ml-auto">Produto original — sem vínculo com qualquer ferramenta existente.</span>
+          <nav className="ml-auto flex items-center gap-4">
+            <Link to="/termos" className="transition-colors hover:text-foreground">
+              Termos de Uso
+            </Link>
+            <Link to="/privacidade" className="transition-colors hover:text-foreground">
+              Privacidade
+            </Link>
+            <span className="hidden sm:inline">Produto original — sem vínculo com qualquer ferramenta existente.</span>
+          </nav>
         </div>
       </footer>
     </div>

@@ -30,6 +30,9 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  // Guarda contra clique duplo: "Carregar exemplo" e "Limpar espaço" são
+  // operações longas e destrutivas — um segundo toque as repetiria.
+  const [bulkBusy, setBulkBusy] = useState<"demo" | "clear" | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Quando o perfil salvo muda (ex.: outra aba editou), recarrega o formulário:
@@ -227,35 +230,44 @@ export function SettingsSection({ ws }: { ws: Workspace }) {
               variant="outline"
               size="sm"
               className="gap-1.5"
+              disabled={bulkBusy !== null}
               onClick={async () => {
+                setBulkBusy("demo");
                 try {
                   await ws.seedDemo();
                   toast.success("Espaço de exemplo carregado");
                 } catch (error) {
                   toast.error(error instanceof Error ? error.message : "Não foi possível carregar o exemplo");
+                } finally {
+                  setBulkBusy(null);
                 }
               }}
             >
-              <Sparkles className="size-4" /> Carregar dados de exemplo
+              <Sparkles className="size-4" />
+              {bulkBusy === "demo" ? "Carregando…" : "Carregar dados de exemplo"}
             </Button>
             {confirmReset ? (
               <span className="inline-flex items-center gap-2">
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="gap-1.5"
+                  className="gap-1-5"
+                  disabled={bulkBusy !== null}
                   onClick={async () => {
+                    setBulkBusy("clear");
                     try {
                       await ws.clearWorkspace();
                       toast.success("Espaço de trabalho limpo");
                     } catch (error) {
                       toast.error(error instanceof Error ? error.message : "Não foi possível limpar");
                     } finally {
+                      setBulkBusy(null);
                       setConfirmReset(false);
                     }
                   }}
                 >
-                  <Trash2 className="size-4" /> Sim, excluir tudo
+                  <Trash2 className="size-4" />
+                  {bulkBusy === "clear" ? "Excluindo…" : "Sim, excluir tudo"}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setConfirmReset(false)}>
                   Cancelar

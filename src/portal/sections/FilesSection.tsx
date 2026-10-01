@@ -81,8 +81,12 @@ export function FilesSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
           }
         }}
         onDelete={async (id) => {
-          await ws.remove("deliverable", id);
-          toast.success("Arquivo excluído");
+          try {
+            await ws.remove("deliverable", id);
+            toast.success("Arquivo excluído");
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Não foi possível excluir o arquivo");
+          }
         }}
       />
     </div>

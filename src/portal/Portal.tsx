@@ -29,6 +29,7 @@ import { todayISO } from "@/data/constants";
 import type { SectionId } from "@/data/types";
 import { SECTIONS } from "@/data/types";
 import { useWorkspace } from "@/data/workspace";
+import { toast } from "sonner";
 import { useClientFocus } from "./useClientFocus";
 import { cn } from "@/lib/utils";
 
@@ -256,8 +257,18 @@ export default function Portal() {
               size="sm"
               className="gap-1.5 text-muted-foreground"
               onClick={async () => {
-                await signOut();
-                navigate("/");
+                try {
+                  await signOut();
+                  navigate("/");
+                } catch (error) {
+                  // Sem isto, uma falha de rede no logout viraria promessa
+                  // rejeitada sem aviso: o botão pareceria não funcionar.
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : "Não foi possível sair. Tente de novo.",
+                  );
+                }
               }}
             >
               <LogOut className="size-3.5" />

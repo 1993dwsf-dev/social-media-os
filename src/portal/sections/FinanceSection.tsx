@@ -372,8 +372,12 @@ export function FinanceSection({ ws, focus }: { ws: Workspace; focus: ClientFocu
           }
         }}
         onDelete={async (id) => {
-          await ws.remove("finance", id);
-          toast.success("Lançamento excluído");
+          try {
+            await ws.remove("finance", id);
+            toast.success("Lançamento excluído");
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Não foi possível excluir o lançamento");
+          }
         }}
       />
     </div>

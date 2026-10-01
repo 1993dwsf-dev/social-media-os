@@ -15,6 +15,12 @@ const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const Portal = lazy(() => import("./portal/Portal.tsx"));
 const Workbook = lazy(() => import("./pages/Workbook.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const Terms = lazy(() =>
+  import("./pages/Legal.tsx").then((m) => ({ default: m.TermsPage })),
+);
+const Privacy = lazy(() =>
+  import("./pages/Legal.tsx").then((m) => ({ default: m.PrivacyPage })),
+);
 
 // Simple loading fallback for route transitions
 function RouteLoading() {
@@ -57,22 +63,39 @@ class RootErrorBoundary extends React.Component<
     };
   }
   componentDidCatch(err: Error) {
-    console.error("[WebContainer preview] Root crash:", err);
+    console.error("[Contentplane] Root crash:", err);
   }
   render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-6">
           <div className="max-w-lg text-center">
-            <p className="text-sm font-semibold">Erro de execução na pré-visualização</p>
-            <p className="mt-2 text-xs text-muted-foreground break-words">
-              {this.state.message}
+            <p className="text-base font-semibold">Algo deu errado nesta tela</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Seus dados continuam salvos. Tente recarregar a página — se persistir, entre
+              novamente e, se necessário, restaure o último backup (Configurações → Exportar JSON).
             </p>
-            {this.state.stack && (
-              <pre className="mt-3 text-left text-[10px] leading-4 text-muted-foreground/80 max-h-40 overflow-auto rounded border border-border/60 p-2">
-                {this.state.stack}
-              </pre>
-            )}
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-5 inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
+            >
+              Recarregar a página
+            </button>
+            {/* Detalhe técnico fica escondido: ajuda no suporte sem poluir o usuário. */}
+            <details className="mt-6 text-left">
+              <summary className="cursor-pointer text-xs text-muted-foreground">
+                Detalhe técnico
+              </summary>
+              <p className="mt-2 text-xs text-muted-foreground break-words">
+                {this.state.message}
+              </p>
+              {this.state.stack && (
+                <pre className="mt-2 text-left text-[10px] leading-4 text-muted-foreground/80 max-h-40 overflow-auto rounded border border-border/60 p-2">
+                  {this.state.stack}
+                </pre>
+              )}
+            </details>
           </div>
         </div>
       );
@@ -139,6 +162,8 @@ createRoot(document.getElementById("root")!).render(
                   </RequireAuth>
                 }
               />
+              <Route path="/termos" element={<Terms />} />
+              <Route path="/privacidade" element={<Privacy />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

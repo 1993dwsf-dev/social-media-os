@@ -118,8 +118,12 @@ export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
           }
         }}
         onDelete={async (id) => {
-          await ws.remove("task", id);
-          toast.success("Tarefa excluída");
+          try {
+            await ws.remove("task", id);
+            toast.success("Tarefa excluída");
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Não foi possível excluir a tarefa");
+          }
         }}
       />
     </div>

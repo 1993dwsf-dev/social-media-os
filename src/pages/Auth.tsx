@@ -21,7 +21,7 @@ import { useAction, useQuery } from "convex/react";
 import logo from "@/assets/logo.svg";
 import { ArrowRight, Loader2, Mail, ShieldAlert, UserX } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 
 interface AuthProps {
   redirectAfterAuth?: string;
@@ -390,6 +390,14 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           )}
 
           <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-muted border-t rounded-b-lg">
+            <Link to="/termos" className="underline hover:text-primary transition-colors">
+              Termos de Uso
+            </Link>
+            {" · "}
+            <Link to="/privacidade" className="underline hover:text-primary transition-colors">
+              Privacidade
+            </Link>
+            {" · "}
             Protegido por{" "}
             <a
               href="https://freebuff.com"

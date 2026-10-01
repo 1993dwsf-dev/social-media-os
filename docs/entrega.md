@@ -27,6 +27,7 @@ Depois valide visualmente as quatro superfícies:
 | `/auth` | Envio do código por e-mail e opção "Continuar como visitante" |
 | `/app/dashboard` | Portal abre após entrar, menu lateral completo, dados reativos |
 | `/workbook` | 29 abas, fórmulas calculadas (passe o mouse na célula vê a fórmula), sem `#ERROR` |
+| `/termos` e `/privacidade` | Abrem sem sessão; reviewe o texto e troque o e-mail de contato antes de publicar (§11.5) |
 
 Se a pré-visualização estiver em branco, quase sempre são erros de tipo/tema bloqueando o build —
 rode `bun convex dev --once && bun tsc -b --noEmit` e corrija o que aparecer.
@@ -438,6 +439,23 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 - 97 testes depois do reparo das faturas órfãs (§8.5): 4 novos no matcher puro
   (`matchInvoiceToClient`) e 5 no reparo no banco (`tests/repair.test.ts`).
 
+**Operação e conformidade** (ver §11)
+- Exclusões de tarefa, solicitação, reunião, arquivo e lançamento, e o logout, passaram a tratar
+  falha: antes, uma recusa do servidor virava promessa rejeitada sem aviso e o botão pareceria não
+  funcionar. Agora todos reportam `toast` de erro em pt-BR.
+- "Carregar dados de exemplo" e "Sim, excluir tudo" ficam desabilitados durante a operação, com
+  rótulo de progresso ("Carregando…", "Excluindo…") — eliminate o clique duplo em ações destrutivas.
+- A tela de erro do app virou pt-BR para o usuário final ("Algo deu errado nesta tela", botão
+  Recarregar, detalhe técnico escondido); antes mostrava "Erro de execução na pré-visualização" com o
+  stack aberto.
+- Termos de Uso e Aviso de Privacidade (LGPD) publicados em `/termos` e `/privacidade`, com links no
+  rodapé da landing e no `/auth`. Antes de publicar: trocar o e-mail de contato e revisar
+  juridicamente.
+- Documentado o procedimento de operação: ambientes (não há homologação separada — prévia do Freebuff
+  é o dev), limites de taxa existentes (10 tentativas/hora de código, 1 envio por captcha) e o ponto
+  aberto da action pública de captcha, estados de loading/erro por superfície e o plano de rollback
+  em 5 minutos.
+
 **Polimento visual**
 - Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis
   no calendário e nas aprovações.
@@ -460,3 +478,115 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 6. **Financeiro:** mensalidades e despesas com o resultado do mês no topo.
 7. **Planilha:** abrir as abas e explicar a promessa de "uma planilha de verdade, com fórmulas vivas".
 8. Feche em **Configurações → Exportar JSON**, mostrando que os dados são do usuário.
+
+---
+
+## 11. Operação: ambientes, limites, estados de tela e recuperação
+
+Auditoria de 01/10/2026 sobre as sete frentes que costumam virar cobrança depois do lançamento.
+
+### 11.1 Ambientes (staging)
+
+**Não existe ambiente de homologação separado.** O projeto tem dois destinos:
+
+| Ambiente | Onde | Banco | Uso |
+| --- | --- | --- | --- |
+| **dev** | Prévia do Freebuff (`*.vly.sh`) + implantação Convex `dev` | Descartável, recomeça do zero | Developimento, testes manuais, `bun convex dev --once` |
+| **prod** | Botão **Publicar** no Freebuff | Definitivo | Usuário final |
+
+Consequências práticas:
+
+- A prévia do Freebuff é o "staging": publique uma mudança, valide na prévia, **só então** publique
+  em produção. Não existe um terceiro lugar para testar release candidate.
+- Banco de dev e banco de prod são **independentes**: dados de teste nunca vazam para o cliente e
+  dado do cliente nunca aparece na prévia.
+- Funções internas (limpeza de sessões, reparo de faturas) e o cron diário só valem na implantação
+  em que foram publicados — testar em dev não prova o comportamento em prod.
+- Antes de publicar em produção, rode o checklist da §1. Se a conta real do cliente já existir,
+  peça um **Export JSON** antes: "Carregar dados de exemplo" e "Limpar espaço de trabalho" são
+  definitivos.
+
+### 11.2 Limites de taxa (rate limit)
+
+| Caminho | Limite | Quem aplica |
+| --- | --- | --- |
+| Verificação do código por e-mail | **10 tentativas por hora por e-mail** | Convex Auth (`authRateLimits`); código errado conta, certo não |
+| Envio do código por e-mail | **1 por desafio de captcha resolvido** | Tabela `turnstileGrants`: autorização de 10 min, de uso único (§8.2) |
+| Sessão | 30 dias de inatividade / 30 dias totais | Convex Auth + limpeza no cron diário (§8.4) |
+| Funções do portal | Sem limite próprio — mas todas exigem sessão e são idempotentes (`generateInvoices` deduplica por cliente e mês) | — |
+| `turnstile.verifyTurnstile` (action pública) | **Sem limite próprio** | Cada chamada gera uma verificação no Cloudflare, que cobra por verificação e tem limite próprio |
+
+A última linha é o único ponto aberto: um visitante pode chamar a action em laço e gerar custo na
+Cloudflare (o token do captcha é que barra o envio de e-mail, não a action). Se o custo aparecer no
+painel da Cloudflare, o limite natural cabe em `turnstile.grantEmailAccess`: no máximo 5
+autorizações por hora e por e-mail, com base no índice `by_identifier`. Não foi implementado — é
+uma decisão de custo, não de segurança.
+
+Limites de plataforma (duração da função, consultas por segundo, tamanho da função) são os do
+Convex e valem para tudo; o produto não chega perto deles por ser single-seat.
+
+### 11.3 Estados de loading e de erro
+
+O que o usuário já vê:
+
+| Onde | Estado |
+| --- | --- |
+| Troca de rota | "Carregando…" (`Suspense` em `main.tsx`) |
+| Rota protegida | Spinner enquanto a sessão é conferida (`RequireAuth`) |
+| Portal | "Carregando seu espaço de trabalho…" até as consultas do workspace responderem (`ws.ready`) |
+| `/auth` | Botões desabilitados durante envio/verificação e mensagem de erro em pt-BR na tela |
+| Escritas | `toast` de sucesso **ou** de erro em todas as ações — inclusive exclusões e logout (§9) |
+| Falha inesperada | Tela "Algo deu errado nesta tela" com botão **Recarregar** e o detalhe técnico escondido em "Detalhe técnico" |
+
+Limites conhecidos (não são defeitos, mas convém explicá-los ao suporte):
+
+- **Falha de consulta derruba a seção inteira.** Se uma consulta do Convex falhar, o React entrega o
+  erro ao *error boundary* e a tela "Algo deu errado" aparece. Os dados do usuário estão intactos;
+  recarregar resolve. Não há hoje uma tela de erro por seção com botão "Tentar de novo".
+- **Sem estado de "reconectando".** Queda de rede deixa os últimos dados na tela enquanto o Convex
+  reconecta em segundo plano; não há aviso visível.
+- **Tela vazia ≠ erro.** Sem sessão, as consultas devolvem lista vazia de propósito (§8.3): uma
+  seção vazia sem dados normalmente é sessão expirada, não falha.
+
+### 11.4 Rollback e recuperação
+
+| Camada | Como reverter | Observação |
+| --- | --- | --- |
+| Front | Republicar a versão anterior pelo Freebuff | Rápido; dados não são afetados |
+| Funções Convex | Painel do Convex → *Deployments* → rollback para uma versão anterior | Cada `bun convex dev --once` é uma versão; o dev e a prod têm históricos separados |
+| Dados | **Não há versionamento** — o backup é o Export JSON do usuário | Por isso o backup é item obrigatório da entrega (§8) |
+| Rotinas internas | São idempotentes e conservadoras: `sessions.cleanupInactiveSessions` só apaga o que está vencido; `repair.relinkOrphanInvoices` simula por padrão (§8.5) | Rodar de novo não piora o estado |
+| Segredos | Trocar na aba Keys; nenhum código precisa mudar (§8.1) | — |
+
+**Plano de rollback em 5 minutos:**
+
+1. Não publique mais nada e avise que a manutenção está em curso.
+2. Se o problema for de código/função: faça o rollback no painel do Convex (funções) e/ou publique a
+   versão anterior no Freebuff (front).
+3. Se o problema for de dado: peça ao usuário um **Export JSON** e compare com o anterior; para
+   restaurar, use **Importar backup** (Configurações → Importar backup).
+4. Se o problema for de rotina interna: rode a função interna em modo simulação primeiro e leia o
+   relatório — nada é gravado sem `apply: true`.
+5. Se o problema for de sessão ou de segredo: troque o valor na aba Keys — a renovação passa a
+   valer na navegação seguinte.
+
+### 11.5 Termos de uso e privacidade (LGPD)
+
+As páginas `/termos` e `/privacidade` são públicas (sem sessão) e descrevem o produto real:
+
+- **Termos:** conta e acesso por código, backup como responsabilidade do usuário, dados de
+  clientes inseridos por conta do gestor (LGPD), limites do produto (§7), ausência de cobrança e de
+  SLA, logout × exclusão de dados, contato.
+- **Privacidade:** dados coletados (conta, espaço de trabalho, sessão, captcha), finalidade e base
+  legal por item (execução de contrato e legítimo interesse), operadores de infraestrutura (plataforma
+  do banco e Cloudflare quando o captcha está ativo), retenção (30 dias de sessão, 10 min de
+  autorização de captcha, 1 h de tentativas de código), direitos do art. 18 e como exercê-los no
+  produto, segurança e alterações da política.
+
+Links no rodapé da landing e no rodapé do `/auth`.
+
+**Antes de publicar:** troque a constante `CONTATO` em `src/pages/Legal.tsx` pelo e-mail real do
+responsável e passe o texto por revisão jurídica — o conteúdo é honesto e específico, mas não
+substitui parecer. O texto também não cobre o que é papel do operador da infraestrutura (acordo de
+tratamento de dados, retenção e suboperadores da plataforma): isso é contrato com o fornecedor, não
+documento do produto.

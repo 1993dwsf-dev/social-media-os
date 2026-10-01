@@ -82,8 +82,12 @@ export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
           }
         }}
         onDelete={async (id) => {
-          await ws.remove("meeting", id);
-          toast.success("Reunião excluída");
+          try {
+            await ws.remove("meeting", id);
+            toast.success("Reunião excluída");
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Não foi possível excluir a reunião");
+          }
         }}
       />
     </div>

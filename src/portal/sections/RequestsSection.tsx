@@ -79,8 +79,12 @@ export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
           }
         }}
         onDelete={async (id) => {
-          await ws.remove("request", id);
-          toast.success("Solicitação excluída");
+          try {
+            await ws.remove("request", id);
+            toast.success("Solicitação excluída");
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Não foi possível excluir a solicitação");
+          }
         }}
       />
     </div>
