@@ -329,6 +329,55 @@ renovação continua funcionando.
 
 ---
 
+## 8.5 Faturas antigas sem cliente: o reparo
+
+O defeito corrigido em §9 ("as faturas saíam **sem `clientId`**") estava publicado até a versão
+anterior, então quem clicou em **Gerar faturas** no financeiro pode ter lançamentos de receita
+gravados sem cliente. Como o dado é do próprio gestor e a tabela é pequena, dá para consertar direto
+no banco — sem planilha paralela.
+
+**O que essas linhas têm de marcante:** `kind: "invoice"`, `clientId` ausente, descrição no formato
+`Mensalidade — <nome do cliente>` e valor igual à mensalidade do cliente. Essas duas pistas bastam
+para religar a fatura ao cliente certo.
+
+**Como rodar** (painel do Convex → aba *Functions* → *Run*, ou CLI):
+
+```bash
+# 1. Simulação — não escreve nada, devolve o relatório
+npx convex run repair:relinkOrphanInvoices '{}'
+
+# 2. Gravação — só depois de ler o relatório
+npx convex run repair:relinkOrphanInvoices '{"apply":true}'
+```
+
+A função é **interna** (o cliente não alcança) e o inventário de rotas do `tests/no-session.test.ts`
+impede que alguém a exponha. Ela varre todos os lançamentos das contas do banco, então o relatório
+traz o estrago de todos os gestores, não só de um.
+
+**O que o relatório devolve** (`{ dryRun, scanned, relinked, matched, skipped, skippedCount }`):
+
+| `skipped[].outcome` | Significado | Ação sugerida |
+| --- | --- | --- |
+| `unmatched` | Descrição fora do padrão (`Mensalidade — …`) ou cliente que não existe mais | Conferir o texto; se o cliente foi apagado, é um lançamento sem vínculo legítimo |
+| `ambiguous` | Dois clientes com o mesmo nome **e** a mesma mensalidade | Decidir o cliente pela data/valor e ajustar o lançamento manualmente |
+| `fee-mismatch` | Nome bate com um cliente só, mas o valor não é a mensalidade | Provavelmente valor renegociado: ligar o cliente à mão |
+| `duplicate` | Religar a fatura criaria a segunda do mesmo cliente no mesmo mês | Conferir qual das duas é a boa e apagar a outra |
+
+Só as linhas `kind: "invoice"` sem `clientId` entram na varredura — **despesas e receitas soltas
+(sem cliente) não são tocadas**. O reparo também é idempotente: rodar duas vezes não muda nada, e
+não atravessa contas (cada órfã só casa com clientes do mesmo `ownerId`).
+
+**Depois do reparo**, o "Gerar faturas" volta a deduplicar: a fatura religada passa a bloquear o mês
+do cliente, e as faturas voltam a aparecer na ficha do cliente em vez da faixa de lançamentos sem
+vínculo.
+
+**Prova automatizada:** `tests/repair.test.ts` reconstrói o estrago real (clientes homônimos,
+cliente homônimo de outra conta, fatura duplicada, receita e despesa sem vínculo) e confere o
+casamento puro, a simulação que não escreve, o reparo que não atravessa contas, a idempotência e a
+deduplicação voltando a valer — **9 testes**.
+
+---
+
 ## 9. Changelog de preparação para lançamento (30/09/2026)
 
 Varredura completa de código e funcionalidades antes do lançamento oficial:
@@ -362,7 +411,10 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
   deduplicação por mês funcionava por acidente (comparava `undefined`), uma fatura legítima do mesmo
   mês não bloqueava duplicata e o filtro opcional por cliente sempre devolvia zero. O handler agora
   projeta os campos que o planejador espera.
-- Inventário de rotas documentado: das 44 funções, 4 são internas e só 5 respondem sem sessão.
+- Inventário de rotas documentado: das 45 funções, 5 são internas e só 5 respondem sem sessão.
+- Corrigido no passado: as faturas já gravadas sem `clientId` são religadas ao cliente pela função
+  interna `repair:relinkOrphanInvoices` (simulação por padrão, relatório com o que ficou pendente de
+  decisão humana) — ver §8.5.
 - 16 testes de isolamento com duas contas e 7 testes das portas abertas (`convex-test`).
 - 14 testes de isolamento da sessão anônima (visitante), do `signIn` real ao logout — ver §8.3.
 
@@ -383,6 +435,8 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
   de OTP —, isolamento entre contas, isolamento da sessão anônima, logout, expiração com prazos
   reais, limpeza de sessões, financeiro real e rotas sem sessão), `tsc` limpo, funções Convex
   publicadas.
+- 97 testes depois do reparo das faturas órfãs (§8.5): 4 novos no matcher puro
+  (`matchInvoiceToClient`) e 5 no reparo no banco (`tests/repair.test.ts`).
 
 **Polimento visual**
 - Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis

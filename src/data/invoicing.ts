@@ -24,6 +24,87 @@ export interface PlannedInvoice {
 
 export const INVOICE_DUE_DAY = 10;
 
+/** Prefixo que o planejador escreve na descrição de toda fatura gerada. */
+const INVOICE_PREFIX = /^mensalidade\s*[—–\-:·]\s*/i;
+
+/** Nome comparável: sem acento, sem caixa e com espaços normalizados. */
+export function normalizeClientName(value: string): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/** O que a religação precisa saber de uma fatura supostamente órfã. */
+export interface OrphanInvoice {
+  description: string;
+  amount: number;
+}
+
+/** O que a religação precisa saber de um cliente. */
+export interface MatchClient {
+  id: string;
+  name: string;
+  monthlyFee: number;
+}
+
+export type InvoiceMatch =
+  | { outcome: "matched"; clientId: string; clientName: string }
+  | {
+      outcome: "unmatched" | "ambiguous" | "fee-mismatch";
+      candidates: string[];
+    };
+
+/**
+ * Decide a quem pertence uma fatura gerada que ficou sem `clientId`.
+ *
+ * O vínculo é reconstruído a partir de duas pistas que o planejador gravou:
+ * a descrição (`Mensalidade — <nome do cliente>`) e o valor, que deve ser a
+ * mensalidade vigente. Só há reparo automático quando as duas concordam e
+ * apontam para um único cliente:
+ *
+ *  - nome fora do padrão ou cliente inexistente → `unmatched`;
+ *  - nome que bate com vários clientes e o valor não separa → `ambiguous`;
+ *  - nome de um cliente só, mas valor diferente da mensalidade → `fee-mismatch`.
+ *
+ * Os dois últimos casos ficam para decisão humana: um reparo automático errado
+ * atribuiria dinheiro à pessoa errada.
+ */
+export function matchInvoiceToClient(
+  invoice: OrphanInvoice,
+  clients: MatchClient[],
+): InvoiceMatch {
+  const description = String(invoice.description ?? "").trim();
+  if (!INVOICE_PREFIX.test(description)) {
+    return { outcome: "unmatched", candidates: [] };
+  }
+  const wanted = normalizeClientName(description.replace(INVOICE_PREFIX, ""));
+  if (!wanted) return { outcome: "unmatched", candidates: [] };
+
+  const byName = clients.filter(
+    (client) => normalizeClientName(client.name) === wanted,
+  );
+  if (byName.length === 0) return { outcome: "unmatched", candidates: [] };
+
+  // A mensalidade é o desempate entre clientes homônimos.
+  const byFee = byName.filter(
+    (client) => Number(client.monthlyFee) === Number(invoice.amount),
+  );
+  if (byFee.length === 1) {
+    return {
+      outcome: "matched",
+      clientId: byFee[0].id,
+      clientName: byFee[0].name,
+    };
+  }
+  if (byFee.length > 1) {
+    return { outcome: "ambiguous", candidates: byFee.map((c) => c.name) };
+  }
+  return { outcome: "fee-mismatch", candidates: byName.map((c) => c.name) };
+}
+
 /** Primeiro dia do mês `offset` meses à frente (ISO aaaa-mm-dd). */
 export function monthStart(offset: number, now = new Date()): string {
   const d = new Date(now);
