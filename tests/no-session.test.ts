@@ -25,6 +25,7 @@ import schema from "../src/convex/schema";
 import * as authModule from "../src/convex/auth";
 import * as demoModule from "../src/convex/demo";
 import * as portalModule from "../src/convex/portal";
+import * as sessionsModule from "../src/convex/sessions";
 import * as turnstileModule from "../src/convex/turnstile";
 import * as usersModule from "../src/convex/users";
 import * as emailOtpModule from "../src/convex/auth/emailOtp";
@@ -38,6 +39,7 @@ const modules = {
   "../src/convex/auth.ts": () => import("../src/convex/auth"),
   "../src/convex/demo.ts": () => import("../src/convex/demo"),
   "../src/convex/portal.ts": () => import("../src/convex/portal"),
+  "../src/convex/sessions.ts": () => import("../src/convex/sessions"),
   "../src/convex/turnstile.ts": () => import("../src/convex/turnstile"),
   "../src/convex/users.ts": () => import("../src/convex/users"),
 };
@@ -46,6 +48,7 @@ const MODULES: Record<string, Record<string, unknown>> = {
   auth: authModule as unknown as Record<string, unknown>,
   demo: demoModule as unknown as Record<string, unknown>,
   portal: portalModule as unknown as Record<string, unknown>,
+  sessions: sessionsModule as unknown as Record<string, unknown>,
   turnstile: turnstileModule as unknown as Record<string, unknown>,
   users: usersModule as unknown as Record<string, unknown>,
 };
@@ -165,6 +168,7 @@ const SESSION_MUTATIONS = [
 /** Nunca chamáveis pelo cliente (o Convex recusa antes de executar). */
 const INTERNAL: Record<string, Kind> = {
   "auth:store": "mutation",
+  "sessions:cleanupInactiveSessions": "mutation",
   "turnstile:grantEmailAccess": "mutation",
   "turnstile:consumeEmailGrant": "mutation",
 };

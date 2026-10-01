@@ -286,6 +286,39 @@ caso deste produto.
 
 ---
 
+## 8.4 Sessões: expiração e limpeza
+
+Cada login cria uma sessão (`authSessions`) e um **token de refresh**
+(`authRefreshTokens`). O Convex Auth já cuida dos prazos:
+
+| Prazo | Onde | Padrão | O que acontece |
+| --- | --- | --- | --- |
+| Duração total | `authSessions.expirationTime` | 30 dias | Depois disso a renovação é recusada e a sessão é descartada. |
+| Inatividade | `authRefreshTokens.expirationTime` | 30 dias | Cada renovação emite um token novo e empurra o prazo; vencido, a sessão não renova mais. |
+
+Dá para encurtar os dois prazos sem tocar em código: basta definir `AUTH_SESSION_TOTAL_DURATION_MS`
+e `AUTH_SESSION_INACTIVE_DURATION_MS` (em milissegundos) na aba Keys. Sem elas valem os padrões
+acima.
+
+A biblioteca só descarta essas linhas quando alguém tenta renovar. Para quem nunca volta, quem
+varre é a função **interna** `sessions:cleanupInactiveSessions`, agendada no cron diário
+(`src/convex/crons.ts`, 6h30 UTC — fora do horário comercial no Brasil):
+
+- apaga tokens de refresh vencidos;
+- apaga sessões vencidas e sessões que ficaram sem nenhum refresh vivo;
+- apaga tokens órfãos (de sessão que já não existe).
+
+Ela devolve `{ sessions, refreshTokens }` com o que foi limpo (visível no log da implantação), é
+**interna** — o cliente não alcança, e o inventário de rotas do `tests/no-session.test.ts` garante
+que ninguém a exponha por engano — e não toca em sessão ativa. O produto é single-seat: uma
+varredura de punhado de linhas por dia é gratuita na prática.
+
+**Prova automatizada:** `tests/sessions.test.ts` cobre a limpeza (apaga vencidas, inativas e órfãs,
+preserva as ativas e é idempotente) e a expiração na prática — sessão vencida e refresh vencido
+recusam a renovação e derrubam apenas a própria sessão — **4 testes**.
+
+---
+
 ## 9. Changelog de preparação para lançamento (30/09/2026)
 
 Varredura completa de código e funcionalidades antes do lançamento oficial:
@@ -314,17 +347,23 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 - Auditoria de todas as consultas e mutations: nenhuma leitura cruza contas; ver §8.3.
 - Corrigido: um `update` podia reapontar um registro para o cliente de outra conta.
 - Corrigido: `generateInvoices` aceitava um `clientId` de outra conta.
-- Inventário de rotas documentado: das 43 funções, 3 são internas e só 5 respondem sem sessão.
+- Inventário de rotas documentado: das 44 funções, 4 são internas e só 5 respondem sem sessão.
 - 14 testes de isolamento com duas contas e 7 testes das portas abertas (`convex-test`).
 - 14 testes de isolamento da sessão anônima (visitante), do `signIn` real ao logout — ver §8.3.
+
+**Sessões**
+- Expiração e limpeza: a função interna `sessions:cleanupInactiveSessions`, agendada no cron
+  diário, remove sessões vencidas/sem refresh vivo e tokens vencidos/órfãos — ver §8.4.
+- 4 testes cobrindo a limpeza, a idempotência e a recusa de renovação depois do prazo ou da
+  inatividade.
 
 **Qualidade**
 - ESLint: 18 erros → 0 (padrão de estado-durante-render recomendado pelo React nas seções;
   omissões `_id`/`ownerId` padronizadas; falsos positivos de shadcn/ui suprimidos com
   justificativa).
-- 79 testes passando (planilha, fórmulas, faturas, anti-robô do login — incluindo o fluxo completo
-  de OTP —, isolamento entre contas, isolamento da sessão anônima, logout e rotas sem sessão), `tsc`
-  limpo, funções Convex publicadas.
+- 83 testes passando (planilha, fórmulas, faturas, anti-robô do login — incluindo o fluxo completo
+  de OTP —, isolamento entre contas, isolamento da sessão anônima, logout, sessões e rotas sem
+  sessão), `tsc` limpo, funções Convex publicadas.
 
 **Polimento visual**
 - Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis
