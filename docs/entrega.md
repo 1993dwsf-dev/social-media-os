@@ -272,7 +272,10 @@ caso deste produto.
 
 - `tests/tenancy.test.ts` roda as funções Convex de verdade em memória (`convex-test`) com duas contas
   e verifica leitura, escrita, troca de dono, reapontamento de `clientId`, faturas, dados de exemplo e
-  limpeza — **14 testes**.
+  limpeza — **16 testes**. No fim, o financeiro passa pelo ciclo real: `generateInvoices` grava as
+  faturas (com `clientId` correto e idempotente), o patch de receita e o `markFinancePaid` atualizam o
+  lançamento, e as seis tabelas por cliente (conteúdo, tarefas, solicitações, reuniões, arquivos e
+  financeiro) percorrem criar → atualizar → remover.
 - `tests/no-session.test.ts` atualiza o inventário de rotas a cada execução (toda função nova precisa
   ser classificada, senão a suíte falha), chama **todas** as rotas sem sessão com um espaço marcado
   (`SEGREDO-DA-CONTA`) e confere que nenhuma leitura devolve dado de usuário e que nenhuma escrita
@@ -354,8 +357,13 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 - Auditoria de todas as consultas e mutations: nenhuma leitura cruza contas; ver §8.3.
 - Corrigido: um `update` podia reapontar um registro para o cliente de outra conta.
 - Corrigido: `generateInvoices` aceitava um `clientId` de outra conta.
+- Corrigido (auditado nesta rodada): o handler de `generateInvoices` passava as linhas cruas do banco
+  (`_id`) ao planejador de faturas, que espera `{ id, ... }` — as faturas saíam **sem `clientId`**, a
+  deduplicação por mês funcionava por acidente (comparava `undefined`), uma fatura legítima do mesmo
+  mês não bloqueava duplicata e o filtro opcional por cliente sempre devolvia zero. O handler agora
+  projeta os campos que o planejador espera.
 - Inventário de rotas documentado: das 44 funções, 4 são internas e só 5 respondem sem sessão.
-- 14 testes de isolamento com duas contas e 7 testes das portas abertas (`convex-test`).
+- 16 testes de isolamento com duas contas e 7 testes das portas abertas (`convex-test`).
 - 14 testes de isolamento da sessão anônima (visitante), do `signIn` real ao logout — ver §8.3.
 
 **Sessões**
@@ -371,9 +379,10 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 - ESLint: 18 erros → 0 (padrão de estado-durante-render recomendado pelo React nas seções;
   omissões `_id`/`ownerId` padronizadas; falsos positivos de shadcn/ui suprimidos com
   justificativa).
-- 86 testes passando (planilha, fórmulas, faturas, anti-robô do login — incluindo o fluxo completo
+- 88 testes passando (planilha, fórmulas, faturas, anti-robô do login — incluindo o fluxo completo
   de OTP —, isolamento entre contas, isolamento da sessão anônima, logout, expiração com prazos
-  reais, limpeza de sessões e rotas sem sessão), `tsc` limpo, funções Convex publicadas.
+  reais, limpeza de sessões, financeiro real e rotas sem sessão), `tsc` limpo, funções Convex
+  publicadas.
 
 **Polimento visual**
 - Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis

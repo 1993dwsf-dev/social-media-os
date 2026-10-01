@@ -279,7 +279,18 @@ export const generateInvoices = mutation({
     const ownerId = await requireOwner(ctx);
     // O filtro opcional também precisa ser do dono (defesa em profundidade).
     await assertOwnedClient(ctx, ownerId, clientId);
-    const clients = (await listOwned(ctx, ownerId, "clients")) as any[];
+    // O planejador espera `{ id, name, status, monthlyFee }`: as linhas do
+    // banco têm `_id`, e passar o documento cru fazia o plano sair com
+    // `clientId` indefinido (faturas sem cliente, deduplicação por acidente e
+    // o filtro por cliente devolvendo sempre zero).
+    const clients = ((await listOwned(ctx, ownerId, "clients")) as any[]).map(
+      (row) => ({
+        id: row._id as string,
+        name: row.name as string,
+        status: row.status as string,
+        monthlyFee: row.monthlyFee as number,
+      }),
+    );
     const existing = (await db(ctx)
       .query("finance")
       .withIndex("by_owner", (q: any) => q.eq("ownerId", ownerId))

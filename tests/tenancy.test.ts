@@ -415,3 +415,165 @@ describe("dados de exemplo e limpeza", () => {
     ]);
   });
 });
+
+// ---- caminho feliz do financeiro -------------------------------------------
+
+// O planejador puro (`planInvoices`) já é testado em `tests/contentplane.test.ts`;
+// aqui o que entra no banco de verdade é o handler `generateInvoices`, que só
+// aparecia nos testes por recusa (cliente de outra conta).
+
+// Referências de função do Convex como o `convex-test` as aceita.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyFn = any;
+
+describe("caminho feliz do financeiro", () => {
+  test("generateInvoices cria as faturas no banco, marca como pago e o patch de receita funciona", async () => {
+    const { asAlice, asBob, ids } = await twoWorkspaces();
+
+    // Duas janelas de um mês, com o plano idempotente no banco: a segunda
+    // passada não duplica as faturas do mês corrente.
+    expect(await asAlice.mutation(api.portal.generateInvoices, {})).toEqual({ created: 2 });
+    expect(await asAlice.mutation(api.portal.generateInvoices, { months: 1 })).toEqual({
+      created: 0,
+    });
+
+    const invoices = (await asAlice.query(api.portal.listFinance)).filter(
+      (f) => f.kind === "invoice",
+    );
+    expect(invoices).toHaveLength(2);
+    expect(invoices[0].amount).toBe(1000);
+    expect(invoices[0].status).toBe("Pending");
+    expect(invoices.every((f) => f.dueDate.endsWith("-10"))).toBe(true);
+    expect(
+      invoices.every((f) =>
+        [ids.aliceClient, ids.aliceSpare].includes(f.clientId),
+      ),
+    ).toBe(true);
+
+    // Receita avulsa criada e editada (o updateFinance só era exercitado por
+    // recusa, com id de outra conta).
+    const extra = await asAlice.mutation(api.portal.createFinance, {
+      data: financeRow(ids.alice, "Diária de fotos"),
+    });
+    await asAlice.mutation(api.portal.updateFinance, {
+      id: extra,
+      patch: { amount: 250, status: "Paid" },
+    });
+    const patched = (await asAlice.query(api.portal.listFinance)).find(
+      (f) => f._id === extra,
+    );
+    expect(patched?.amount).toBe(250);
+    expect(patched?.status).toBe("Paid");
+
+    // A fatura gerada sai de "Pending" com a data de pagamento de hoje.
+    await asAlice.mutation(api.portal.markFinancePaid, { id: invoices[0]._id });
+    const paid = (await asAlice.query(api.portal.listFinance)).find(
+      (f) => f._id === invoices[0]._id,
+    );
+    expect(paid?.status).toBe("Paid");
+    expect(paid?.paidDate).toBe(new Date().toISOString().slice(0, 10));
+
+    // E o Bob segue sem fatura: a janela de um mês é por conta.
+    expect((await asBob.query(api.portal.listFinance)).filter((f) => f.kind === "invoice")).toEqual([]);
+  });
+
+  test("as seis tabelas por cliente passam pelo ciclo completo criar → atualizar → remover", async () => {
+    const { asAlice, ids } = await twoWorkspaces();
+
+    const cycle = async (
+      list: AnyFn,
+      create: AnyFn,
+      update: AnyFn,
+      remove: AnyFn,
+      data: Record<string, unknown>,
+      changed: Record<string, unknown>,
+      readKey: "topic" | "title" | "name",
+    ) => {
+      const created = (await asAlice.mutation(create, { data })) as string;
+      expect(created.length).toBeGreaterThan(0);
+
+      // Procura pelo id criado: o cenário já vem com dados de exemplo.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rows = async () => (await asAlice.query(list)) as any[];
+
+      let row = (await rows()).find((r) => r._id === created);
+      expect(row).toBeDefined();
+      expect(row[readKey]).toBe(data[readKey]);
+
+      await asAlice.mutation(update, { id: created, patch: changed });
+      row = (await rows()).find((r) => r._id === created);
+      for (const [key, value] of Object.entries(changed)) {
+        expect(row[key]).toBe(value);
+      }
+
+      await asAlice.mutation(remove, { id: created });
+      expect((await rows()).some((r) => r._id === created)).toBe(false);
+    };
+
+    await cycle(
+      api.portal.listContent,
+      api.portal.createContent,
+      api.portal.updateContent,
+      api.portal.removeContent,
+      contentRow(ids.alice, ids.aliceClient, "Conteúdo novo"),
+      { topic: "Conteúdo editado", status: "Drafting" },
+      "topic",
+    );
+    await cycle(
+      api.portal.listRequests,
+      api.portal.createRequest,
+      api.portal.updateRequest,
+      api.portal.removeRequest,
+      {
+        clientId: ids.aliceClient,
+        title: "Solicitação nova",
+        category: "Design",
+        priority: "High",
+        dateSubmitted: today,
+        status: "New",
+        assignedTo: "",
+        dueDate: today,
+        comments: "",
+      },
+      { status: "In Progress" },
+      "title",
+    );
+    await cycle(
+      api.portal.listMeetings,
+      api.portal.createMeeting,
+      api.portal.updateMeeting,
+      api.portal.removeMeeting,
+      {
+        clientId: ids.aliceClient,
+        title: "Reunião nova",
+        date: today,
+        time: "09:00",
+        agenda: "",
+        participants: "",
+        status: "Scheduled",
+        notes: "",
+        actionItems: "",
+      },
+      { time: "14:00" },
+      "title",
+    );
+    await cycle(
+      api.portal.listDeliverables,
+      api.portal.createDeliverable,
+      api.portal.updateDeliverable,
+      api.portal.removeDeliverable,
+      {
+        clientId: ids.aliceClient,
+        name: "Entrega nova.pdf",
+        category: "Documents",
+        description: "",
+        date: today,
+        status: "Shared",
+        relatedContent: "",
+        relatedProject: "Mensalidade",
+      },
+      { status: "In progress" },
+      "name",
+    );
+  });
+});
