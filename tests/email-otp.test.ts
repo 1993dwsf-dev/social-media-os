@@ -265,7 +265,88 @@ describe("login por e-mail com captcha — caminho completo", () => {
   });
 });
 
-// ---- 2. o captcha é obrigatório --------------------------------------------
+// ---- 2. verificação do código ----------------------------------------------
+
+describe("login por e-mail com captcha — verificação do código", () => {
+  /** Roda o caminho até o código ter sido "enviado" e devolve o código em claro. */
+  async function startedFlow(t: TestConvex) {
+    process.env.TURNSTILE_SECRET_KEY = "sempre-passa";
+    mockCloudflare(() => cloudflareSays(true));
+
+    const verify = await t.action(api.turnstile.verifyTurnstile, {
+      email: EMAIL,
+      token: "token-do-widget",
+    });
+    expect(verify).toEqual({ ok: true, message: "" });
+
+    const started = await t.action(api.auth.signIn, {
+      provider: "email-otp",
+      params: { email: EMAIL },
+    });
+    expect(started).toEqual({ started: true });
+    expect(sentOtps).toHaveLength(1);
+    return sentOtps[0].otp;
+  }
+
+  test("código errado é recusado, não consome o código certo e não cria sessão", async () => {
+    const t = convexTest(schema, modules);
+    const otp = await startedFlow(t);
+    const wrong = otp === "000000" ? "111111" : "000000";
+
+    await expectRefusal(
+      t.action(api.auth.signIn, {
+        provider: "email-otp",
+        params: { email: EMAIL, code: wrong },
+      }),
+      "Could not verify code",
+    );
+
+    const state = await t.run(async (ctx) => ({
+      sessions: await ctx.db.query("authSessions").collect(),
+      refreshTokens: await ctx.db.query("authRefreshTokens").collect(),
+      codes: await ctx.db.query("authVerificationCodes").collect(),
+      limits: await ctx.db.query("authRateLimits").collect(),
+    }));
+    expect(state.sessions).toEqual([]);
+    expect(state.refreshTokens).toEqual([]);
+    // O código correto continua válido — a tentativa errada não o consome.
+    expect(state.codes).toHaveLength(1);
+    // E a tentativa errada entra no contador de 10 por hora por e-mail.
+    expect(state.limits).toHaveLength(1);
+    expect(state.limits[0].attemptsLeft).toBe(9);
+  });
+
+  test("código expirado é recusado mesmo com o texto certo e não cria sessão", async () => {
+    const t = convexTest(schema, modules);
+    const otp = await startedFlow(t);
+
+    // Expira o código de verdade na tabela (o provider usa 15 minutos).
+    await t.run(async (ctx) => {
+      const codes = await ctx.db.query("authVerificationCodes").collect();
+      await ctx.db.patch(codes[0]._id, { expirationTime: Date.now() - 1 });
+    });
+
+    await expectRefusal(
+      t.action(api.auth.signIn, {
+        provider: "email-otp",
+        params: { email: EMAIL, code: otp },
+      }),
+      "Could not verify code",
+    );
+
+    const state = await t.run(async (ctx) => ({
+      sessions: await ctx.db.query("authSessions").collect(),
+      refreshTokens: await ctx.db.query("authRefreshTokens").collect(),
+      codes: await ctx.db.query("authVerificationCodes").collect(),
+    }));
+    expect(state.sessions).toEqual([]);
+    expect(state.refreshTokens).toEqual([]);
+    // O código expirado é descartado na tentativa: não dá para retentar.
+    expect(state.codes).toEqual([]);
+  });
+});
+
+// ---- 3. o captcha é obrigatório --------------------------------------------
 
 describe("login por e-mail com captcha — sem autorização", () => {
   test("sem resolver o captcha, o código não sai e nenhuma sessão é criada", async () => {
@@ -324,7 +405,7 @@ describe("login por e-mail com captcha — sem autorização", () => {
   });
 });
 
-// ---- 3. token recusado e Cloudflare fora do ar -----------------------------
+// ---- 4. token recusado e Cloudflare fora do ar -----------------------------
 
 describe("login por e-mail com captcha — token recusado e degradação", () => {
   test("token recusado pelo Cloudflare não grava autorização nem envia código", async () => {
