@@ -7,6 +7,10 @@
 // devolvida, verificamos que um visitante não lê nem escreve no espaço de
 // outras contas — e que ninguém alcança o espaço do visitante.
 //
+// No fim, os prazos de sessão são encurtados pelas envs do Convex Auth
+// (`AUTH_SESSION_TOTAL_DURATION_MS` e `AUTH_SESSION_INACTIVE_DURATION_MS`) para
+// provar a expiração com o relógio de verdade e a limpeza do cron.
+//
 // Rode com: bun test
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -22,7 +26,7 @@ import {
 } from "bun:test";
 import { convexTest } from "convex-test";
 
-import { api } from "../src/convex/_generated/api";
+import { api, internal } from "../src/convex/_generated/api";
 import schema from "../src/convex/schema";
 import type { Id } from "../src/convex/_generated/dataModel";
 
@@ -34,6 +38,7 @@ const modules = {
   "../src/convex/auth.ts": () => import("../src/convex/auth"),
   "../src/convex/demo.ts": () => import("../src/convex/demo"),
   "../src/convex/portal.ts": () => import("../src/convex/portal"),
+  "../src/convex/sessions.ts": () => import("../src/convex/sessions"),
   "../src/convex/turnstile.ts": () => import("../src/convex/turnstile"),
   "../src/convex/users.ts": () => import("../src/convex/users"),
 };
@@ -272,6 +277,18 @@ async function expectRefusal(promise: Promise<unknown>, expected: string) {
   expect(message).toContain(expected);
 }
 
+/**
+ * Espera o relógio de verdade passar do prazo gravado no banco (+ margem). O
+ * Convex Auth grava os prazos relativos a `Date.now()`, então um `sleep` fixo
+ * seria frágil; aqui a espera é calculada a partir do próprio prazo.
+ */
+async function waitPast(expirationTime: number, marginMs = 15) {
+  const remaining = expirationTime + marginMs - Date.now();
+  if (remaining > 0) {
+    await new Promise((resolve) => setTimeout(resolve, remaining));
+  }
+}
+
 // A action `auth:signIn` sempre gera o JWT da sessão, então os testes precisam
 // de uma chave de assinatura — gerada uma vez, só em memória.
 let testPrivateKeyPem = "";
@@ -304,6 +321,10 @@ const realConsole = {
 
 beforeEach(() => {
   delete process.env.TURNSTILE_SECRET_KEY;
+  // Os prazos de sessão voltam ao padrão (30 dias) em cada teste; quem precisa
+  // de prazos curtos define a env dentro do próprio teste, antes do login.
+  delete process.env.AUTH_SESSION_TOTAL_DURATION_MS;
+  delete process.env.AUTH_SESSION_INACTIVE_DURATION_MS;
   process.env.JWT_PRIVATE_KEY = testPrivateKeyPem;
   process.env.CONVEX_SITE_URL = "https://contentplane.exemplo";
   // O Convex Auth loga em INFO a cada `auth:store`; silenciamos o ruído.
@@ -316,6 +337,8 @@ beforeEach(() => {
 afterEach(() => {
   globalThis.fetch = realFetch;
   delete process.env.TURNSTILE_SECRET_KEY;
+  delete process.env.AUTH_SESSION_TOTAL_DURATION_MS;
+  delete process.env.AUTH_SESSION_INACTIVE_DURATION_MS;
   delete process.env.JWT_PRIVATE_KEY;
   delete process.env.CONVEX_SITE_URL;
   console.log = realConsole.log;
@@ -841,5 +864,139 @@ describe("anti-robô na entrada como visitante", () => {
     expect(typeof visitor.tokens?.token).toBe("string");
     const user = await t.run(async (ctx) => await ctx.db.get(visitor.visitorId));
     expect(user?.isAnonymous).toBe(true);
+  });
+});
+
+// ---- 5. expiração com prazos reais (via env) --------------------------------
+
+// O Convex Auth lê os prazos no momento em que cria a sessão: a duração total
+// vem de `AUTH_SESSION_TOTAL_DURATION_MS` e a janela de inatividade de
+// `AUTH_SESSION_INACTIVE_DURATION_MS` (ambas em ms; sem elas, 30 dias). Aqui o
+// login é feito de verdade com prazos curtos e a limpeza interna
+// (`sessions:cleanupInactiveSessions`, a mesma do cron diário) confirma que a
+// sessão expirada é removida, sem tocar no espaço do visitante.
+
+describe("expiração com prazos reais via env", () => {
+  test("prazo total curto: a sessão vence, a limpeza remove ela e o refresh, e o token antigo não volta", async () => {
+    process.env.AUTH_SESSION_TOTAL_DURATION_MS = "40";
+    const t = convexTest(schema, modules);
+    const visitor = await signInVisitor(t);
+    const refreshToken = visitor.tokens?.refreshToken ?? "";
+    expect(refreshToken.length).toBeGreaterThan(0);
+
+    // O espaço do visitante precisa sobreviver à limpeza.
+    await visitor.asVisitor.mutation(api.portal.saveWorkspace, {
+      patch: { managerName: "Visitante" },
+    });
+    const client = await visitor.asVisitor.mutation(api.portal.createClient, {
+      data: clientRow(visitor.visitorId, "Cliente do visitante"),
+    });
+    await visitor.asVisitor.mutation(api.portal.createTask, {
+      data: taskRow(visitor.visitorId, client, "Tarefa do visitante"),
+    });
+
+    // O login gravou o prazo curto da env (valor bem abaixo dos 30 dias).
+    const before = await authSnapshot(t);
+    expect(before.sessions).toHaveLength(1);
+    expect(before.refreshTokens).toHaveLength(1);
+    const session = before.sessions[0];
+    expect(session.expirationTime - session._creationTime).toBeLessThan(5_000);
+
+    await waitPast(session.expirationTime);
+
+    // Vencida, a linha continua no banco: ninguém varre sozinho.
+    expect((await authSnapshot(t)).sessions).toHaveLength(1);
+
+    // A limpeza do cron leva a sessão vencida e o refresh junto.
+    expect(
+      await t.mutation(internal.sessions.cleanupInactiveSessions, {}),
+    ).toEqual({ sessions: 1, refreshTokens: 1 });
+
+    const after = await authSnapshot(t);
+    expect(after.sessions).toEqual([]);
+    expect(after.refreshTokens).toEqual([]);
+    // A limpeza é só de linhas de auth: usuário, conta e registros ficam.
+    expect(after.users.map((user) => user._id)).toEqual([visitor.visitorId]);
+    expect(after.accounts).toHaveLength(1);
+    const kept = await t.run(async (ctx) => ({
+      workspace: await ctx.db.query("workspaces").first(),
+      clients: await ctx.db.query("clients").collect(),
+      tasks: await ctx.db.query("tasks").collect(),
+    }));
+    expect(kept.workspace?.managerName).toBe("Visitante");
+    expect(kept.clients).toHaveLength(1);
+    expect(kept.tasks).toHaveLength(1);
+
+    // O refresh emitido no login não ressuscita a sessão removida.
+    expect(await t.action(api.auth.signIn, { refreshToken })).toEqual({
+      tokens: null,
+    });
+    expect((await authSnapshot(t)).sessions).toEqual([]);
+  });
+
+  test("inatividade curta: o refresh vence sem uso e a limpeza derruba a sessão que não renova mais", async () => {
+    process.env.AUTH_SESSION_INACTIVE_DURATION_MS = "40";
+    const t = convexTest(schema, modules);
+    const visitor = await signInVisitor(t);
+
+    const before = await authSnapshot(t);
+    expect(before.sessions).toHaveLength(1);
+    expect(before.refreshTokens).toHaveLength(1);
+    const totalMs =
+      before.sessions[0].expirationTime - before.sessions[0]._creationTime;
+    const inactiveMs =
+      before.refreshTokens[0].expirationTime -
+      before.refreshTokens[0]._creationTime;
+    // O prazo total segue o padrão (30 dias); só a inatividade foi encurtada.
+    expect(totalMs).toBeGreaterThan(1_000);
+    expect(inactiveMs).toBeLessThan(5_000);
+
+    await waitPast(before.refreshTokens[0].expirationTime);
+
+    // A sessão ainda está no prazo total — o que morreu foi a renovação.
+    expect((await authSnapshot(t)).sessions).toHaveLength(1);
+
+    expect(
+      await t.mutation(internal.sessions.cleanupInactiveSessions, {}),
+    ).toEqual({ sessions: 1, refreshTokens: 1 });
+
+    const after = await authSnapshot(t);
+    expect(after.sessions).toEqual([]);
+    expect(after.refreshTokens).toEqual([]);
+    expect(after.users.map((user) => user._id)).toEqual([visitor.visitorId]);
+  });
+
+  test("prazos curtos mas vivos: a limpeza preserva a sessão e a renovação continua funcionando", async () => {
+    process.env.AUTH_SESSION_TOTAL_DURATION_MS = "60000";
+    process.env.AUTH_SESSION_INACTIVE_DURATION_MS = "60000";
+    const t = convexTest(schema, modules);
+    const visitor = await signInVisitor(t);
+    const refreshToken = visitor.tokens?.refreshToken ?? "";
+
+    const before = await authSnapshot(t);
+    expect(before.sessions[0].expirationTime).toBeGreaterThan(Date.now());
+    expect(before.refreshTokens[0].expirationTime).toBeGreaterThan(Date.now());
+
+    // Nada vencido: a limpeza roda, não encontra lixo e não toca na sessão.
+    expect(
+      await t.mutation(internal.sessions.cleanupInactiveSessions, {}),
+    ).toEqual({ sessions: 0, refreshTokens: 0 });
+    expect((await authSnapshot(t)).sessions.map((s) => s._id)).toEqual([
+      visitor.sessionId,
+    ]);
+
+    // E a sessão ainda renova de verdade: o token antigo devolve um par novo.
+    const refreshed = (await t.action(api.auth.signIn, {
+      refreshToken,
+    })) as unknown as {
+      tokens?: { token?: string; refreshToken?: string } | null;
+    } | null;
+    expect(typeof refreshed?.tokens?.token).toBe("string");
+    expect(refreshed?.tokens?.refreshToken).not.toBe(refreshToken);
+
+    const after = await authSnapshot(t);
+    expect(after.sessions).toHaveLength(1);
+    // O token usado fica registrado; o novo entra no lugar.
+    expect(after.refreshTokens).toHaveLength(2);
   });
 });

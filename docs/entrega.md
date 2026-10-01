@@ -281,7 +281,8 @@ caso deste produto.
   provider "anonymous") e prova o isolamento da sessão anônima: espaço próprio começa vazio, o
   visitante não lê nem altera registros de contas com e-mail, a conta com e-mail não alcança o espaço
   do visitante, dois visitantes não se veem, o captcha exigido recusa a entrada sem gravar nada e o
-  logout encerra a sessão (sessão e refresh apagados, leituras vazias, escrita recusada) — **14
+  logout encerra a sessão (sessão e refresh apagados, leituras vazias, escrita recusada) e, no fim,
+  com os prazos de sessão encurtados por env, a sessão vencida é removida pela limpeza — **17
   testes**.
 
 ---
@@ -316,6 +317,12 @@ varredura de punhado de linhas por dia é gratuita na prática.
 **Prova automatizada:** `tests/sessions.test.ts` cobre a limpeza (apaga vencidas, inativas e órfãs,
 preserva as ativas e é idempotente) e a expiração na prática — sessão vencida e refresh vencido
 recusam a renovação e derrubam apenas a própria sessão — **4 testes**.
+
+Em `tests/anonymous.test.ts`, o login é feito de verdade com os prazos encurtados pelas envs
+(`AUTH_SESSION_TOTAL_DURATION_MS`/`AUTH_SESSION_INACTIVE_DURATION_MS`) e a limpeza remove a sessão
+vencida ou que ficou sem renovação, preserva usuário, conta e registros do visitante, e o refresh
+antigo não volta — **3 testes**. Com prazos curtos mas vivos, é a limpeza que não toca em nada e a
+renovação continua funcionando.
 
 ---
 
@@ -356,14 +363,17 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
   diário, remove sessões vencidas/sem refresh vivo e tokens vencidos/órfãos — ver §8.4.
 - 4 testes cobrindo a limpeza, a idempotência e a recusa de renovação depois do prazo ou da
   inatividade.
+- 3 testes com prazos reais encurtados por env: o login nasce com o prazo total vencendo ou com a
+  janela de inatividade vencida, a limpeza do cron remove a sessão e os tokens vencidos sem tocar nos
+  dados, e o refresh antigo não ressuscita a sessão.
 
 **Qualidade**
 - ESLint: 18 erros → 0 (padrão de estado-durante-render recomendado pelo React nas seções;
   omissões `_id`/`ownerId` padronizadas; falsos positivos de shadcn/ui suprimidos com
   justificativa).
-- 83 testes passando (planilha, fórmulas, faturas, anti-robô do login — incluindo o fluxo completo
-  de OTP —, isolamento entre contas, isolamento da sessão anônima, logout, sessões e rotas sem
-  sessão), `tsc` limpo, funções Convex publicadas.
+- 86 testes passando (planilha, fórmulas, faturas, anti-robô do login — incluindo o fluxo completo
+  de OTP —, isolamento entre contas, isolamento da sessão anônima, logout, expiração com prazos
+  reais, limpeza de sessões e rotas sem sessão), `tsc` limpo, funções Convex publicadas.
 
 **Polimento visual**
 - Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis
