@@ -222,7 +222,9 @@ pt-BR na tela.
 ## 8.3 Isolamento entre contas (auditoria de 30/09/2026)
 
 **Regra do produto:** cada conta é um espaço de trabalho fechado. Não existe (e não deve existir)
-nenhuma tela ou função que leia dados de outra conta.
+nenhuma tela ou função que leia dados de outra conta. A mesma regra vale para a **sessão anônima**
+("Continuar como visitante"): ela cria uma conta própria, com espaço vazio, e não enxerga nem toca o
+espaço de ninguém.
 
 **Como isso é garantido no código** — todo registro gravado tem `ownerId`, e toda função do Convex
 começa resolvendo a conta logada com `getAuthUserId`:
@@ -267,6 +269,11 @@ caso deste produto.
   ser classificada, senão a suíte falha), chama **todas** as rotas sem sessão com um espaço marcado
   (`SEGREDO-DA-CONTA`) e confere que nenhuma leitura devolve dado de usuário e que nenhuma escrita
   passa — **7 testes**.
+- `tests/anonymous.test.ts` exercita o fluxo real de entrada como visitante (`auth:signIn` com o
+  provider "anonymous") e prova o isolamento da sessão anônima: espaço próprio começa vazio, o
+  visitante não lê nem altera registros de contas com e-mail, a conta com e-mail não alcança o espaço
+  do visitante, dois visitantes não se veem e o captcha exigido recusa a entrada sem gravar nada —
+  **13 testes**.
 
 ---
 
@@ -296,13 +303,15 @@ Varredura completa de código e funcionalidades antes do lançamento oficial:
 - Corrigido: `generateInvoices` aceitava um `clientId` de outra conta.
 - Inventário de rotas documentado: das 43 funções, 3 são internas e só 5 respondem sem sessão.
 - 14 testes de isolamento com duas contas e 7 testes das portas abertas (`convex-test`).
+- 13 testes de isolamento da sessão anônima (visitante), do `signIn` real ao recorte de dados dos
+  dois lados — ver §8.3.
 
 **Qualidade**
 - ESLint: 18 erros → 0 (padrão de estado-durante-render recomendado pelo React nas seções;
   omissões `_id`/`ownerId` padronizadas; falsos positivos de shadcn/ui suprimidos com
   justificativa).
-- 57 testes passando (planilha, fórmulas, faturas, anti-robô do login, isolamento entre contas e
-  rotas sem sessão), `tsc` limpo, funções Convex publicadas.
+- 70 testes passando (planilha, fórmulas, faturas, anti-robô do login, isolamento entre contas,
+  isolamento da sessão anônima e rotas sem sessão), `tsc` limpo, funções Convex publicadas.
 
 **Polimento visual**
 - Chips de plataforma (IG/TT/LI/YT/FB/PN) viraram ícones coloridos das redes, mais escaneáveis
