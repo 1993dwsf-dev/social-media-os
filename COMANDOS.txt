@@ -1,0 +1,166 @@
+================================================================================
+CONTENTPLANE — COMANDOS DO PROJETO
+Guia rápido de tudo que foi executado durante o desenvolvimento e a manutenção.
+Rodar na RAIZ do projeto. Plataforma: Bun + Vite + React + Convex.
+================================================================================
+
+
+--------------------------------------------------------------------------------
+1. PUBLICAR AS FUNÇÕES DO CONVEX E GERAR OS TIPOS
+--------------------------------------------------------------------------------
+Toda mudança em src/convex/ precisa disto antes de rodar o typecheck:
+
+    bun convex dev --once
+
+  - "--once" é obrigatório: sem ele o comando fica interativo e trava.
+  - Saída esperada: "Convex functions ready!".
+  - Só publicam na implantação de DEV. Produção é pelo botão Publicar do Freebuff.
+
+Rodar as três verificações de uma vez (o comando usado no dia a dia):
+
+    bun convex dev --once && bun tsc -b --noEmit && bun test && bunx eslint src tests --quiet
+
+
+--------------------------------------------------------------------------------
+2. VERIFICAÇÃO (types, testes, lint)
+--------------------------------------------------------------------------------
+Checagem de tipos (tem que sair limpa):
+
+    bun tsc -b --noEmit
+
+Suíte completa de testes:
+
+    bun test
+
+Lint (ESLint só com erros, sem avisos):
+
+    bunx eslint src tests --quiet
+
+Rodar um arquivo de teste específico:
+
+    bun test tests/repair.test.ts
+    bun test tests/sessions.test.ts
+    bun test tests/anonymous.test.ts
+    bun test tests/tenancy.test.ts
+    bun test tests/no-session.test.ts
+    bun test tests/email-otp.test.ts
+    bun test tests/turnstile.test.ts
+    bun test tests/contentplane.test.ts
+
+Rodar um teste pelo nome:
+
+    bun test -t "religação das faturas órfãs"
+
+
+--------------------------------------------------------------------------------
+3. FUNÇÕES INTERNAS (o cliente NÃO alcança — rodar pelo painel ou CLI)
+--------------------------------------------------------------------------------
+Todas exigem o nome no formato "módulo:função".
+
+--- Limpeza de sessões inativas (também roda no cron diário) ---
+
+    npx convex run sessions:cleanupInactiveSessions '{}'
+
+  Devolve: { sessions, refreshTokens } com o que foi apagado.
+  Idempotente: rodar de novo devolve { sessions: 0, refreshTokens: 0 }.
+
+--- Reparo das faturas antigas gravadas sem clientId (ver §8.5 do docs/entrega.md) ---
+
+  1) SIMULAÇÃO — não escreve nada, mostra o relatório:
+
+    npx convex run repair:relinkOrphanInvoices '{}'
+
+  2) GRAVAÇÃO — só depois de ler o relatório:
+
+    npx convex run repair:relinkOrphanInvoices '{"apply":true}'
+
+  Relatório devolvido:
+    { dryRun, scanned, relinked, matchedCount, matched, skippedCount, skipped }
+
+  Motivos de "skipped" (ficam para decisão humana):
+    unmatched     — descrição fora do padrão ou cliente que não existe mais
+    ambiguous     — dois clientes com mesmo nome E mesma mensalidade
+    fee-mismatch  — nome bate, mas o valor não é a mensalidade
+    duplicate     — religar criaria a segunda fatura do mesmo cliente no mesmo mês
+
+
+--------------------------------------------------------------------------------
+4. CONTAGEM DE FUNÇÕES DA API (inventário)
+--------------------------------------------------------------------------------
+Das 45 funções: 5 internas e 5 respondem sem sessão.
+O tests/no-session.test.ts falha se alguma função nova não for classificada lá.
+
+    bun -e '
+    const mods = { auth: await import("./src/convex/auth"), demo: await import("./src/convex/demo"), portal: await import("./src/convex/portal"), repair: await import("./src/convex/repair"), sessions: await import("./src/convex/sessions"), turnstile: await import("./src/convex/turnstile"), users: await import("./src/convex/users") };
+    let total = 0, internal = 0, open = 0;
+    for (const ns of Object.values(mods)) {
+      for (const fn of Object.values(ns)) {
+        const f = fn;
+        if (!f || !(f.isQuery || f.isMutation || f.isAction)) continue;
+        total++;
+        if (f.isInternal === true) internal++; else open++;
+      }
+    }
+    console.log("total=" + total, "internal=" + internal, "open=" + open);'
+
+
+--------------------------------------------------------------------------------
+5. CHAVES DE TESTE OFICIAIS DO CLOUDFLARE TURNSTILE (validar sem domínio próprio)
+--------------------------------------------------------------------------------
+Site key que SEMPRE passa (visível):    1x00000000000000000000AA
+Site key que SEMPRE passa (invisível):  1x00000000000000000000BB
+Site key que SEMPRE bloqueia:           2x00000000000000000000AB
+Secret que SEMPRE passa:               1x0000000000000000000000000000000AA
+
+Referência: developers.cloudflare.com/turnstile/troubleshooting/testing/
+
+Env vars usadas pelo projeto (aba Keys do Freebuff — NUNCA editar .env à mão):
+  VITE_TURNSTILE_SITE_KEY   (front, mostra o widget no /auth)
+  TURNSTILE_SECRET_KEY      (servidor; sem ela o captcha fica desligado)
+
+Prazos de sessão, para teste (aba Keys):
+  AUTH_SESSION_TOTAL_DURATION_MS     (padrão 30 dias)
+  AUTH_SESSION_INACTIVE_DURATION_MS  (padrão 30 dias)
+
+
+--------------------------------------------------------------------------------
+6. PUBLICAR EM PRODUÇÃO E ROLBACK
+--------------------------------------------------------------------------------
+Publicar (painel do Freebuff, não é comando):
+  https://freebuff.com/project/<nome-do-projeto>?publish=true
+
+Rollback das funções (painel do Convex → Deployments → versão anterior).
+Rollback do front: republicar a versão anterior pelo Freebuff.
+ATENÇÃO: o banco não tem versionamento. O backup é o Export JSON do usuário
+(Configurações → Exportar JSON). Planos de reversal: docs/entrega.md §11.4.
+
+
+--------------------------------------------------------------------------------
+7. REGRAS DO AMBIENTE (o que NÃO rodar)
+--------------------------------------------------------------------------------
+- NUNCA rodar "bun convex dev" sem "--once" (trava o terminal).
+- NUNCA rodar "bun run dev" / vite / qualquer servidor: a plataforma já roda o
+  dev server e o Convex dev em sessões gerenciadas.
+- NUNCA iniciar/parar/matar processos de servidor pelo terminal.
+- NUNCA editar arquivos .env — usar a aba Keys/API keys.
+- NUNCA editar src/convex/_generated/* na mão; rodar "bun convex dev --once".
+- Comandos com "env" na linha de comando são bloqueados pela plataforma.
+- Git está bloqueado neste projeto (git status/commit não funcionam).
+
+
+--------------------------------------------------------------------------------
+8. DOCUMENTAÇÃO
+--------------------------------------------------------------------------------
+docs/entrega.md — guia de entrega e manutenção:
+  §1   checklist antes de publicar
+  §8.1 rotação de chaves e segredos
+  §8.2 anti-robô no login (Cloudflare Turnstile)
+  §8.3 isolamento entre contas
+  §8.4 sessões: expiração e limpeza
+  §8.5 faturas antigas sem cliente: o reparo
+  §9   changelog de preparação para lançamento
+  §10  roteiro de demonstração
+  §11  operação: ambientes, limites, estados de tela e recuperação
+
+Estado atual: 97 testes passando, tsc limpo, eslint limpo, funções publicadas.
+================================================================================
