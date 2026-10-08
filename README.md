@@ -1,7 +1,6 @@
-# Contentplane — Sistema operacional para gestores de social media
+# Social Media OS — Sistema operacional para gestores de social media
 
-Um sistema operacional completo para **gestores de social media independentes e agências
-boutique**: um espaço de trabalho para toda a sua carteira (clientes, calendários, tarefas,
+Um sistema operacional completo para **gestores de social media independentes **: um espaço de trabalho para toda a sua carteira (clientes, calendários, tarefas,
 aprovações, dinheiro) e uma planilha de 29 abas — tudo compartilhando a mesma arquitetura de
 informação.
 
