@@ -1,8 +1,9 @@
 # Social Media OS — Sistema operacional para gestores de social media
 
-Um sistema operacional completo para **gestores de social media independentes **: um espaço de trabalho para toda a sua carteira (clientes, calendários, tarefas,
-aprovações, dinheiro) e uma planilha de 29 abas — tudo compartilhando a mesma arquitetura de
-informação.
+Um sistema operacional completo para **gestores de social media independentes**: um espaço de
+trabalho para toda a sua carteira (clientes, calendários, tarefas, aprovações e dinheiro) e uma
+prévia local de uma planilha de 29 abas, exportável em CSV. **A planilha ainda não sincroniza com
+os registros reais do workspace.**
 
 > Produto original. Sem vínculo, cópia ou inspiração em marca, anúncio de marketplace ou produto existente.
 
@@ -19,7 +20,7 @@ nenhum cliente acessa o espaço de trabalho.
 | Superfície | Onde | O que faz |
 | --- | --- | --- |
 | **Espaço do gestor** | `/app/dashboard` (após entrar) | Clientes, estratégia, integração, calendário, tarefas, aprovações, solicitações, financeiro, reuniões, arquivos e configurações. |
-| **Planilha do gestor** | `/workbook` | 29 abas com fórmulas, listas suspensas e formatação de status — visíveis no app e exportáveis em CSV. |
+| **Modelo de planilha** | `/workbook` | Prévia local de 29 abas com fórmulas e formatação, exportável em CSV; não sincroniza com o workspace. |
 | **Ferramentas de dados** | Configurações | Exportar/importar JSON, espaço de exemplo (4 clientes fictícios) e limpeza total. |
 
 ## A arquitetura de informação
@@ -36,8 +37,9 @@ Gestor (você)
  → Financeiro         (receitas e despesas, opcionalmente vinculadas a um cliente)
 ```
 
-Cada superfície (espaço de trabalho e planilha) é uma visão desse mesmo modelo: o dado é digitado
-uma vez e referenciado em todos os lugares.
+O portal do gestor é a fonte dos dados persistidos no Convex. A rota `/workbook` é um modelo de
+referência gerado localmente: não lê nem grava os registros do portal e deve ser usada como
+prévia/exportação CSV até que a sincronização seja implementada.
 
 ## O espaço de trabalho do gestor
 

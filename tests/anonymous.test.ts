@@ -101,7 +101,7 @@ function taskRow(ownerId: Id<"users">, clientId: Id<"clients">, title: string) {
     project: "Mensalidade",
     category: "Design",
     priority: "Medium",
-    status: "Todo",
+    status: "Backlog",
     startDate: today,
     dueDate: today,
     completedAt: "",
@@ -852,18 +852,25 @@ describe("anti-robô na entrada como visitante", () => {
     expect(await t.run(async (ctx) => ctx.db.query("turnstileGrants").collect())).toEqual([]);
   });
 
-  test("com o Cloudflare fora do ar, o visitante entra mesmo assim (degradação graciosa)", async () => {
+  test("com o Cloudflare fora do ar, a entrada como visitante é recusada quando Turnstile está ativo", async () => {
     process.env.TURNSTILE_SECRET_KEY = "sempre-passa";
     globalThis.fetch = (async () => {
       throw new Error("offline");
     }) as typeof fetch;
 
     const t = convexTest(schema, modules);
-    const visitor = await signInVisitor(t, { turnstileToken: "token-do-widget" });
+    const before = await authSnapshot(t);
 
-    expect(typeof visitor.tokens?.token).toBe("string");
-    const user = await t.run(async (ctx) => await ctx.db.get(visitor.visitorId));
-    expect(user?.isAnonymous).toBe(true);
+    // Política de falha fechada: sem o siteverify não é possível confirmar o
+    // token, a entrada é recusada e nada é gravado.
+    await expectRefusal(
+      t.action(api.auth.signIn, {
+        provider: "anonymous",
+        params: { turnstileToken: "token-do-widget" },
+      }),
+      "Não foi possível validar a verificação de segurança",
+    );
+    expect(await authSnapshot(t)).toEqual(before);
   });
 });
 

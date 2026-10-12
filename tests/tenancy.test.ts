@@ -57,7 +57,7 @@ function taskRow(ownerId: Id<"users">, clientId: Id<"clients">, title: string) {
     project: "Mensalidade",
     category: "Design",
     priority: "Medium",
-    status: "Todo",
+    status: "Backlog",
     startDate: today,
     dueDate: today,
     completedAt: "",

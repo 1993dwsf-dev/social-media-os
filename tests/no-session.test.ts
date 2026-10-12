@@ -165,6 +165,7 @@ const SESSION_MUTATIONS = [
   "portal:generateInvoices",
   "portal:markFinancePaid",
   "portal:clearWorkspace",
+  "portal:importWorkspace",
   "demo:seedDemo",
 ];
 
@@ -257,7 +258,7 @@ async function seededWorkspace() {
       project: "",
       category: "",
       priority: "Medium",
-      status: "Todo",
+      status: "Backlog",
       startDate: today,
       dueDate: today,
       completedAt: "",
@@ -397,6 +398,7 @@ function writeArgs(
     "portal:generateInvoices": { months: 2 },
     "portal:markFinancePaid": { id: ids.finance },
     "portal:clearWorkspace": {},
+    "portal:importWorkspace": { snapshot: {} },
     "demo:seedDemo": {},
   };
 

@@ -26,7 +26,7 @@ const FEATURES = [
   {
     icon: Table2,
     title: "Planilha do gestor",
-    body: "Configuração, carteira de clientes, um ano inteiro de calendários mensais, Plano de Conteúdo, Tarefas, Hashtags, Parcerias e Financeiro — cada aba estruturada com listas suspensas, fórmulas e formatação de status.",
+    body: "Modelo local de 29 abas com calendários, Plano de Conteúdo, Tarefas, Hashtags, Parcerias e Financeiro, fórmulas e formatação de status. É uma prévia exportável em CSV e ainda não sincroniza com os registros reais do workspace.",
   },
   {
     icon: Building2,
@@ -124,7 +124,7 @@ export default function Landing() {
               </Button>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
-              Abre com uma agência fictícia totalmente populada — quatro clientes de exemplo inclusos.
+              Abre com uma agência fictícia totalmente populada — quatro clientes de exemplo inclusos. A planilha é um modelo local e não sincroniza com esses dados.
             </p>
           </motion.div>
 
@@ -158,19 +158,20 @@ export default function Landing() {
               Um sistema, duas superfícies
             </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
-              Tudo compartilha a mesma arquitetura de informação
+              O portal é o sistema; a planilha, o modelo de referência
             </h2>
             <p className="mt-4 text-muted-foreground">
-              A planilha e o espaço do gestor são duas visões do mesmo modelo — cadastre o cliente
-              uma vez e as duas acompanham.
+              O portal do gestor é a fonte dos dados persistidos no Convex. A rota /workbook é um
+              modelo de referência gerado localmente: não lê nem grava os registros do portal e deve
+              ser usada como prévia/exportação CSV até que a sincronização seja implementada.
             </p>
           </motion.div>
           <div className="mt-10 grid gap-4 md:grid-cols-2">
             {            [
               {
                 title: "Planilha do gestor",
-                sub: "A sala de máquinas",
-                body: "Planejamento anual, calendários mensais por cliente, produção de conteúdo, tarefas, hashtags, parcerias e financeiro — com fórmulas de painel que leem a carteira de clientes.",
+                sub: "A sala de máquinas (modelo local)",
+                body: "Planejamento anual, calendários mensais por cliente, produção de conteúdo, tarefas, hashtags, parcerias e financeiro — com fórmulas de painel que leem a carteira de clientes. É um modelo local, não sincronizado com o portal.",
                 points: ["Painel com fórmulas ao vivo", "12 calendários mensais com coluna de cliente", "Relatórios por cliente e registro de entregas"],
               },
               {

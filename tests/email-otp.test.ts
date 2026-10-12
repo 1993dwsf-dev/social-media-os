@@ -43,6 +43,8 @@ type TestConvex = ReturnType<typeof convexTest>;
 
 const EMAIL = "gestora@exemplo.com";
 
+const today = "2026-09-30";
+
 // ---- mocks de rede ---------------------------------------------------------
 
 /** Códigos que o "serviço de e-mail" receberia (nunca sai e-mail de verdade). */
@@ -50,8 +52,11 @@ const sentOtps: { to: string; otp: string; appName: string }[] = [];
 
 mock.module("axios", () => ({
   default: {
-    post: async (url: string, body: { to: string; otp: string; appName: string }) => {
-      if (url !== "https://auth.freebuff.app/send_otp") {
+    post: async (
+      url: string,
+      body: { to: string; otp: string; appName: string },
+    ) => {
+      if (url !== "https://integrations.vly.ai/v1/email/otp") {
         throw new Error(`URL inesperada no envio de OTP: ${url}`);
       }
       sentOtps.push(body);
@@ -122,8 +127,9 @@ beforeEach(() => {
   delete process.env.TURNSTILE_SECRET_KEY;
   process.env.JWT_PRIVATE_KEY = testPrivateKeyPem;
   process.env.CONVEX_SITE_URL = "https://contentplane.exemplo";
-  // O provider de e-mail monta o link do código a partir do SITE_URL.
   process.env.SITE_URL = "https://contentplane.exemplo";
+  // O gateway do Freebuff exige a chave de integração para enviar o código.
+  process.env.VLY_INTEGRATION_KEY = "chave-de-teste";
   // O Convex Auth loga em INFO a cada `auth:store`; silenciamos o ruído.
   console.log = () => {};
   console.info = () => {};
@@ -138,6 +144,7 @@ afterEach(() => {
   delete process.env.JWT_PRIVATE_KEY;
   delete process.env.CONVEX_SITE_URL;
   delete process.env.SITE_URL;
+  delete process.env.VLY_INTEGRATION_KEY;
   console.log = realConsole.log;
   console.info = realConsole.info;
   console.warn = realConsole.warn;
@@ -443,7 +450,7 @@ describe("login por e-mail com captcha — token recusado e degradação", () =>
     expect(sentOtps).toHaveLength(0);
   });
 
-  test("Cloudflare inacessível não tranca o login: autoriza e envia o código", async () => {
+  test("Cloudflare inacessível bloqueia o login quando Turnstile está ativo", async () => {
     process.env.TURNSTILE_SECRET_KEY = "sempre-passa";
     mockCloudflare(() => {
       throw new Error("offline");
@@ -451,21 +458,25 @@ describe("login por e-mail com captcha — token recusado e degradação", () =>
 
     const t = convexTest(schema, modules);
 
-    // Degradação deliberada: o siteverify caiu, mas o login continua.
+    // Política de falha fechada: sem resposta do siteverify, a checagem não
+    // pode ser confirmada e o pedido é recusado — nada é autorizado.
     const verify = await t.action(api.turnstile.verifyTurnstile, {
       email: EMAIL,
       token: "token-do-widget",
     });
-    expect(verify).toEqual({ ok: true, message: "" });
-    expect(await grantsFor(t, EMAIL)).toHaveLength(1);
+    expect(verify.ok).toBe(false);
+    expect(verify.message).not.toBe("");
+    expect(await grantsFor(t, EMAIL)).toHaveLength(0);
 
-    const started = await t.action(api.auth.signIn, {
-      provider: "email-otp",
-      params: { email: EMAIL },
-    });
-    expect(started).toEqual({ started: true });
-    expect(sentOtps).toHaveLength(1);
-    expect(sentOtps[0].otp).toMatch(/^\d{6}$/);
+    // Sem autorizaedaccão, o código também não sai.
+    await expectRefusal(
+      t.action(api.auth.signIn, {
+        provider: "email-otp",
+        params: { email: EMAIL },
+      }),
+      "Resolva a verificação de segurança antes de pedir o código.",
+    );
+    expect(sentOtps).toHaveLength(0);
   });
 });
 
@@ -494,7 +505,23 @@ describe("logout da sessão por e-mail", () => {
 
     // A sessão cria um cliente no próprio espaço.
     await asUser.mutation(api.portal.createClient, {
-      data: { name: "Cliente da gestora" },
+      data: {
+        name: "Cliente da gestora",
+        contactName: "",
+        email: "",
+        phone: "",
+        website: "",
+        industry: "",
+        packageName: "",
+        monthlyFee: 0,
+        startDate: today,
+        status: "Active",
+        socials: {},
+        notes: "",
+        onboarding: {},
+        strategy: [],
+        kpis: [],
+      },
     });
     expect((await asUser.query(api.portal.listClients)).map((row) => row.name)).toEqual([
       "Cliente da gestora",

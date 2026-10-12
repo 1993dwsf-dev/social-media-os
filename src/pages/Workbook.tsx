@@ -174,7 +174,7 @@ export default function Workbook() {
               Planilha do Gestor — Contentplane
             </p>
             <p className="text-[11px] leading-tight text-muted-foreground">
-              {sheets.length} abas · fórmulas, listas suspensas e formatação de status
+              {sheets.length} abas · modelo estático, não sincronizado com o workspace
             </p>
           </div>
           <div className="ml-auto flex items-center gap-2">
@@ -320,10 +320,9 @@ export default function Workbook() {
         </div>
 
         <p className="mt-3 text-[11px] text-muted-foreground">
-          Cabeçalhos fixos, validação por lista suspensa (▾), formatação condicional de status e
-          fórmulas entre abas reproduzem a especificação da planilha — células de fórmula mostram o
-          valor calculado; passe o mouse para ver a fórmula. As células de entrada estão em branco
-          nos calendários mensais — prontas para o planejamento real.
+          Esta tela é uma prévia local do modelo de planilha: as abas e fórmulas vêm de{" "}
+          <code>src/data/workbook.ts</code>, não dos registros do Convex. A visualização não edita
+          nem salva dados no workspace; use os botões de CSV para exportar o modelo.
         </p>
       </main>
     </div>

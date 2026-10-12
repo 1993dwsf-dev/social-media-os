@@ -118,6 +118,9 @@ export function useWorkspace(): Workspace {
   const saveWorkspace = useMutation(api.portal.saveWorkspace);
   const seedDemoMutation = useMutation(api.demo.seedDemo);
   const clearMutation = useMutation(api.portal.clearWorkspace);
+  const importWorkspaceMutation = useMutation(
+    api.portal.importWorkspace,
+  );
 
   const contentApi = {
     create: useMutation(api.portal.createContent),
@@ -257,6 +260,7 @@ export function useWorkspace(): Workspace {
 
   const exportJSON = useCallback(() => {
     const snapshot = {
+      version: 1,
       exportedAt: new Date().toISOString(),
       profile,
       clients,
@@ -272,39 +276,40 @@ export function useWorkspace(): Workspace {
 
   const importJSON = useCallback(
     async (file: File) => {
-      const parsed = JSON.parse(await file.text()) as Record<string, unknown>;
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        throw new Error("Backup do Contentplane inválido (esperado um objeto JSON).");
+      // Limite operacional do arquivo de importação.
+      if (file.size > 500_000) {
+        throw new Error(
+          "O backup é maior que 500 KB. Exporte uma base menor e tente novamente.",
+        );
       }
-      const idMap = new Map<string, string>();
-      for (const client of (parsed.clients as ClientRecord[]) ?? []) {
-        const { id, ...rest } = client;
-        const created = await createClient({ data: rest });
-        idMap.set(String(id), String(created));
+
+      let parsed: unknown;
+
+      try {
+        parsed = JSON.parse(await file.text());
+      } catch {
+        throw new Error(
+          "O arquivo não contém um JSON válido.",
+        );
       }
-      const remap = (rows: unknown) =>
-        ((rows as unknown[]) ?? []).map((row) => {
-          const { id: _rowId, clientId, ...rest } = row as Record<string, unknown>;
-          return { ...rest, clientId: idMap.get(String(clientId)) };
-        });
-      for (const row of remap(parsed.content)) await contentApi.create({ data: withClient(row) });
-      for (const row of remap(parsed.tasks)) await tasksApi.create({ data: withClient(row) });
-      for (const row of remap(parsed.requests)) await requestsApi.create({ data: withClient(row) });
-      for (const row of remap(parsed.meetings)) await meetingsApi.create({ data: withClient(row) });
-      for (const row of remap(parsed.deliverables)) await deliverablesApi.create({ data: withClient(row) });
-      for (const row of remap(parsed.finance)) await financeApi.create({ data: withClient(row) });
-      if (parsed.profile) await saveWorkspace({ patch: parsed.profile });
+
+      if (
+        !parsed ||
+        typeof parsed !== "object" ||
+        Array.isArray(parsed)
+      ) {
+        throw new Error(
+          "Backup do Contentplane inválido (esperado um objeto JSON).",
+        );
+      }
+
+      // Uma única mutation valida o arquivo, reconstrói os vínculos
+      // e grava tudo numa transação Convex.
+      await importWorkspaceMutation({
+        snapshot: parsed,
+      });
     },
-    [
-      createClient,
-      contentApi,
-      tasksApi,
-      requestsApi,
-      meetingsApi,
-      deliverablesApi,
-      financeApi,
-      saveWorkspace,
-    ],
+    [importWorkspaceMutation],
   );
 
   const remove = useCallback(

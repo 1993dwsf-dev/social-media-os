@@ -167,24 +167,26 @@ describe("verifyTurnstileToken", () => {
     expect(result.errorCodes).toEqual(["timeout-or-duplicate"]);
   });
 
-  test("erro HTTP do Cloudflare não tranca o login (degrada aberto)", async () => {
+  test("erro HTTP do Cloudflare bloqueia o login quando Turnstile está ativo", async () => {
     process.env.TURNSTILE_SECRET_KEY = "sempre-passa";
     mockFetch(() => new Response("boom", { status: 500 }));
     const result = await verifyTurnstileToken("token-do-widget");
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
     expect(result.unavailable).toBe(true);
     expect(result.errorCodes).toEqual(["http-500"]);
   });
 
-  test("falha de rede não tranca o login (degrada aberto)", async () => {
+  test("falha de rede bloqueia o login quando Turnstile está ativo", async () => {
     process.env.TURNSTILE_SECRET_KEY = "sempre-passa";
     mockFetch(() => {
       throw new Error("offline");
     });
     const result = await verifyTurnstileToken("token-do-widget");
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
     expect(result.unavailable).toBe(true);
-    expect(result.errorCodes).toEqual(["verification-unavailable"]);
+    expect(result.errorCodes).toEqual([
+      "verification-unavailable",
+    ]);
   });
 
   test("aceita as chaves de teste oficiais do Cloudflare", async () => {

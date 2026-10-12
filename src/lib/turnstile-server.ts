@@ -8,9 +8,10 @@
 // exatamente como antes. Assim que a chave existir, o captcha passa a ser
 // exigido no envio do código por e-mail e na entrada como visitante.
 //
-// Exceção deliberada: se o Cloudflare ficar inacessível (erro de rede ou HTTP
-// inesperado), deixamos passar em vez de trancar todo mundo fora do produto —
-// o token continua sendo recusado normalmente quando o siteverify responde.
+// Exceção deliberada: quando a chave está configurada, falha de rede/HTTP
+// bloqueia o login. Isso evita que a barreira antiabuso seja contornada
+// justamente durante uma indisponibilidade; mantenha limites de tentativa e
+// monitore o serviço.
 
 const SITEVERIFY_URL =
   "https://challenges.cloudflare.com/turnstile/v0/siteverify";
@@ -23,7 +24,7 @@ export type TurnstileResult = {
   ok: boolean;
   /** Chaves não configuradas: a checagem está desligada. */
   skipped: boolean;
-  /** Cloudflare inacessível: seguimos em frente e registramos o aviso. */
+  /** Cloudflare inacessível: a checagem não pôde ser concluída. */
   unavailable: boolean;
   /** Códigos devolvidos pelo Cloudflare (ex.: `timeout-or-duplicate`). */
   errorCodes: string[];
@@ -95,7 +96,7 @@ export async function verifyTurnstileToken(
     if (!response.ok) {
       console.error("[turnstile] siteverify respondeu HTTP", response.status);
       return {
-        ok: true,
+        ok: false,
         skipped: false,
         unavailable: true,
         errorCodes: [`http-${response.status}`],
@@ -116,7 +117,7 @@ export async function verifyTurnstileToken(
   } catch (error) {
     console.error("[turnstile] falha ao falar com o siteverify:", error);
     return {
-      ok: true,
+      ok: false,
       skipped: false,
       unavailable: true,
       errorCodes: ["verification-unavailable"],

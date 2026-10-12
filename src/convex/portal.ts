@@ -10,6 +10,13 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
+import {
+  parseWorkspaceBackup,
+  parseWorkspaceProfile,
+  parseWorkspaceRecord,
+  type WorkspaceRecordTable,
+} from "./recordValidation";
+
 import { planInvoices } from "../data/invoicing";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
@@ -105,7 +112,11 @@ export const saveWorkspace = mutation({
       .query("workspaces")
       .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
       .unique();
-    const clean = sanitize(patch);
+    const clean = parseWorkspaceProfile(
+      sanitize(patch),
+      true,
+    );
+
     if (existing) {
       await ctx.db.patch(existing._id, clean);
       return existing._id;
@@ -143,7 +154,19 @@ export const createClient = mutation({
   args: { data: v.any() },
   handler: async (ctx, { data }) => {
     const ownerId = await requireOwner(ctx);
-    return await db(ctx).insert("clients", { ...sanitize(data), ownerId });
+    const record = parseWorkspaceRecord(
+      "clients",
+      sanitize(data),
+    );
+
+    if (typeof record.createdAt !== "number") {
+      record.createdAt = Date.now();
+    }
+
+    return await db(ctx).insert("clients", {
+      ...record,
+      ownerId,
+    });
   },
 });
 
@@ -153,7 +176,14 @@ export const updateClient = mutation({
     const ownerId = await requireOwner(ctx);
     const doc = await getOwned(ctx, ownerId, "clients", id);
     if (!doc) throw new Error("Cliente não encontrado neste espaço de trabalho");
-    await ctx.db.patch(doc._id, sanitize(patch));
+    await ctx.db.patch(
+      doc._id,
+      parseWorkspaceRecord(
+        "clients",
+        sanitize(patch),
+        true,
+      ),
+    );
   },
 });
 
@@ -191,8 +221,13 @@ function perClientApi(table: PerClientTable) {
       args: { data: v.any() },
       handler: async (ctx, { data }) => {
         const ownerId = await requireOwner(ctx);
-        const record = sanitize(data);
+        const record = parseWorkspaceRecord(
+          table as WorkspaceRecordTable,
+          sanitize(data),
+        );
+
         await assertOwnedClient(ctx, ownerId, record.clientId as string | undefined);
+
         return await db(ctx).insert(table, { ...record, ownerId });
       },
     }),
@@ -202,7 +237,12 @@ function perClientApi(table: PerClientTable) {
         const ownerId = await requireOwner(ctx);
         const doc = await getOwned(ctx, ownerId, table, id);
         if (!doc) throw new Error("Registro não encontrado neste espaço de trabalho");
-        const record = sanitize(patch);
+        const record = parseWorkspaceRecord(
+          table as WorkspaceRecordTable,
+          sanitize(patch),
+          true,
+        );
+
         // Um patch não pode reapontar o registro para o cliente de outra pessoa.
         await assertOwnedClient(ctx, ownerId, record.clientId as string | undefined);
         await ctx.db.patch(doc._id, record);
@@ -256,6 +296,256 @@ export const listFinance = finance.list;
 export const createFinance = finance.create;
 export const updateFinance = finance.update;
 export const removeFinance = finance.remove;
+
+// ---- importação transacional ---------------------------------------------
+
+// Importação transacional: valida o backup inteiro e suas relações antes de
+// gravar qualquer registro. Uma falha aborta toda a mutation.
+function asImportRecord(
+  value: unknown,
+  label: string,
+): Record<string, unknown> {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    throw new Error(
+      `Backup inválido: registro de ${label} deve ser um objeto.`,
+    );
+  }
+
+  return { ...(value as Record<string, unknown>) };
+}
+
+/** Remove o `id` de origem: nenhum ID exportado entra no registro novo. */
+function withoutSourceId(
+  raw: Record<string, unknown>,
+): Record<string, unknown> {
+  const { id: _sourceId, ...rest } = raw;
+  return rest;
+}
+
+export const importWorkspace = mutation({
+  args: {
+    snapshot: v.any(),
+  },
+
+  handler: async (ctx, { snapshot }) => {
+    const ownerId = await requireOwner(ctx);
+    const backup = parseWorkspaceBackup(snapshot);
+
+    // IDs antigos são usados apenas para reconstruir relacionamentos.
+    // Nenhum ID exportado escolhe o novo ID ou o dono do registro.
+    const seenClientIds = new Set<string>();
+
+    const preparedClients = backup.clients.map((value) => {
+      const raw = asImportRecord(value, "cliente");
+      const oldId = raw.id;
+
+      if (
+        typeof oldId !== "string" ||
+        !oldId.trim()
+      ) {
+        throw new Error(
+          "Backup inválido: um cliente não possui ID de origem.",
+        );
+      }
+
+      if (seenClientIds.has(oldId)) {
+        throw new Error(
+          "Backup inválido: há IDs de cliente duplicados.",
+        );
+      }
+
+      seenClientIds.add(oldId);
+
+      const record = parseWorkspaceRecord(
+        "clients",
+        sanitize(withoutSourceId(raw)),
+      );
+
+      if (typeof record.createdAt !== "number") {
+        record.createdAt = Date.now();
+      }
+
+      return {
+        oldId,
+        record,
+      };
+    });
+
+    const sourceClientIds = new Set(
+      preparedClients.map((row) => row.oldId),
+    );
+
+    type RelatedTable = Exclude<
+      WorkspaceRecordTable,
+      "clients"
+    >;
+
+    const prepareRelated = (
+      table: RelatedTable,
+      values: unknown[],
+    ): Array<{
+      record: Record<string, unknown>;
+      sourceClientId?: string;
+    }> =>
+      values.map((value) => {            const raw = asImportRecord(
+              value as Record<string, unknown>,
+              table,
+            );
+
+        const sourceClientId =
+          typeof raw.clientId === "string" &&
+          raw.clientId !== ""
+            ? raw.clientId
+            : undefined;
+
+        if (
+          table !== "finance" &&
+          !sourceClientId
+        ) {
+          throw new Error(
+            `Backup inválido: um registro de ${table} não tem cliente associado.`,
+          );
+        }
+
+        if (
+          sourceClientId &&
+          !sourceClientIds.has(sourceClientId)
+        ) {
+          throw new Error(
+            `Backup inválido: um registro de ${table} aponta para um cliente ausente.`,
+          );
+        }
+
+        const record = parseWorkspaceRecord(
+          table,
+          sanitize(withoutSourceId(raw)),
+        );
+
+        return {
+          record,
+          sourceClientId,
+        };
+      });
+
+    // Todas as coleções são validadas antes da primeira gravação.
+    const prepared = {
+      content: prepareRelated("content", backup.content),
+      tasks: prepareRelated("tasks", backup.tasks),
+      requests: prepareRelated("requests", backup.requests),
+      meetings: prepareRelated("meetings", backup.meetings),
+      deliverables: prepareRelated(
+        "deliverables",
+        backup.deliverables,
+      ),
+      finance: prepareRelated("finance", backup.finance),
+    };
+
+    const profile =
+      backup.profile === undefined
+        ? undefined
+        : parseWorkspaceProfile(backup.profile);
+
+    // Cria novamente os clientes e mantém um mapa dos novos IDs.
+    const newClientIds = new Map<string, Id<"clients">>();
+
+    for (const row of preparedClients) {
+      const id = await db(ctx).insert("clients", {
+        ...row.record,
+        ownerId,
+      });
+
+      newClientIds.set(
+        row.oldId,
+        id as Id<"clients">,
+      );
+    }
+
+    const insertRelated = async (
+      table: RelatedTable,
+      rows: Array<{
+        record: Record<string, unknown>;
+        sourceClientId?: string;
+      }>,
+    ) => {
+      for (const row of rows) {
+        const record = { ...row.record };
+
+        if (row.sourceClientId) {
+          const newClientId = newClientIds.get(
+            row.sourceClientId,
+          );
+
+          if (!newClientId) {
+            throw new Error(
+              "Falha ao reconstruir a relação com o cliente.",
+            );
+          }
+
+          record.clientId = newClientId;
+        } else {
+          delete record.clientId;
+        }
+
+        await db(ctx).insert(table, {
+          ...record,
+          ownerId,
+        });
+      }
+    };
+
+    await insertRelated("content", prepared.content);
+    await insertRelated("tasks", prepared.tasks);
+    await insertRelated("requests", prepared.requests);
+    await insertRelated("meetings", prepared.meetings);
+    await insertRelated(
+      "deliverables",
+      prepared.deliverables,
+    );
+    await insertRelated("finance", prepared.finance);
+
+    if (profile) {
+      const existing = await ctx.db
+        .query("workspaces")
+        .withIndex("by_owner", (q) =>
+          q.eq("ownerId", ownerId),
+        )
+        .unique();
+
+      if (existing) {
+        await ctx.db.patch(existing._id, profile);
+      } else {
+        await ctx.db.insert("workspaces", {
+          ownerId,
+          managerName: "",
+          agency: "",
+          email: "",
+          currency: "R$",
+          weekStart: "Monday",
+          approvalTurnaroundDays: 3,
+          notifyEmail: true,
+          notifyApprovals: true,
+          notifyFinance: false,
+          density: "comfortable",
+          ...profile,
+        });
+      }
+    }
+
+    return {
+      clients: preparedClients.length,
+      content: prepared.content.length,
+      tasks: prepared.tasks.length,
+      requests: prepared.requests.length,
+      meetings: prepared.meetings.length,
+      deliverables: prepared.deliverables.length,
+      finance: prepared.finance.length,
+    };
+  },
+});
 
 // ---- recurring invoices ---------------------------------------------------
 
