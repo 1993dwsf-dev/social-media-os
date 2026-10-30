@@ -23,21 +23,9 @@ jobs:
         run: bun run lint
       - name: Standalone data and input-validation tests
         run: bun test tests/contentplane.test.ts tests/record-validation.test.ts
-      - name: Validate Convex CI secret
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-        run: |
-          if [ -z "$CONVEX_DEPLOY_KEY" ]; then
-            echo "::error::CONVEX_DEPLOY_KEY não configurada. Necessária para codegen, build e testes de isolamento."
-            exit 1
-          fi
-      - name: Generate Convex types
-        env:
-          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
-        run: bunx convex codegen
+      - name: Generate Convex types on ephemeral local CI backend
+        run: bunx convex dev --once
       - name: Build
-        env:
-          VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL }}
         run: bun run build
       - name: Security and regression tests
         run: bun test
