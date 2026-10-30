@@ -2,10 +2,17 @@
 
 Documento operacional para **uma única versão final**. Não crie ambientes extras nem branches paralelas.
 
+## Destinos desta instalação
+- Projeto Convex: `david-william/social-media-os`.
+- Único deployment de produção: `charming-leopard-770` (`https://charming-leopard-770.convex.cloud`).
+- Projeto Cloudflare Pages: `social-media-os`; URL atribuída: `https://social-media-os-b0c.pages.dev`.
+- Origem GitHub: `1993dwsf-dev/social-media-os`, produção somente da `main`, previews desativados.
+- Estes destinos registram a configuração; a liberação depende dos testes reais descritos abaixo.
+
 ## 1. Convex (backend e banco)
 1. Escolha **um deployment** Convex sob sua conta. Não utilize o deployment do Barber OS: os bancos devem ser independentes.
 2. Em Settings > Environment Variables do deployment escolhido, configure:
-   - `CONVEX_SITE_URL`: URL do PRÓPRIO deployment `https://<nome>.convex.site` (não use `pages.dev`).
+   - `CONVEX_SITE_URL` é fornecida automaticamente pelo próprio Convex: o emissor deve ser `https://charming-leopard-770.convex.site` (não use `pages.dev` nem o backend de outro produto).
    - `SOCIAL_MEDIA_OS_SIGNUP_CODE`: código privado aleatório e difícil de adivinhar. Não coloque no frontend ou GitHub.
    - `JWT_PRIVATE_KEY` e `JWKS`: chaves de autenticação geradas de acordo com o guia oficial Convex Auth.
 3. Gere uma **deploy key** para ESSE deployment, com permissão restrita a deploy. Armazene-a em Cloudflare Pages como segredo `CONVEX_DEPLOY_KEY` e em GitHub Actions sob o mesmo nome, se desejar CI.
@@ -15,12 +22,12 @@ Documento operacional para **uma única versão final**. Não crie ambientes ext
 
 ## 2. Cloudflare Pages (frontend)
 1. Crie UM projeto Pages por integração com o repositório `1993dwsf-dev/social-media-os` e branch `main`.
-2. Nome desejado: `social-media-os`; endereço esperado se disponível: `https://social-media-os.pages.dev`.
+2. Nome do projeto: `social-media-os`; endereço atribuído: `https://social-media-os-b0c.pages.dev`.
 3. Framework Vite; diretório de saída `dist`; diretório raiz `/`.
-4. Build command: `bunx convex deploy --cmd 'bun run build' --cmd-url-env-var-name VITE_CONVEX_URL`.
-5. Variável secreta `CONVEX_DEPLOY_KEY`: a chave específica do deployment Social Media OS; **NÃO** a do Barber OS. O CLI fornecerá `VITE_CONVEX_URL` ao build.
+4. Build command: `node scripts/build-pages.mjs`. Configure `BUN_VERSION=1.4.4` no ambiente de produção. O script publica o backend e gera os bindings antes do build TypeScript, sem comandos aninhados entre aspas.
+5. Variável secreta `CONVEX_DEPLOY_KEY`: a chave específica do deployment Social Media OS; **NÃO** a do Barber OS. O script recusa chaves de outro deployment, bloqueia branches diferentes da `main` e define `VITE_CONVEX_URL` para este backend.
 6. Variável opcional `VITE_SUPPORT_EMAIL`: e-mail real do responsável para Termos e Privacidade. Sem ela, haverá uma pendência explícita nos textos legais.
-7. Configure publicação automática apenas da `main`. Faça o primeiro deploy e verifique o build e `/auth`. Não copie variáveis de outro aplicativo.
+7. Configure publicação automática apenas da `main` (`production_deployments_enabled=true`, `preview_deployment_setting=none`). Mantenha a chave de deploy somente no ambiente de produção. Faça o primeiro deploy e verifique o build e `/auth`. Não copie variáveis de outro aplicativo.
 
 Se a conta Cloudflare/Convex não estiver conectada ao agente, estas ações exigem autenticação do titular. Não envie tokens por chat.
 
