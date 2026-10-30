@@ -2,9 +2,8 @@ import { z } from "zod";
 
 /**
  * Validação de entrada para as mutations públicas do Contentplane.
- * `schemaValidation: false` permanece temporariamente no schema para permitir
- * uma auditoria/migração segura dos documentos históricos. Mesmo assim, todas
- * as novas escritas públicas devem passar por estas listas estritas.
+ * O schema do Convex valida a estrutura persistida. Estas listas acrescentam
+ * regras de negócio, limites e validação de valores às escritas públicas.
  */
 
 const MAX_TEXT = 10_000;

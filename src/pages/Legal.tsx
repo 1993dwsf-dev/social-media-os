@@ -79,7 +79,7 @@ export function PrivacyPage() {
         <p>Não acessamos senhas de redes sociais nem importamos dados automaticamente das plataformas. Não cadastre dados sensíveis ou informações desnecessárias.</p>
       </Section>
       <Section title="3. Finalidades e infraestrutura">
-        <p>Os dados são utilizados para autenticar usuários, manter o espaço de trabalho e executar as funcionalidades solicitadas. O frontend é previsto no Cloudflare Pages e o banco de dados e autenticação no Convex, provedores de infraestrutura envolvidos no processamento técnico.</p>
+        <p>Os dados são utilizados para autenticar usuários, manter o espaço de trabalho e executar as funcionalidades solicitadas. O frontend é servido pelo Cloudflare Pages; o banco de dados e a autenticação ficam no Convex, provedores de infraestrutura envolvidos no processamento técnico.</p>
       </Section>
       <Section title="4. Acesso e proteção">
         <p>O backend aplica autenticação e vincula registros ao identificador de proprietário da conta. A criptografia de transporte é fornecida pelas conexões HTTPS. O usuário deve manter senha forte, não compartilhar seu acesso e exportar backups regularmente.</p>

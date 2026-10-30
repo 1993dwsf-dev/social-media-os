@@ -59,7 +59,10 @@ Se a conta Cloudflare/Convex não estiver conectada ao agente, estas ações exi
 - Sem recuperação automática de senha, a troca de acesso requer procedimento de suporte com verificação de identidade. Não prometa reset por e-mail.
 
 ## 6. Pendências bloqueantes de liberação
-- Convex e Cloudflare configurados sob a conta correta, build e funções publicados.
-- CI com codegen e testes de autenticação/isolamento aprovados.
-- Contato e textos contratuais/LGPD revisados com informações reais.
-- Smoke test do navegador e duas contas com dados distintos.
+- [x] Convex e Cloudflare configurados sob a conta correta, build e funções publicados.
+- [x] CI com codegen e testes de autenticação/isolamento aprovados.
+- [x] Smoke test do navegador e duas contas com dados distintos.
+- [ ] Contato e textos contratuais/LGPD revisados com informações reais.
+- [ ] Origem e eventual revogação das credenciais históricas expostas verificadas; a nova instalação usa outras chaves.
+
+Para criar a conta do operador e atender o primeiro cliente, siga [primeiro-acesso.md](primeiro-acesso.md). Não compartilhe o valor do convite em documentos públicos.

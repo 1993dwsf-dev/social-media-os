@@ -214,7 +214,8 @@ const schema = defineSchema(
     }).index("by_owner", ["ownerId"]),
   },
   {
-    schemaValidation: false,
+    // Production was audited before enabling database-level validation.
+    schemaValidation: true,
   },
 );
 
