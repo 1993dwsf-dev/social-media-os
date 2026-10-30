@@ -1,0 +1,58 @@
+# Implantação final — Social Media OS
+
+Documento operacional para **uma única versão final**. Não crie ambientes extras nem branches paralelas.
+
+## 1. Convex (backend e banco)
+1. Escolha **um deployment** Convex sob sua conta. Não utilize o deployment do Barber OS: os bancos devem ser independentes.
+2. Em Settings > Environment Variables do deployment escolhido, configure:
+   - `CONVEX_SITE_URL`: URL do PRÓPRIO deployment `https://<nome>.convex.site` (não use `pages.dev`).
+   - `SOCIAL_MEDIA_OS_SIGNUP_CODE`: código privado aleatório e difícil de adivinhar. Não coloque no frontend ou GitHub.
+   - `JWT_PRIVATE_KEY` e `JWKS`: chaves de autenticação geradas de acordo com o guia oficial Convex Auth.
+3. Gere uma **deploy key** para ESSE deployment, com permissão restrita a deploy. Armazene-a em Cloudflare Pages como segredo `CONVEX_DEPLOY_KEY` e em GitHub Actions sob o mesmo nome, se desejar CI.
+4. Publique as funções e esquema. `bunx convex deploy` deve concluir sem falhas.
+
+**Aviso:** a chave privada `.env.keys` já esteve publicada. Retirá-la do commit atual NÃO a remove do histórico. Revogue/substitua credenciais comprometidas e verifique se havia arquivos cifrados com ela.
+
+## 2. Cloudflare Pages (frontend)
+1. Crie UM projeto Pages por integração com o repositório `1993dwsf-dev/social-media-os` e branch `main`.
+2. Nome desejado: `social-media-os`; endereço esperado se disponível: `https://social-media-os.pages.dev`.
+3. Framework Vite; diretório de saída `dist`; diretório raiz `/`.
+4. Build command: `bunx convex deploy --cmd 'bun run build' --cmd-url-env-var-name VITE_CONVEX_URL`.
+5. Variável secreta `CONVEX_DEPLOY_KEY`: a chave específica do deployment Social Media OS; **NÃO** a do Barber OS. O CLI fornecerá `VITE_CONVEX_URL` ao build.
+6. Variável opcional `VITE_SUPPORT_EMAIL`: e-mail real do responsável para Termos e Privacidade. Sem ela, haverá uma pendência explícita nos textos legais.
+7. Configure publicação automática apenas da `main`. Faça o primeiro deploy e verifique o build e `/auth`. Não copie variáveis de outro aplicativo.
+
+Se a conta Cloudflare/Convex não estiver conectada ao agente, estas ações exigem autenticação do titular. Não envie tokens por chat.
+
+## 3. Segurança e aceitação obrigatórias
+- Nenhuma credencial privada presente em arquivos versionados ou em assets do frontend.
+- Cadastro sem convite ou com convite incorreto recusado pelo backend; cadastro com convite válido permitido.
+- Login com senha correta aceita; senha incorreta recusada; logout bloqueia rotas privadas.
+- Conta A cria cliente, tarefas e financeiro. Conta B não consegue listar, alterar, vincular ou excluir registros da A.
+- Exclusão de um cliente não atinge registros de outro proprietário.
+- Login e app carregam por `pages.dev`, inclusive acesso direto a `/app/dashboard` e refresh.
+- Após limpar cache/armazenamento do navegador, registros permanecem no Convex e retornam quando o usuário entra novamente.
+- Exportar backup JSON e restaurar em conta de teste vazia; verificar contagem e vínculos.
+- Exportação CSV da planilha funciona; **não é exportação dos dados reais do workspace**.
+- Remover dados fictícios da conta do cliente antes de entregar.
+
+**Não declarar pronto para venda antes de testar os itens acima com deploy real.**
+
+## 4. Primeiro cliente — fluxo sem extras
+1. Definir valor e periodicidade de cobrança fora do sistema, em contrato simples.
+2. Configurar o convite secreto no Convex e enviar o código ao cliente por canal privado.
+3. Entregar o endereço `/auth`, acompanhar criação da conta e primeiro login.
+4. Demonstrar cadastro de cliente, conteúdo, calendário, tarefas, financeiro e exportação do backup.
+5. Suporte inicial por contato informado no contrato; sem prometer integração com redes sociais ou portal para os clientes do gestor.
+
+## 5. Operação e recuperação
+- Dados de clientes ficam no Convex, não no cache do navegador. Limpar cookies remove a sessão local, não o banco.
+- Faça backup regular em `Configurações > Exportar JSON`; guarde o arquivo fora do app.
+- Para restaurar: `Configurações > Importar backup`. A importação **acrescenta dados**: evite importar duas vezes e teste em conta vazia antes de restaurar em conta com dados.
+- Sem recuperação automática de senha, a troca de acesso requer procedimento de suporte com verificação de identidade. Não prometa reset por e-mail.
+
+## 6. Pendências bloqueantes de liberação
+- Convex e Cloudflare configurados sob a conta correta, build e funções publicados.
+- CI com codegen e testes de autenticação/isolamento aprovados.
+- Contato e textos contratuais/LGPD revisados com informações reais.
+- Smoke test do navegador e duas contas com dados distintos.

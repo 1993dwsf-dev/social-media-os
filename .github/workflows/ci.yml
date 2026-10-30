@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -10,27 +12,32 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
+      - name: Lint
+        run: bun run lint
+      - name: Standalone data and input-validation tests
+        run: bun test tests/contentplane.test.ts tests/record-validation.test.ts
+      - name: Validate Convex CI secret
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: |
+          if [ -z "$CONVEX_DEPLOY_KEY" ]; then
+            echo "::error::CONVEX_DEPLOY_KEY não configurada. Necessária para codegen, build e testes de isolamento."
+            exit 1
+          fi
       - name: Generate Convex types
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
         run: bunx convex codegen
-
-      - name: Lint
-        run: bun run lint
-
       - name: Build
+        env:
+          VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL }}
         run: bun run build
-
-      - name: Tests
+      - name: Security and regression tests
         run: bun test
