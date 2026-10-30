@@ -23,7 +23,7 @@ export default function NotFound() {
           <h1 className="mt-2 text-lg font-semibold">Esta página saiu do planejamento</h1>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
             O endereço que você abriu não existe ou mudou de lugar. O resto do
-            Contentplane está exatamente onde você deixou.
+            Social Media OS está exatamente onde você deixou.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
             <Button asChild size="sm">
@@ -37,7 +37,7 @@ export default function NotFound() {
           </div>
           <img
             src={logo}
-            alt="Contentplane"
+            alt="Social Media OS"
             className="mx-auto mt-10 size-8 rounded-lg opacity-40"
           />
         </div>

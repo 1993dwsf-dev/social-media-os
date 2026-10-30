@@ -171,7 +171,7 @@ export default function Workbook() {
           <img src={logo} alt="" className="size-7 rounded-md" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold leading-tight">
-              Planilha do Gestor — Contentplane
+              Planilha do Gestor — Social Media OS
             </p>
             <p className="text-[11px] leading-tight text-muted-foreground">
               {sheets.length} abas · modelo estático, não sincronizado com o workspace

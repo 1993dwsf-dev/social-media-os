@@ -1,6 +1,6 @@
 {
-  "name": "Contentplane — Sistema operacional para gestores de social media",
-  "short_name": "Contentplane",
+  "name": "Social Media OS — Sistema operacional para gestores de social media",
+  "short_name": "Social Media OS",
   "description": "O sistema operacional para gestores de social media: planilha de 29 abas e espaço de trabalho para gerir clientes, conteúdo, aprovações e finanças.",
   "start_url": "/",
   "display": "standalone",

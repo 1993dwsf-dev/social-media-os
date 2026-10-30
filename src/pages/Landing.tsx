@@ -69,7 +69,7 @@ export default function Landing() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <img src={logo} alt="" className="size-8 rounded-lg" />
-          <span className="text-base font-semibold tracking-tight">Contentplane</span>
+          <span className="text-base font-semibold tracking-tight">Social Media OS</span>
           <nav className="ml-auto hidden items-center gap-6 text-sm text-muted-foreground md:flex">
             <a href="#system" className="transition-colors hover:text-foreground">O sistema</a>
             <a href="#features" className="transition-colors hover:text-foreground">Recursos</a>
@@ -282,7 +282,7 @@ export default function Landing() {
       <footer className="border-t border-border/60 py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 text-xs text-muted-foreground sm:px-6">
           <img src={logo} alt="" className="size-5 rounded" />
-          <span className="font-medium text-foreground">Contentplane</span>
+          <span className="font-medium text-foreground">Social Media OS</span>
           <span>· Sistema operacional para gestores de social media</span>
           <nav className="ml-auto flex items-center gap-4">
             <Link to="/termos" className="transition-colors hover:text-foreground">

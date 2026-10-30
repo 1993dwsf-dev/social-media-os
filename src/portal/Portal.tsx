@@ -143,7 +143,7 @@ export default function Portal() {
     <div className="flex items-center gap-2.5 border-b border-border/70 px-5 py-4">
       <img src={logo} alt="" className="size-8 rounded-lg" />
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold tracking-tight">Contentplane</p>
+        <p className="truncate text-sm font-semibold tracking-tight">Social Media OS</p>
         <p className="truncate text-[11px] text-muted-foreground">
           {ws.profile.agency || ws.profile.managerName || "Espaço do gestor"}
         </p>
