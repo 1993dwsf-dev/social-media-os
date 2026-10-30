@@ -37,7 +37,7 @@ bun run lint
 bun test
 bun run build
 ```
-Os tipos em `src/convex/_generated` são gerados pelo CLI Convex; sem implantação acessível, a etapa de codegen e o build completo não funcionam. Não inclua chaves em `VITE_*`, commits ou issues.
+Os tipos em `src/convex/_generated` são gerados pelo CLI Convex; o CI usa uma instância Convex local e temporária para validar o build e os testes sem segredos de produção. A publicação real precisa de autorização no Convex. Não inclua chaves em `VITE_*`, commits ou issues.
 
 ## Segurança
 - Backend exige autenticação em mutations, filtra listagens por `ownerId` e valida referências de clientes nas escritas.
