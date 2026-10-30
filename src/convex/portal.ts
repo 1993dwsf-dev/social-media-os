@@ -204,7 +204,10 @@ export const removeClient = mutation({
         .query(table)
         .withIndex("by_client", (q: any) => q.eq("clientId", doc._id))
         .collect()) as any[];
-      for (const row of rows) await ctx.db.delete(row._id);
+      for (const row of rows) {
+        // A legacy cross-tenant reference must never delete a foreign record.
+        if (row.ownerId === ownerId) await ctx.db.delete(row._id);
+      }
     }
     await ctx.db.delete(doc._id);
   },
