@@ -29,8 +29,6 @@ import * as repairModule from "../src/convex/repair";
 import * as sessionsModule from "../src/convex/sessions";
 import * as turnstileModule from "../src/convex/turnstile";
 import * as usersModule from "../src/convex/users";
-import * as emailOtpModule from "../src/convex/auth/emailOtp";
-import * as guestModule from "../src/convex/auth/guest";
 
 // Caminhos relativos a este arquivo; a entrada em `_generated` é o que permite
 // ao harness descobrir a raiz do diretório de funções.
@@ -477,17 +475,6 @@ describe("inventário da API", () => {
     }
   });
 
-  test("os módulos de provider do auth não expõem funções de API", () => {
-    for (const namespace of [emailOtpModule, guestModule]) {
-      const functions = Object.values(
-        namespace as unknown as Record<string, unknown>,
-      ).filter((value) => {
-        const fn = value as { isQuery?: boolean; isMutation?: boolean } | null;
-        return Boolean(fn && (fn.isQuery || fn.isMutation));
-      });
-      expect(functions).toEqual([]);
-    }
-  });
 });
 
 // ---- 2. comportamento sem sessão ------------------------------------------

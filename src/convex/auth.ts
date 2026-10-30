@@ -7,7 +7,7 @@ const invitedPassword = Password({
   profile(params) {
     const expected = process.env.SOCIAL_MEDIA_OS_SIGNUP_CODE;
     const supplied = typeof params.inviteCode === "string" ? params.inviteCode.trim() : "";
-    if (!expected || supplied !== expected) {
+    if (params.flow === "signUp" && (!expected || supplied !== expected)) {
       throw new ConvexError("Cadastro restrito. Solicite seu código de acesso ao administrador.");
     }
     const email = typeof params.email === "string" ? params.email.trim().toLowerCase() : "";
