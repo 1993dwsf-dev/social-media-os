@@ -57,5 +57,5 @@ A proposta existente sugere um piloto de R$ 49 por mês por gestor; esse valor a
 
 - Preencher a identificação pública do responsável e o e-mail de suporte; a publicação ainda mostra esse contato como pendente.
 - Revisar termos e privacidade com os dados reais e definir proposta/contrato, cancelamento e atendimento.
-- Resolver a origem e eventual revogação de credenciais históricas, sem reutilizá-las nesta instalação.
+- Não reutilizar a chave histórica dotenvx, já identificada na auditoria. Se houver arquivos cifrados fora deste repositório, substituir seu par de chaves e as credenciais contidas nesses arquivos; a instalação atual usa outras credenciais.
 - Não prometer publicação automática, métricas conectadas, portal do cliente, reset automático de senha ou cobrança automatizada.

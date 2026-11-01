@@ -18,14 +18,14 @@ Documento operacional para **uma única versão final**. Não crie ambientes ext
 3. Gere uma **deploy key** para ESSE deployment, com permissão restrita a deploy. Armazene-a em Cloudflare Pages como segredo `CONVEX_DEPLOY_KEY` e em GitHub Actions sob o mesmo nome, se desejar CI.
 4. Publique as funções e esquema. `bunx convex deploy` deve concluir sem falhas.
 
-**Aviso:** a chave privada `.env.keys` já esteve publicada. Retirá-la do commit atual NÃO a remove do histórico. Revogue/substitua credenciais comprometidas e verifique se havia arquivos cifrados com ela.
+**Histórico auditado:** `.env.keys` expôs uma chave `DOTENV_PRIVATE_KEY_LOCAL` de descriptografia dotenvx. Nos 44 commits e 383 blobs examinados antes desta manutenção, não foi encontrado o payload cifrado correspondente. A instalação atual não usa essa chave nem dotenvx. A exposição histórica permanece; se houver arquivos cifrados fora do repositório, recriptografe-os e substitua nos provedores as credenciais neles contidas. Consulte o escopo em [auditoria-mvp.md](auditoria-mvp.md).
 
 ## 2. Cloudflare Pages (frontend)
 1. Crie UM projeto Pages por integração com o repositório `1993dwsf-dev/social-media-os` e branch `main`.
 2. Nome do projeto: `social-media-os`; endereço atribuído: `https://social-media-os-b0c.pages.dev`.
 3. Framework Vite; diretório de saída `dist`; diretório raiz `/`.
-4. Build command: `node scripts/build-pages.mjs`. Configure `BUN_VERSION=1.4.4` no ambiente de produção. O script publica o backend e gera os bindings antes do build TypeScript, sem comandos aninhados entre aspas.
-5. Variável secreta `CONVEX_DEPLOY_KEY`: a chave específica do deployment Social Media OS; **NÃO** a do Barber OS. O script recusa chaves de outro deployment, bloqueia branches diferentes da `main` e define `VITE_CONVEX_URL` para este backend.
+4. Build command: `node scripts/build-pages.mjs`. Configure `BUN_VERSION=1.4.4` no ambiente de produção. O script gera os bindings sem ativar código no backend, executa lint, testes e build TypeScript/Vite e só depois publica o Convex. Qualquer falha interrompe a publicação. O Pages publica o frontend quando esse comando termina com sucesso.
+5. Variável secreta `CONVEX_DEPLOY_KEY`: a chave específica do deployment Social Media OS; **NÃO** a do Barber OS. O script recusa chaves de outro deployment, exige `CF_PAGES_BRANCH=main` fornecida pelo Pages e define `VITE_CONVEX_URL` para este backend.
 6. Variável opcional `VITE_SUPPORT_EMAIL`: e-mail real do responsável para Termos e Privacidade. Sem ela, haverá uma pendência explícita nos textos legais.
 7. Configure publicação automática apenas da `main` (`production_deployments_enabled=true`, `preview_deployment_setting=none`). Mantenha a chave de deploy somente no ambiente de produção. Faça o primeiro deploy e verifique o build e `/auth`. Não copie variáveis de outro aplicativo.
 
@@ -63,6 +63,6 @@ Se a conta Cloudflare/Convex não estiver conectada ao agente, estas ações exi
 - [x] CI com codegen e testes de autenticação/isolamento aprovados.
 - [x] Smoke test do navegador e duas contas com dados distintos.
 - [ ] Contato e textos contratuais/LGPD revisados com informações reais.
-- [ ] Origem e eventual revogação das credenciais históricas expostas verificadas; a nova instalação usa outras chaves.
+- [x] Chave histórica identificada como descriptografia dotenvx, sem payload cifrado encontrado no repositório; a nova instalação usa outras chaves. Arquivos externos não foram auditados.
 
 Para criar a conta do operador e atender o primeiro cliente, siga [primeiro-acesso.md](primeiro-acesso.md). Não compartilhe o valor do convite em documentos públicos.

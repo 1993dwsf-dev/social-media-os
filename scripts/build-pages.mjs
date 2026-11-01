@@ -7,7 +7,7 @@ const deployKey = process.env.CONVEX_DEPLOY_KEY ?? "";
 if (!deployKey.startsWith(`prod:${deployment}|`)) {
   throw new Error("Configure a deploy key exclusiva do Convex de produção do Social Media OS.");
 }
-if (process.env.CF_PAGES_BRANCH && process.env.CF_PAGES_BRANCH !== "main") {
+if (process.env.CF_PAGES_BRANCH !== "main") {
   throw new Error("A publicação do Social Media OS é permitida somente pela main.");
 }
 
@@ -24,7 +24,11 @@ function run(command, args) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-// Generate the ignored Convex bindings before the frontend's TypeScript build.
+// Codegen reads deployment metadata without changing the published backend.
+// Validate this same checkout before either backend or frontend is published.
 // Argument arrays avoid the Pages runner's handling of nested command quotes.
-run(process.execPath, [cli, "deploy", "--yes"]);
+run(process.execPath, [cli, "codegen", "--typecheck", "disable"]);
+run("bun", ["run", "lint"]);
+run("bun", ["test"]);
 run("bun", ["run", "build"]);
+run(process.execPath, [cli, "deploy", "--yes"]);

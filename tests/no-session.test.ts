@@ -18,41 +18,26 @@
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { convexTest } from "convex-test";
+import { readdirSync } from "node:fs";
 
 import { api } from "../src/convex/_generated/api";
 import schema from "../src/convex/schema";
 
-import * as authModule from "../src/convex/auth";
-import * as demoModule from "../src/convex/demo";
-import * as portalModule from "../src/convex/portal";
-import * as repairModule from "../src/convex/repair";
-import * as sessionsModule from "../src/convex/sessions";
-import * as turnstileModule from "../src/convex/turnstile";
-import * as usersModule from "../src/convex/users";
-
 // Caminhos relativos a este arquivo; a entrada em `_generated` é o que permite
-// ao harness descobrir a raiz do diretório de funções.
-const modules = {
+// ao harness descobrir a raiz do diretório de funções. A descoberta automática
+// impede que um módulo novo fique fora do inventário de segurança.
+const modules: Record<string, () => Promise<any>> = {
   "../src/convex/_generated/api.js": () =>
     import("../src/convex/_generated/api"),
-  "../src/convex/auth.ts": () => import("../src/convex/auth"),
-  "../src/convex/demo.ts": () => import("../src/convex/demo"),
-  "../src/convex/portal.ts": () => import("../src/convex/portal"),
-  "../src/convex/repair.ts": () => import("../src/convex/repair"),
-  "../src/convex/sessions.ts": () => import("../src/convex/sessions"),
-  "../src/convex/turnstile.ts": () => import("../src/convex/turnstile"),
-  "../src/convex/users.ts": () => import("../src/convex/users"),
 };
-
-const MODULES: Record<string, Record<string, unknown>> = {
-  auth: authModule as unknown as Record<string, unknown>,
-  demo: demoModule as unknown as Record<string, unknown>,
-  portal: portalModule as unknown as Record<string, unknown>,
-  repair: repairModule as unknown as Record<string, unknown>,
-  sessions: sessionsModule as unknown as Record<string, unknown>,
-  turnstile: turnstileModule as unknown as Record<string, unknown>,
-  users: usersModule as unknown as Record<string, unknown>,
-};
+const MODULES: Record<string, Record<string, unknown>> = {};
+for (const file of readdirSync(new URL("../src/convex/", import.meta.url))) {
+  if (!file.endsWith(".ts")) continue;
+  const path = `../src/convex/${file}`;
+  const load = () => import(path);
+  modules[path] = load;
+  MODULES[file.slice(0, -3)] = await load();
+}
 
 const SENTINEL = "SEGREDO-DA-CONTA";
 
@@ -104,23 +89,18 @@ function allRoutes(): Route[] {
 }
 
 /**
- * Consultas que respondem sem sessão. Todas são "vazias": nenhuma devolve
- * dado de usuário. `turnstile:getTurnstileStatus` é configuração do servidor,
- * não dado de ninguém.
+ * Consultas que respondem sem sessão, sem devolver dados de usuário.
  */
 const OPEN_QUERIES: Record<string, unknown> = {
   "auth:isAuthenticated": false,
-  "turnstile:getTurnstileStatus": { enforced: false },
 };
 
 /**
- * Ações que respondem sem sessão: as duas de sessão (o próprio login/logout,
- * por definição) e a verificação do captcha, que roda antes de haver login.
+ * Ações que respondem sem sessão: o próprio login/logout, por definição.
  */
 const OPEN_ACTIONS = [
   "auth:signIn",
   "auth:signOut",
-  "turnstile:verifyTurnstile",
 ];
 
 /** Tudo que devolve vazio/nulo sem sessão. */
@@ -169,11 +149,10 @@ const SESSION_MUTATIONS = [
 
 /** Nunca chamáveis pelo cliente (o Convex recusa antes de executar). */
 const INTERNAL: Record<string, Kind> = {
+  "audit:reportStoredDataIssues": "query",
   "auth:store": "mutation",
   "repair:relinkOrphanInvoices": "mutation",
   "sessions:cleanupInactiveSessions": "mutation",
-  "turnstile:grantEmailAccess": "mutation",
-  "turnstile:consumeEmailGrant": "mutation",
 };
 
 const CLASSIFIED = new Set([
@@ -413,7 +392,6 @@ const realConsole = {
 };
 
 beforeEach(() => {
-  delete process.env.TURNSTILE_SECRET_KEY;
   // O Convex Auth loga em INFO a cada `auth:store`; silenciamos o ruído.
   console.log = () => {};
   console.info = () => {};
@@ -508,13 +486,6 @@ describe("sem sessão: leitura", () => {
     expect(await callWithoutSession(t, "auth:isAuthenticated")).toBe(false);
     // Ação sem retorno; o Convex serializa `undefined` como `null`.
     expect(await callWithoutSession(t, "auth:signOut")).toBeNull();
-
-    // O captcha sem chave secreta configurada libera, mas não grava nada.
-    const turnstile = await callWithoutSession(t, "turnstile:verifyTurnstile", {
-      email: "qualquer@exemplo.com",
-      token: "",
-    });
-    expect(JSON.stringify(turnstile)).not.toContain(SENTINEL);
 
     // `signIn` com provider inexistente é recusado antes de qualquer escrita.
     await expect(

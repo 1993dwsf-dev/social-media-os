@@ -187,10 +187,9 @@ const schema = defineSchema(
       .index("by_owner", ["ownerId"])
       .index("by_client", ["clientId"]),
 
-    // ---- Contentplane: anti-robô do /auth ---------------------------------
-    // Criada quando o visitante resolve o captcha (Cloudflare Turnstile).
-    // Cada linha libera **um** envio de código para um e-mail e expira em
-    // poucos minutos — ver `src/convex/turnstile.ts`.
+    // Tabela legada do antigo login por código, preservada para não excluir
+    // dados históricos. O login por senha não usa captcha nem grava grants;
+    // os endpoints antigos de Turnstile foram removidos.
     turnstileGrants: defineTable({
       identifier: v.string(), // e-mail normalizado
       token: v.string(), // token do widget (auditoria)
