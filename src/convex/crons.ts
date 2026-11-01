@@ -1,4 +1,4 @@
-// Rotina diária de manutenção do Contentplane.
+// Rotina diária de manutenção do Social Media OS.
 //
 // A limpeza de sessões inativas (`sessions.cleanupInactiveSessions`) roda uma
 // vez por dia, de madrugada em UTC — o produto é single-seat e o uso típico é

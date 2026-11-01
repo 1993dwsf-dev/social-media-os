@@ -1,4 +1,4 @@
-// Testes de "porta aberta" do Contentplane: todas as funções que o cliente
+// Testes de "porta aberta" do Social Media OS: todas as funções que o cliente
 // alcança **sem sessão** e a garantia de que nenhuma delas devolve dado de
 // usuário.
 //

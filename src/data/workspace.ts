@@ -271,7 +271,7 @@ export function useWorkspace(): Workspace {
       deliverables,
       finance,
     };
-    download("contentplane-backup.json", JSON.stringify(snapshot, null, 2), "application/json");
+    download("social-media-os-backup.json", JSON.stringify(snapshot, null, 2), "application/json");
   }, [profile, clients, content, tasks, requests, meetings, deliverables, finance]);
 
   const importJSON = useCallback(
@@ -299,7 +299,7 @@ export function useWorkspace(): Workspace {
         Array.isArray(parsed)
       ) {
         throw new Error(
-          "Backup do Contentplane inválido (esperado um objeto JSON).",
+          "Backup do Social Media OS inválido (esperado um objeto JSON).",
         );
       }
 

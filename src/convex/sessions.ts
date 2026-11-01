@@ -1,4 +1,4 @@
-// Expiração e limpeza das sessões de login do Contentplane.
+// Expiração e limpeza das sessões de login do Social Media OS.
 //
 // O Convex Auth já cria cada sessão com prazos: `authSessions.expirationTime`
 // é a duração total (30 dias) e `authRefreshTokens.expirationTime` é a janela

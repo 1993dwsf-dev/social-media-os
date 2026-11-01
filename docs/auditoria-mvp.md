@@ -4,7 +4,7 @@
 
 ## Verificações objetivas
 
-- Revisão de código publicada e validada: `e36c7d347683365641b4ae201d535114bfe39fef`, CI [41311175701](https://github.com/1993dwsf-dev/social-media-os/actions/runs/41311175701), concluída com sucesso. A CI executa lint, geração de tipos com Convex local e temporário, build Vite/TypeScript e testes. O [deployment Pages correspondente](https://dash.cloudflare.com/?to=/bb3055e676b5aff1531b35b7ab8eb90d/pages/view/social-media-os/cda0603c-3b4b-436f-8131-8c49834c6726) também concluiu com sucesso.
+- Validação funcional de referência: `e36c7d347683365641b4ae201d535114bfe39fef`, CI [41311175701](https://github.com/1993dwsf-dev/social-media-os/actions/runs/41311175701), concluída com sucesso. A CI executa lint, geração de tipos com Convex local e temporário, build Vite/TypeScript e testes. O [deployment Pages correspondente](https://dash.cloudflare.com/?to=/bb3055e676b5aff1531b35b7ab8eb90d/pages/view/social-media-os/cda0603c-3b4b-436f-8131-8c49834c6726) também concluiu com sucesso.
 - Esta manutenção passou localmente e na CI em 82 testes, lint sem erros e build. Foram retirados 15 testes do utilitário de captcha removido e acrescentados 8 testes de segurança da publicação; os testes de autenticação, isolamento e importação permanecem.
 - O script do Pages exige origem `main` e chave do backend exclusivo. Gera tipos sem ativar código no deployment, executa lint, testes e build e só então publica o backend. Uma falha nessas etapas interrompe a publicação; a execução não depende de a CI paralela terminar primeiro.
 - Isolamento: dados são filtrados no backend por `ownerId`; leituras e alterações entre dois gestores são negadas nos testes.
@@ -12,7 +12,8 @@
 - Backups: importação valida coleções e relacionamentos, remapeia IDs, é transacional e limitada a 1.000 registros por operação.
 - Rotas privadas: protegidas pela sessão Convex Auth. Sem sessão, consultas retornam vazio e mutations são negadas.
 - Sessão: Convex Auth com provider Password; cadastro com convite; entrada com senha sem convite.
-- App: código do toolbar, JWT federado Freebuff, gateway de OTP e login de visitante retirados. Os endpoints antigos de Turnstile e seu utilitário também foram removidos nesta manutenção. A tabela legada foi preservada para não excluir dados históricos.
+- App: toolbar do ambiente de criação, JWT federado do provedor anterior, gateway de OTP e login de visitante retirados. Os endpoints antigos de Turnstile e seu utilitário também foram removidos nesta manutenção. A tabela legada foi preservada para não excluir dados históricos.
+- Identidade: Social Media OS, um produto de David William. A apresentação pública, o nome do backup e as mensagens usam a marca do produto; os avisos e licenças de terceiros são preservados.
 - O inventário de segurança descobre os módulos Convex automaticamente, incluindo a consulta interna de auditoria, e exige classificação explícita de suas funções.
 - Cloudflare Pages: SPA fallback `public/_redirects` e cabeçalhos básicos `public/_headers` adicionados.
 - Produção publicada em https://social-media-os-b0c.pages.dev, com origem GitHub e deploy automático exclusivo da `main`; previews desativados. O disparo observado foi `github:push`.
@@ -43,7 +44,7 @@
 
 - [x] Um único código em `main` com CI aprovado.
 - [x] Build do frontend aprovado e testes de isolamento e importação concluídos.
-- [x] Login e cadastro sem Freebuff no código.
+- [x] Login e cadastro usando Convex Auth no backend exclusivo do produto.
 - [x] Novas credenciais da instalação geradas sem reutilizar as históricas e variáveis privadas configuradas.
 - [x] Natureza da chave histórica e alcance verificável no repositório identificados; credenciais da instalação atual independentes.
 - [x] Deployment Convex real publicado e validado.

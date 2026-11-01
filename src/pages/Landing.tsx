@@ -291,8 +291,8 @@ export default function Landing() {
             <Link to="/privacidade" className="transition-colors hover:text-foreground">
               Privacidade
             </Link>
-            <span className="hidden sm:inline">Produto original — sem vínculo com qualquer ferramenta existente.</span>
           </nav>
+          <p className="w-full">Um produto de David William.</p>
         </div>
       </footer>
     </div>

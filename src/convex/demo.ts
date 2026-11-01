@@ -1,4 +1,4 @@
-// Espaço de exemplo fictício do Contentplane.
+// Espaço de exemplo fictício do Social Media OS.
 //
 // Quatro clientes de uma gestora de social media independente, com conteúdos,
 // tarefas, solicitações, reuniões, entregas e finanças distribuídos ao redor de

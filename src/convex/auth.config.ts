@@ -1,6 +1,6 @@
 import type { AuthConfig } from "convex/server";
 
-// Only trust JWTs issued by this Convex deployment; no Freebuff federation.
+// Trust only JWTs issued by this Convex deployment.
 export default {
   providers: [
     {

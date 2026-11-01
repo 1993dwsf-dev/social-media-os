@@ -43,7 +43,7 @@ class RootErrorBoundary extends React.Component<
     };
   }
   componentDidCatch(err: Error) {
-    console.error("[Contentplane] Root crash:", err);
+    console.error("[Social Media OS] Root crash:", err);
   }
   render() {
     if (this.state.hasError) {

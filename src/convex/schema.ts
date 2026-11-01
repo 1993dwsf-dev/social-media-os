@@ -32,7 +32,7 @@ const schema = defineSchema(
       role: v.optional(roleValidator), // role of the user. do not remove
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
-    // ---- Contentplane: manager workspace -----------------------------------
+    // ---- Social Media OS: manager workspace --------------------------------
     // Every row is scoped to the signed-in manager through `ownerId`.
 
     clients: defineTable({

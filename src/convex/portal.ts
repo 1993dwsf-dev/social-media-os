@@ -1,4 +1,4 @@
-// API do espaço de trabalho do gestor no Contentplane.
+// API do espaço de trabalho do gestor no Social Media OS.
 //
 // Cada consulta e mutation é limitada ao gestor logado (`ownerId`), então duas
 // contas nunca veem os clientes, conteúdos, tarefas ou finanças uma da outra.

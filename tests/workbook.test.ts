@@ -1,4 +1,4 @@
-// Testes de regressão da camada de dados do Contentplane:
+// Testes de regressão da camada de dados do Social Media OS:
 // a planilha de 29 abas (com seu motor de fórmulas) e o planejador de faturas
 // recorrentes.
 //

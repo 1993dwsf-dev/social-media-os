@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Validação de entrada para as mutations públicas do Contentplane.
+ * Validação de entrada para as mutations públicas do Social Media OS.
  * O schema do Convex valida a estrutura persistida. Estas listas acrescentam
  * regras de negócio, limites e validação de valores às escritas públicas.
  */

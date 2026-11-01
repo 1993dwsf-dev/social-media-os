@@ -1,4 +1,4 @@
-// Planilha do Gestor Contentplane — sistema operacional de 29 abas para
+// Planilha do Gestor Social Media OS — sistema operacional de 29 abas para
 // gestores de social media. As abas são definidas como dados para que o
 // visualizador web possa renderizá-las, calcular fórmulas, validar listas
 // suspensas e exportar CSV.

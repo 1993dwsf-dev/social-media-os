@@ -1,4 +1,4 @@
-// Testes de isolamento entre contas do Contentplane.
+// Testes de isolamento entre contas do Social Media OS.
 //
 // Regra do produto: **cada gestor só acessa o que é dele**. Todo registro tem
 // `ownerId` e todas as consultas/mutations de `src/convex/portal.ts` e
@@ -418,7 +418,7 @@ describe("dados de exemplo e limpeza", () => {
 
 // ---- caminho feliz do financeiro -------------------------------------------
 
-// O planejador puro (`planInvoices`) já é testado em `tests/contentplane.test.ts`;
+// O planejador puro (`planInvoices`) já é testado em `tests/workbook.test.ts`;
 // aqui o que entra no banco de verdade é o handler `generateInvoices`, que só
 // aparecia nos testes por recusa (cliente de outra conta).
 

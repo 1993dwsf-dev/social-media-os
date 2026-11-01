@@ -123,6 +123,9 @@ export default function Auth({ redirectAfterAuth = "/app/dashboard" }: AuthProps
               Ao usar o sistema, você concorda com os <Link to="/termos" className="underline">Termos</Link> e a{" "}
               <Link to="/privacidade" className="underline">Política de Privacidade</Link>.
             </p>
+            <p className="text-center text-xs text-muted-foreground">
+              Um produto de David William.
+            </p>
           </CardFooter>
         </form>
       </Card>

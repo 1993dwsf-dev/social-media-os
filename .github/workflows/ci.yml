@@ -22,7 +22,7 @@ jobs:
       - name: Lint
         run: bun run lint
       - name: Standalone data and input-validation tests
-        run: bun test tests/contentplane.test.ts tests/record-validation.test.ts
+        run: bun test tests/workbook.test.ts tests/record-validation.test.ts
       - name: Generate Convex types on ephemeral local CI backend
         run: bunx convex dev --once
       - name: Build

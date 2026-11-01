@@ -1,4 +1,4 @@
-// Testes da expiração e da limpeza de sessões inativas do Contentplane.
+// Testes da expiração e da limpeza de sessões inativas do Social Media OS.
 //
 // O Convex Auth cria cada sessão com dois prazos: o total
 // (`authSessions.expirationTime`, 30 dias) e o de inatividade

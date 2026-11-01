@@ -1,5 +1,7 @@
 # Social Media OS — MVP de gestão de clientes e conteúdo
 
+Um produto de David William.
+
 Aplicação React + TypeScript + Vite + Convex para **um gestor de social media por conta**, com vários clientes cadastrados no seu espaço. Clientes não possuem login e não veem o painel.
 
 ## O que já existe
@@ -14,7 +16,7 @@ Aplicação React + TypeScript + Vite + Convex para **um gestor de social media 
 ## Arquitetura única
 - Frontend: Cloudflare Pages (uma única branch `main`, um único endereço público).
 - Backend e banco: **um único deployment Convex**, com autenticação Convex Auth e dados isolados por `ownerId`.
-- Login: e-mail/senha, cadastro restrito por `SOCIAL_MEDIA_OS_SIGNUP_CODE` configurado APENAS no backend Convex. Sem serviços do Freebuff, Google ou envio de OTP.
+- Login: Convex Auth com e-mail/senha, cadastro restrito por `SOCIAL_MEDIA_OS_SIGNUP_CODE` configurado APENAS no backend Convex. Sem login social ou envio de OTP.
 - Sem domínio próprio obrigatório para a URL `*.pages.dev`.
 - Recuperação automática de senha não existe neste MVP; o operador precisará prestar suporte ao usuário que perder acesso, mediante verificação de identidade.
 
