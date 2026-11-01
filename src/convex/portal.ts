@@ -7,7 +7,7 @@
 // (`data`) e as atualizações recebem um patch parcial; o modelo TypeScript em
 // `src/data/types.ts` continua sendo a fonte de verdade dos campos.
 
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { activeUser } from "./activeUser";
 import { v } from "convex/values";
 
 import {
@@ -17,6 +17,10 @@ import {
   type WorkspaceRecordTable,
 } from "./recordValidation";
 
+import {
+  assertWorkspaceCapacity,
+  readWorkspaceSnapshot,
+} from "./workspaceData";
 import { planInvoices } from "../data/invoicing";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
@@ -41,7 +45,7 @@ type PerClientTable = Exclude<OwnedTable, "clients">;
 const db = (ctx: Ctx) => ctx.db as any;
 
 async function currentOwner(ctx: Ctx): Promise<Owner | null> {
-  return await getAuthUserId(ctx);
+  return await activeUser(ctx);
 }
 
 async function requireOwner(ctx: Ctx): Promise<Owner> {
@@ -92,8 +96,18 @@ async function getOwned(
 async function assertOwnedClient(ctx: Ctx, ownerId: Owner, clientId?: string) {
   if (!clientId) return;
   const client = await getOwned(ctx, ownerId, "clients", clientId);
-  if (!client) throw new Error("Cliente não encontrado neste espaço de trabalho");
+  if (!client)
+    throw new Error("Cliente não encontrado neste espaço de trabalho");
 }
+
+export const exportWorkspace = query({
+  args: {},
+  handler: async (ctx) => {
+    const ownerId = await currentOwner(ctx);
+    if (!ownerId) return null;
+    return await readWorkspaceSnapshot(ctx, ownerId);
+  },
+});
 
 // ---- workspace profile ----------------------------------------------------
 
@@ -117,16 +131,14 @@ export const saveWorkspace = mutation({
       .query("workspaces")
       .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
       .unique();
-    const clean = parseWorkspaceProfile(
-      sanitize(patch),
-      true,
-    );
+    const clean = parseWorkspaceProfile(sanitize(patch), true);
 
     if (existing) {
       await ctx.db.patch(existing._id, clean);
+      await assertWorkspaceCapacity(ctx, ownerId);
       return existing._id;
     }
-    return await ctx.db.insert("workspaces", {
+    const id = await ctx.db.insert("workspaces", {
       ownerId,
       managerName: "",
       agency: "",
@@ -140,6 +152,8 @@ export const saveWorkspace = mutation({
       density: "comfortable",
       ...clean,
     });
+    await assertWorkspaceCapacity(ctx, ownerId);
+    return id;
   },
 });
 
@@ -159,19 +173,18 @@ export const createClient = mutation({
   args: { data: v.any() },
   handler: async (ctx, { data }) => {
     const ownerId = await requireOwner(ctx);
-    const record = parseWorkspaceRecord(
-      "clients",
-      sanitize(data),
-    );
+    const record = parseWorkspaceRecord("clients", sanitize(data));
 
     if (typeof record.createdAt !== "number") {
       record.createdAt = Date.now();
     }
 
-    return await db(ctx).insert("clients", {
+    const id = await db(ctx).insert("clients", {
       ...record,
       ownerId,
     });
+    await assertWorkspaceCapacity(ctx, ownerId);
+    return id;
   },
 });
 
@@ -180,15 +193,13 @@ export const updateClient = mutation({
   handler: async (ctx, { id, patch }) => {
     const ownerId = await requireOwner(ctx);
     const doc = await getOwned(ctx, ownerId, "clients", id);
-    if (!doc) throw new Error("Cliente não encontrado neste espaço de trabalho");
+    if (!doc)
+      throw new Error("Cliente não encontrado neste espaço de trabalho");
     await ctx.db.patch(
       doc._id,
-      parseWorkspaceRecord(
-        "clients",
-        sanitize(patch),
-        true,
-      ),
+      parseWorkspaceRecord("clients", sanitize(patch), true),
     );
+    await assertWorkspaceCapacity(ctx, ownerId);
   },
 });
 
@@ -197,9 +208,12 @@ export const removeClient = mutation({
   handler: async (ctx, { id }) => {
     const ownerId = await requireOwner(ctx);
     const doc = await getOwned(ctx, ownerId, "clients", id);
-    if (!doc) throw new Error("Cliente não encontrado neste espaço de trabalho");
+    if (!doc)
+      throw new Error("Cliente não encontrado neste espaço de trabalho");
     // Remove tudo que pertence ao cliente para não sobrar registro órfão.
-    for (const table of OWNED_TABLES.filter((t): t is PerClientTable => t !== "clients")) {
+    for (const table of OWNED_TABLES.filter(
+      (t): t is PerClientTable => t !== "clients",
+    )) {
       const rows = (await db(ctx)
         .query(table)
         .withIndex("by_client", (q: any) => q.eq("clientId", doc._id))
@@ -234,9 +248,15 @@ function perClientApi(table: PerClientTable) {
           sanitize(data),
         );
 
-        await assertOwnedClient(ctx, ownerId, record.clientId as string | undefined);
+        await assertOwnedClient(
+          ctx,
+          ownerId,
+          record.clientId as string | undefined,
+        );
 
-        return await db(ctx).insert(table, { ...record, ownerId });
+        const id = await db(ctx).insert(table, { ...record, ownerId });
+        await assertWorkspaceCapacity(ctx, ownerId);
+        return id;
       },
     }),
     update: mutation({
@@ -244,7 +264,8 @@ function perClientApi(table: PerClientTable) {
       handler: async (ctx, { id, patch }) => {
         const ownerId = await requireOwner(ctx);
         const doc = await getOwned(ctx, ownerId, table, id);
-        if (!doc) throw new Error("Registro não encontrado neste espaço de trabalho");
+        if (!doc)
+          throw new Error("Registro não encontrado neste espaço de trabalho");
         const record = parseWorkspaceRecord(
           table as WorkspaceRecordTable,
           sanitize(patch),
@@ -252,8 +273,13 @@ function perClientApi(table: PerClientTable) {
         );
 
         // Um patch não pode reapontar o registro para o cliente de outra pessoa.
-        await assertOwnedClient(ctx, ownerId, record.clientId as string | undefined);
+        await assertOwnedClient(
+          ctx,
+          ownerId,
+          record.clientId as string | undefined,
+        );
         await ctx.db.patch(doc._id, record);
+        await assertWorkspaceCapacity(ctx, ownerId);
       },
     }),
     remove: mutation({
@@ -261,7 +287,8 @@ function perClientApi(table: PerClientTable) {
       handler: async (ctx, { id }) => {
         const ownerId = await requireOwner(ctx);
         const doc = await getOwned(ctx, ownerId, table, id);
-        if (!doc) throw new Error("Registro não encontrado neste espaço de trabalho");
+        if (!doc)
+          throw new Error("Registro não encontrado neste espaço de trabalho");
         await ctx.db.delete(doc._id);
       },
     }),
@@ -313,11 +340,7 @@ function asImportRecord(
   value: unknown,
   label: string,
 ): Record<string, unknown> {
-  if (
-    !value ||
-    typeof value !== "object" ||
-    Array.isArray(value)
-  ) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error(
       `Backup inválido: registro de ${label} deve ser um objeto.`,
     );
@@ -337,11 +360,24 @@ function withoutSourceId(
 export const importWorkspace = mutation({
   args: {
     snapshot: v.any(),
+    allowMerge: v.optional(v.boolean()),
   },
 
-  handler: async (ctx, { snapshot }) => {
+  handler: async (ctx, { snapshot, allowMerge = false }) => {
     const ownerId = await requireOwner(ctx);
     const backup = parseWorkspaceBackup(snapshot);
+    if (!allowMerge) {
+      for (const table of OWNED_TABLES) {
+        const first = await db(ctx)
+          .query(table)
+          .withIndex("by_owner", (q: any) => q.eq("ownerId", ownerId))
+          .first();
+        if (first)
+          throw new Error(
+            "O espaço já contém dados. Confirme a importação adicional; ela pode duplicar registros.",
+          );
+      }
+    }
 
     // IDs antigos são usados apenas para reconstruir relacionamentos.
     // Nenhum ID exportado escolhe o novo ID ou o dono do registro.
@@ -351,19 +387,12 @@ export const importWorkspace = mutation({
       const raw = asImportRecord(value, "cliente");
       const oldId = raw.id;
 
-      if (
-        typeof oldId !== "string" ||
-        !oldId.trim()
-      ) {
-        throw new Error(
-          "Backup inválido: um cliente não possui ID de origem.",
-        );
+      if (typeof oldId !== "string" || !oldId.trim()) {
+        throw new Error("Backup inválido: um cliente não possui ID de origem.");
       }
 
       if (seenClientIds.has(oldId)) {
-        throw new Error(
-          "Backup inválido: há IDs de cliente duplicados.",
-        );
+        throw new Error("Backup inválido: há IDs de cliente duplicados.");
       }
 
       seenClientIds.add(oldId);
@@ -383,14 +412,9 @@ export const importWorkspace = mutation({
       };
     });
 
-    const sourceClientIds = new Set(
-      preparedClients.map((row) => row.oldId),
-    );
+    const sourceClientIds = new Set(preparedClients.map((row) => row.oldId));
 
-    type RelatedTable = Exclude<
-      WorkspaceRecordTable,
-      "clients"
-    >;
+    type RelatedTable = Exclude<WorkspaceRecordTable, "clients">;
 
     const prepareRelated = (
       table: RelatedTable,
@@ -399,30 +423,21 @@ export const importWorkspace = mutation({
       record: Record<string, unknown>;
       sourceClientId?: string;
     }> =>
-      values.map((value) => {            const raw = asImportRecord(
-              value as Record<string, unknown>,
-              table,
-            );
+      values.map((value) => {
+        const raw = asImportRecord(value as Record<string, unknown>, table);
 
         const sourceClientId =
-          typeof raw.clientId === "string" &&
-          raw.clientId !== ""
+          typeof raw.clientId === "string" && raw.clientId !== ""
             ? raw.clientId
             : undefined;
 
-        if (
-          table !== "finance" &&
-          !sourceClientId
-        ) {
+        if (table !== "finance" && !sourceClientId) {
           throw new Error(
             `Backup inválido: um registro de ${table} não tem cliente associado.`,
           );
         }
 
-        if (
-          sourceClientId &&
-          !sourceClientIds.has(sourceClientId)
-        ) {
+        if (sourceClientId && !sourceClientIds.has(sourceClientId)) {
           throw new Error(
             `Backup inválido: um registro de ${table} aponta para um cliente ausente.`,
           );
@@ -445,10 +460,7 @@ export const importWorkspace = mutation({
       tasks: prepareRelated("tasks", backup.tasks),
       requests: prepareRelated("requests", backup.requests),
       meetings: prepareRelated("meetings", backup.meetings),
-      deliverables: prepareRelated(
-        "deliverables",
-        backup.deliverables,
-      ),
+      deliverables: prepareRelated("deliverables", backup.deliverables),
       finance: prepareRelated("finance", backup.finance),
     };
 
@@ -466,10 +478,7 @@ export const importWorkspace = mutation({
         ownerId,
       });
 
-      newClientIds.set(
-        row.oldId,
-        id as Id<"clients">,
-      );
+      newClientIds.set(row.oldId, id as Id<"clients">);
     }
 
     const insertRelated = async (
@@ -483,14 +492,10 @@ export const importWorkspace = mutation({
         const record = { ...row.record };
 
         if (row.sourceClientId) {
-          const newClientId = newClientIds.get(
-            row.sourceClientId,
-          );
+          const newClientId = newClientIds.get(row.sourceClientId);
 
           if (!newClientId) {
-            throw new Error(
-              "Falha ao reconstruir a relação com o cliente.",
-            );
+            throw new Error("Falha ao reconstruir a relação com o cliente.");
           }
 
           record.clientId = newClientId;
@@ -509,18 +514,13 @@ export const importWorkspace = mutation({
     await insertRelated("tasks", prepared.tasks);
     await insertRelated("requests", prepared.requests);
     await insertRelated("meetings", prepared.meetings);
-    await insertRelated(
-      "deliverables",
-      prepared.deliverables,
-    );
+    await insertRelated("deliverables", prepared.deliverables);
     await insertRelated("finance", prepared.finance);
 
     if (profile) {
       const existing = await ctx.db
         .query("workspaces")
-        .withIndex("by_owner", (q) =>
-          q.eq("ownerId", ownerId),
-        )
+        .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
         .unique();
 
       if (existing) {
@@ -543,6 +543,7 @@ export const importWorkspace = mutation({
       }
     }
 
+    await assertWorkspaceCapacity(ctx, ownerId);
     return {
       clients: preparedClients.length,
       content: prepared.content.length,
@@ -611,6 +612,7 @@ export const generateInvoices = mutation({
         kind: "invoice",
       });
     }
+    await assertWorkspaceCapacity(ctx, ownerId);
     return { created: plan.length };
   },
 });
@@ -621,8 +623,13 @@ export const markFinancePaid = mutation({
   handler: async (ctx, { id }) => {
     const ownerId = await requireOwner(ctx);
     const doc = await getOwned(ctx, ownerId, "finance", id);
-    if (!doc) throw new Error("Registro não encontrado neste espaço de trabalho");
-    await ctx.db.patch(doc._id, { status: "Paid", paidDate: new Date().toISOString().slice(0, 10) });
+    if (!doc)
+      throw new Error("Registro não encontrado neste espaço de trabalho");
+    await ctx.db.patch(doc._id, {
+      status: "Paid",
+      paidDate: new Date().toISOString().slice(0, 10),
+    });
+    await assertWorkspaceCapacity(ctx, ownerId);
   },
 });
 

@@ -5,8 +5,15 @@
 // tarefas e dinheiro. As escritas passam pelas mutations de `src/convex/portal.ts`.
 
 import { useCallback, useMemo } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useConvex, useMutation, useQuery } from "convex/react";
 
+import {
+  assertBackupLimits,
+  BACKUP_MAX_BYTES,
+  DEFAULT_WORKSPACE_PROFILE,
+  workspaceLoaded,
+} from "./backup";
+import { type CsvTable, tableCSV } from "./csv";
 import { api } from "@/convex/_generated/api";
 import type {
   ClientRecord,
@@ -44,43 +51,51 @@ export interface WorkspaceActions {
   saveTask: (data: Omit<TaskItem, "id">, id?: string) => Promise<void>;
   saveRequest: (data: Omit<RequestItem, "id">, id?: string) => Promise<void>;
   saveMeeting: (data: Omit<MeetingItem, "id">, id?: string) => Promise<void>;
-  saveDeliverable: (data: Omit<DeliverableItem, "id">, id?: string) => Promise<void>;
+  saveDeliverable: (
+    data: Omit<DeliverableItem, "id">,
+    id?: string,
+  ) => Promise<void>;
   saveFinance: (data: Omit<FinanceEntry, "id">, id?: string) => Promise<void>;
   remove: (
-    kind: "content" | "task" | "request" | "meeting" | "deliverable" | "finance",
+    kind:
+      | "content"
+      | "task"
+      | "request"
+      | "meeting"
+      | "deliverable"
+      | "finance",
     id: string,
   ) => Promise<void>;
   saveProfile: (patch: Partial<WorkspaceProfile>) => Promise<void>;
   seedDemo: () => Promise<void>;
   clearWorkspace: () => Promise<void>;
-  exportJSON: () => void;
-  importJSON: (file: File) => Promise<void>;
+  exportJSON: () => Promise<void>;
+  exportCSV: (table: CsvTable, clientId?: string) => Promise<void>;
+  importJSON: (file: File, allowMerge?: boolean) => Promise<void>;
 }
 
 export type Workspace = WorkspaceData & WorkspaceActions;
 
-export const DEFAULT_PROFILE: WorkspaceProfile = {
-  managerName: "",
-  agency: "",
-  email: "",
-  currency: "R$",
-  weekStart: "Monday",
-  approvalTurnaroundDays: 3,
-  notifyEmail: true,
-  notifyApprovals: true,
-  notifyFinance: false,
-  density: "comfortable",
-};
+export const DEFAULT_PROFILE: WorkspaceProfile = DEFAULT_WORKSPACE_PROFILE;
 
 function strip(doc: Doc): Record<string, unknown> & { id: string } {
-  const { _id: docId, _creationTime: _createdAt, ownerId: _ownerId, ...rest } = doc as Doc & {
+  const {
+    _id: docId,
+    _creationTime: _createdAt,
+    ownerId: _ownerId,
+    ...rest
+  } = doc as Doc & {
     _creationTime?: number;
     ownerId?: string;
   };
   return { id: docId, ...rest };
 }
 
-function sortBy<T>(rows: T[], key: (row: T) => string, direction: "asc" | "desc" = "asc"): T[] {
+function sortBy<T>(
+  rows: T[],
+  key: (row: T) => string,
+  direction: "asc" | "desc" = "asc",
+): T[] {
   return [...rows].sort((a, b) => {
     const left = key(a);
     const right = key(b);
@@ -103,6 +118,7 @@ function download(name: string, content: string, type: string) {
 const EMPTY_DOCS: Doc[] = [];
 
 export function useWorkspace(): Workspace {
+  const convex = useConvex();
   const clientsRaw = useQuery(api.portal.listClients);
   const contentRaw = useQuery(api.portal.listContent);
   const tasksRaw = useQuery(api.portal.listTasks);
@@ -118,40 +134,70 @@ export function useWorkspace(): Workspace {
   const saveWorkspace = useMutation(api.portal.saveWorkspace);
   const seedDemoMutation = useMutation(api.demo.seedDemo);
   const clearMutation = useMutation(api.portal.clearWorkspace);
-  const importWorkspaceMutation = useMutation(
-    api.portal.importWorkspace,
-  );
+  const importWorkspaceMutation = useMutation(api.portal.importWorkspace);
 
-  const contentApi = {
-    create: useMutation(api.portal.createContent),
-    update: useMutation(api.portal.updateContent),
-    remove: useMutation(api.portal.removeContent),
-  };
-  const tasksApi = {
-    create: useMutation(api.portal.createTask),
-    update: useMutation(api.portal.updateTask),
-    remove: useMutation(api.portal.removeTask),
-  };
-  const requestsApi = {
-    create: useMutation(api.portal.createRequest),
-    update: useMutation(api.portal.updateRequest),
-    remove: useMutation(api.portal.removeRequest),
-  };
-  const meetingsApi = {
-    create: useMutation(api.portal.createMeeting),
-    update: useMutation(api.portal.updateMeeting),
-    remove: useMutation(api.portal.removeMeeting),
-  };
-  const deliverablesApi = {
-    create: useMutation(api.portal.createDeliverable),
-    update: useMutation(api.portal.updateDeliverable),
-    remove: useMutation(api.portal.removeDeliverable),
-  };
-  const financeApi = {
-    create: useMutation(api.portal.createFinance),
-    update: useMutation(api.portal.updateFinance),
-    remove: useMutation(api.portal.removeFinance),
-  };
+  const contentCreate = useMutation(api.portal.createContent);
+  const contentUpdate = useMutation(api.portal.updateContent);
+  const contentRemove = useMutation(api.portal.removeContent);
+  const contentApi = useMemo(
+    () => ({
+      create: contentCreate,
+      update: contentUpdate,
+      remove: contentRemove,
+    }),
+    [contentCreate, contentUpdate, contentRemove],
+  );
+  const tasksCreate = useMutation(api.portal.createTask);
+  const tasksUpdate = useMutation(api.portal.updateTask);
+  const tasksRemove = useMutation(api.portal.removeTask);
+  const tasksApi = useMemo(
+    () => ({ create: tasksCreate, update: tasksUpdate, remove: tasksRemove }),
+    [tasksCreate, tasksUpdate, tasksRemove],
+  );
+  const requestsCreate = useMutation(api.portal.createRequest);
+  const requestsUpdate = useMutation(api.portal.updateRequest);
+  const requestsRemove = useMutation(api.portal.removeRequest);
+  const requestsApi = useMemo(
+    () => ({
+      create: requestsCreate,
+      update: requestsUpdate,
+      remove: requestsRemove,
+    }),
+    [requestsCreate, requestsUpdate, requestsRemove],
+  );
+  const meetingsCreate = useMutation(api.portal.createMeeting);
+  const meetingsUpdate = useMutation(api.portal.updateMeeting);
+  const meetingsRemove = useMutation(api.portal.removeMeeting);
+  const meetingsApi = useMemo(
+    () => ({
+      create: meetingsCreate,
+      update: meetingsUpdate,
+      remove: meetingsRemove,
+    }),
+    [meetingsCreate, meetingsUpdate, meetingsRemove],
+  );
+  const deliverablesCreate = useMutation(api.portal.createDeliverable);
+  const deliverablesUpdate = useMutation(api.portal.updateDeliverable);
+  const deliverablesRemove = useMutation(api.portal.removeDeliverable);
+  const deliverablesApi = useMemo(
+    () => ({
+      create: deliverablesCreate,
+      update: deliverablesUpdate,
+      remove: deliverablesRemove,
+    }),
+    [deliverablesCreate, deliverablesUpdate, deliverablesRemove],
+  );
+  const financeCreate = useMutation(api.portal.createFinance);
+  const financeUpdate = useMutation(api.portal.updateFinance);
+  const financeRemove = useMutation(api.portal.removeFinance);
+  const financeApi = useMemo(
+    () => ({
+      create: financeCreate,
+      update: financeUpdate,
+      remove: financeRemove,
+    }),
+    [financeCreate, financeUpdate, financeRemove],
+  );
 
   const clients = useMemo(
     () =>
@@ -179,9 +225,11 @@ export function useWorkspace(): Workspace {
 
   const requests = useMemo(
     () =>
-      sortBy((requestsRaw ?? EMPTY_DOCS) as Doc[], (r) => String(r.dateSubmitted), "desc").map(
-        (r) => strip(r) as unknown as RequestItem,
-      ),
+      sortBy(
+        (requestsRaw ?? EMPTY_DOCS) as Doc[],
+        (r) => String(r.dateSubmitted),
+        "desc",
+      ).map((r) => strip(r) as unknown as RequestItem),
     [requestsRaw],
   );
 
@@ -195,15 +243,21 @@ export function useWorkspace(): Workspace {
 
   const deliverables = useMemo(
     () =>
-      sortBy((deliverablesRaw ?? EMPTY_DOCS) as Doc[], (d) => String(d.date), "desc").map(
-        (d) => strip(d) as unknown as DeliverableItem,
-      ),
+      sortBy(
+        (deliverablesRaw ?? EMPTY_DOCS) as Doc[],
+        (d) => String(d.date),
+        "desc",
+      ).map((d) => strip(d) as unknown as DeliverableItem),
     [deliverablesRaw],
   );
 
   const finance = useMemo(
     () =>
-      sortBy((financeRaw ?? EMPTY_DOCS) as Doc[], (f) => String(f.date), "desc").map((f) => {
+      sortBy(
+        (financeRaw ?? EMPTY_DOCS) as Doc[],
+        (f) => String(f.date),
+        "desc",
+      ).map((f) => {
         const item = strip(f) as unknown as FinanceEntry;
         return { ...item, clientId: (f.clientId as string | undefined) ?? "" };
       }),
@@ -233,9 +287,13 @@ export function useWorkspace(): Workspace {
     return map;
   }, [clients]);
 
-  const clientOf = useCallback((id?: string) => (id ? byId.get(id) : undefined), [byId]);
+  const clientOf = useCallback(
+    (id?: string) => (id ? byId.get(id) : undefined),
+    [byId],
+  );
   const clientName = useCallback(
-    (id?: string) => (id ? byId.get(id)?.name ?? "Cliente não encontrado" : "—"),
+    (id?: string) =>
+      id ? (byId.get(id)?.name ?? "Cliente não encontrado") : "—",
     [byId],
   );
   const money = useCallback(
@@ -258,26 +316,46 @@ export function useWorkspace(): Workspace {
     [createClient, updateClient],
   );
 
-  const exportJSON = useCallback(() => {
-    const snapshot = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      profile,
-      clients,
-      content,
-      tasks,
-      requests,
-      meetings,
-      deliverables,
-      finance,
-    };
-    download("social-media-os-backup.json", JSON.stringify(snapshot, null, 2), "application/json");
-  }, [profile, clients, content, tasks, requests, meetings, deliverables, finance]);
+  const exportJSON = useCallback(async () => {
+    const snapshot = await convex.query(api.portal.exportWorkspace, {});
+    if (!snapshot) throw new Error("Entre novamente para exportar seus dados.");
+    assertBackupLimits(snapshot);
+    // Compact JSON uses exactly the same byte budget as backend validation.
+    download(
+      "social-media-os-backup.json",
+      JSON.stringify(snapshot),
+      "application/json",
+    );
+  }, [convex]);
+
+  const exportCSV = useCallback(
+    async (table: CsvTable, clientId?: string) => {
+      const snapshot = await convex.query(api.portal.exportWorkspace, {});
+      if (!snapshot)
+        throw new Error("Entre novamente para exportar seus dados.");
+      const rows = (
+        snapshot as unknown as Record<string, Record<string, unknown>[]>
+      )[table];
+      const scoped = clientId
+        ? rows.filter((row) =>
+            table === "clients"
+              ? row.id === clientId
+              : row.clientId === clientId,
+          )
+        : rows;
+      download(
+        `social-media-os-${table}.csv`,
+        tableCSV(scoped),
+        "text/csv;charset=utf-8",
+      );
+    },
+    [convex],
+  );
 
   const importJSON = useCallback(
-    async (file: File) => {
+    async (file: File, allowMerge = false) => {
       // Limite operacional do arquivo de importação.
-      if (file.size > 500_000) {
+      if (file.size > BACKUP_MAX_BYTES) {
         throw new Error(
           "O backup é maior que 500 KB. Exporte uma base menor e tente novamente.",
         );
@@ -288,25 +366,22 @@ export function useWorkspace(): Workspace {
       try {
         parsed = JSON.parse(await file.text());
       } catch {
-        throw new Error(
-          "O arquivo não contém um JSON válido.",
-        );
+        throw new Error("O arquivo não contém um JSON válido.");
       }
 
-      if (
-        !parsed ||
-        typeof parsed !== "object" ||
-        Array.isArray(parsed)
-      ) {
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
         throw new Error(
           "Backup do Social Media OS inválido (esperado um objeto JSON).",
         );
       }
 
+      assertBackupLimits(parsed);
+
       // Uma única mutation valida o arquivo, reconstrói os vínculos
       // e grava tudo numa transação Convex.
       await importWorkspaceMutation({
         snapshot: parsed,
+        allowMerge,
       });
     },
     [importWorkspaceMutation],
@@ -314,7 +389,13 @@ export function useWorkspace(): Workspace {
 
   const remove = useCallback(
     async (
-      kind: "content" | "task" | "request" | "meeting" | "deliverable" | "finance",
+      kind:
+        | "content"
+        | "task"
+        | "request"
+        | "meeting"
+        | "deliverable"
+        | "finance",
       id: string,
     ) => {
       const apis = {
@@ -327,12 +408,21 @@ export function useWorkspace(): Workspace {
       } as const;
       await apis[kind].remove({ id });
     },
-    [contentApi, tasksApi, requestsApi, meetingsApi, deliverablesApi, financeApi],
+    [
+      contentApi,
+      tasksApi,
+      requestsApi,
+      meetingsApi,
+      deliverablesApi,
+      financeApi,
+    ],
   );
 
   const saveContent = useCallback(
     async (data: Omit<ContentItem, "id">, id?: string) => {
-      const payload = withClient(data as { clientId?: string } & Record<string, unknown>);
+      const payload = withClient(
+        data as { clientId?: string } & Record<string, unknown>,
+      );
       if (id) await contentApi.update({ id, patch: payload });
       else await contentApi.create({ data: payload });
     },
@@ -341,7 +431,9 @@ export function useWorkspace(): Workspace {
 
   const saveTask = useCallback(
     async (data: Omit<TaskItem, "id">, id?: string) => {
-      const payload = withClient(data as { clientId?: string } & Record<string, unknown>);
+      const payload = withClient(
+        data as { clientId?: string } & Record<string, unknown>,
+      );
       if (id) await tasksApi.update({ id, patch: payload });
       else await tasksApi.create({ data: payload });
     },
@@ -350,7 +442,9 @@ export function useWorkspace(): Workspace {
 
   const saveRequest = useCallback(
     async (data: Omit<RequestItem, "id">, id?: string) => {
-      const payload = withClient(data as { clientId?: string } & Record<string, unknown>);
+      const payload = withClient(
+        data as { clientId?: string } & Record<string, unknown>,
+      );
       if (id) await requestsApi.update({ id, patch: payload });
       else await requestsApi.create({ data: payload });
     },
@@ -359,7 +453,9 @@ export function useWorkspace(): Workspace {
 
   const saveMeeting = useCallback(
     async (data: Omit<MeetingItem, "id">, id?: string) => {
-      const payload = withClient(data as { clientId?: string } & Record<string, unknown>);
+      const payload = withClient(
+        data as { clientId?: string } & Record<string, unknown>,
+      );
       if (id) await meetingsApi.update({ id, patch: payload });
       else await meetingsApi.create({ data: payload });
     },
@@ -368,7 +464,9 @@ export function useWorkspace(): Workspace {
 
   const saveDeliverable = useCallback(
     async (data: Omit<DeliverableItem, "id">, id?: string) => {
-      const payload = withClient(data as { clientId?: string } & Record<string, unknown>);
+      const payload = withClient(
+        data as { clientId?: string } & Record<string, unknown>,
+      );
       if (id) await deliverablesApi.update({ id, patch: payload });
       else await deliverablesApi.create({ data: payload });
     },
@@ -377,7 +475,9 @@ export function useWorkspace(): Workspace {
 
   const saveFinance = useCallback(
     async (data: Omit<FinanceEntry, "id">, id?: string) => {
-      const payload = withClient(data as { clientId?: string } & Record<string, unknown>);
+      const payload = withClient(
+        data as { clientId?: string } & Record<string, unknown>,
+      );
       if (id) await financeApi.update({ id, patch: payload });
       else await financeApi.create({ data: payload });
     },
@@ -385,11 +485,16 @@ export function useWorkspace(): Workspace {
   );
 
   return {
-    ready:
-      clientsRaw !== undefined &&
-      contentRaw !== undefined &&
-      tasksRaw !== undefined &&
-      workspaceRaw !== undefined,
+    ready: workspaceLoaded([
+      clientsRaw,
+      contentRaw,
+      tasksRaw,
+      requestsRaw,
+      meetingsRaw,
+      deliverablesRaw,
+      financeRaw,
+      workspaceRaw,
+    ]),
     clients,
     content,
     tasks,
@@ -422,6 +527,7 @@ export function useWorkspace(): Workspace {
       await clearMutation({});
     },
     exportJSON,
+    exportCSV,
     importJSON,
   };
 }

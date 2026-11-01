@@ -28,11 +28,27 @@ const schema = defineSchema(
       email: v.optional(v.string()), // email of the user. do not remove
       emailVerificationTime: v.optional(v.number()), // email verification time. do not remove
       isAnonymous: v.optional(v.boolean()), // is the user anonymous. do not remove
+      legalVersion: v.optional(v.string()),
+      legalAcceptedAt: v.optional(v.number()),
 
       role: v.optional(roleValidator), // role of the user. do not remove
     }).index("email", ["email"]), // index for the email. do not remove or modify
 
-    // ---- Social Media OS: manager workspace --------------------------------
+    signupInvitations: defineTable({
+      email: v.string(),
+      digest: v.string(),
+      expiresAt: v.number(),
+      usedAt: v.optional(v.number()),
+    }).index("by_email", ["email"]),
+    recoveryCodes: defineTable({
+      userId: v.id("users"),
+      digest: v.string(),
+      createdAt: v.number(),
+    })
+      .index("by_user", ["userId"])
+      .index("by_digest", ["digest"]),
+
+    // ---- Social Media OS: manager workspace -----------------------------------
     // Every row is scoped to the signed-in manager through `ownerId`.
 
     clients: defineTable({

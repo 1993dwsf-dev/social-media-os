@@ -1,73 +1,74 @@
-// Expiração e limpeza das sessões de login do Social Media OS.
-//
-// O Convex Auth já cria cada sessão com prazos: `authSessions.expirationTime`
-// é a duração total (30 dias) e `authRefreshTokens.expirationTime` é a janela
-// de inatividade — cada renovação emite um token novo e empurra esse prazo.
-// A biblioteca **recusa** a renovação depois do prazo (e apaga a sessão nessa
-// tentativa), mas quem nunca volta deixaria a sessão e os tokens vencidos no
-// banco para sempre. É isso que esta função interna limpa, numa passada só:
-//
-//   1. tokens de refresh vencidos — inclusive os de sessão que já morreu;
-//   2. sessões vencidas e sessões que ficaram sem nenhum refresh vivo (não há
-//      mais como renová-las).
-//
-// A função é **interna** (o cliente não alcança) e roda no cron diário
-// (`src/convex/crons.ts`). As tabelas do auth não têm índice por prazo e o
-// produto é single-seat — a varredura completa de um punhado de linhas é
-// barata e não justifica mudar o schema do template.
-
+// Daily cleanup is paginated across all accounts; no global table scan in a
+// single transaction. Existing auth table schemas and data are preserved.
+import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalMutation } from "./_generated/server";
 
 export const cleanupInactiveSessions = internalMutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    phase: v.optional(v.union(v.literal("tokens"), v.literal("sessions"))),
+    cursor: v.optional(v.string()),
+  },
+  handler: async (
+    ctx,
+    { phase = "tokens", cursor },
+  ): Promise<{ sessions: number; refreshTokens: number }> => {
     const now = Date.now();
-
-    const sessions = await ctx.db.query("authSessions").collect();
-    const tokens = await ctx.db.query("authRefreshTokens").collect();
-    const sessionIds = new Set(sessions.map((session) => session._id));
-
-    // Quantos refresh tokens ainda vivos cada sessão tem.
-    const liveTokensBySession = new Map<string, number>();
-    for (const token of tokens) {
-      if (token.expirationTime > now && sessionIds.has(token.sessionId)) {
-        liveTokensBySession.set(
-          token.sessionId,
-          (liveTokensBySession.get(token.sessionId) ?? 0) + 1,
-        );
-      }
-    }
-
-    // Sessão morta: passou do prazo total ou ficou sem nenhum refresh vivo.
-    const deadSessions = new Set(
-      sessions
-        .filter(
-          (session) =>
-            session.expirationTime <= now ||
-            (liveTokensBySession.get(session._id) ?? 0) === 0,
-        )
-        .map((session) => session._id),
-    );
-
     let deletedTokens = 0;
-    for (const token of tokens) {
-      const expired = token.expirationTime <= now;
-      const sessionGone =
-        !sessionIds.has(token.sessionId) || deadSessions.has(token.sessionId);
-      if (expired || sessionGone) {
-        await ctx.db.delete(token._id);
-        deletedTokens += 1;
+    if (phase === "tokens") {
+      const batch = await ctx.db
+        .query("authRefreshTokens")
+        .paginate({ cursor: cursor ?? null, numItems: 200 });
+      for (const token of batch.page) {
+        const session = await ctx.db.get(token.sessionId);
+        if (
+          token.expirationTime <= now ||
+          !session ||
+          session.expirationTime <= now
+        ) {
+          await ctx.db.delete(token._id);
+          deletedTokens++;
+        }
       }
+      if (!batch.isDone) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.sessions.cleanupInactiveSessions,
+          { phase: "tokens", cursor: batch.continueCursor },
+        );
+        return { sessions: 0, refreshTokens: deletedTokens };
+      }
+      await ctx.scheduler.runAfter(
+        0,
+        internal.sessions.cleanupInactiveSessions,
+        { phase: "sessions" },
+      );
+      return { sessions: 0, refreshTokens: deletedTokens };
     }
-
+    const batch = await ctx.db
+      .query("authSessions")
+      .paginate({
+        cursor: phase === "sessions" ? (cursor ?? null) : null,
+        numItems: 200,
+      });
     let deletedSessions = 0;
-    for (const session of sessions) {
-      if (deadSessions.has(session._id)) {
+    for (const session of batch.page) {
+      const liveToken = await ctx.db
+        .query("authRefreshTokens")
+        .withIndex("sessionId", (q) => q.eq("sessionId", session._id))
+        .filter((q) => q.gt(q.field("expirationTime"), now))
+        .first();
+      if (session.expirationTime <= now || !liveToken) {
         await ctx.db.delete(session._id);
-        deletedSessions += 1;
+        deletedSessions++;
       }
     }
-
+    if (!batch.isDone)
+      await ctx.scheduler.runAfter(
+        0,
+        internal.sessions.cleanupInactiveSessions,
+        { phase: "sessions", cursor: batch.continueCursor },
+      );
     return { sessions: deletedSessions, refreshTokens: deletedTokens };
   },
 });

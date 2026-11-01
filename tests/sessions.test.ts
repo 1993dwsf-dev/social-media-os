@@ -11,7 +11,7 @@
 //
 // Rode com: bun test
 
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, jest, test } from "bun:test";
 import { convexTest } from "convex-test";
 
 import { api, internal } from "../src/convex/_generated/api";
@@ -37,6 +37,7 @@ const realConsole = {
 };
 
 beforeEach(() => {
+  jest.useFakeTimers();
   // O Convex Auth loga em INFO/ERROR a cada `auth:store`; silenciamos o ruído.
   console.log = () => {};
   console.info = () => {};
@@ -45,6 +46,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  jest.useRealTimers();
   console.log = realConsole.log;
   console.info = realConsole.info;
   console.warn = realConsole.warn;
@@ -138,8 +140,12 @@ async function seededSessions() {
 
 async function remaining(t: Awaited<ReturnType<typeof seededSessions>>["t"]) {
   return await t.run(async (ctx) => ({
-    sessions: (await ctx.db.query("authSessions").collect()).map((row) => row._id),
-    tokens: (await ctx.db.query("authRefreshTokens").collect()).map((row) => row._id),
+    sessions: (await ctx.db.query("authSessions").collect()).map(
+      (row) => row._id,
+    ),
+    tokens: (await ctx.db.query("authRefreshTokens").collect()).map(
+      (row) => row._id,
+    ),
   }));
 }
 
@@ -151,7 +157,8 @@ describe("limpeza de sessões inativas", () => {
       internal.sessions.cleanupInactiveSessions,
       {},
     );
-    expect(result).toEqual({ sessions: 2, refreshTokens: 4 });
+    expect(result).toEqual({ sessions: 0, refreshTokens: 4 });
+    await t.finishAllScheduledFunctions(jest.runAllTimers);
 
     const state = await remaining(t);
     // Sobraram a sessão ativa e a que renovou; as vencidas/inativas e a órfã saíram.
@@ -159,16 +166,46 @@ describe("limpeza de sessões inativas", () => {
       [ids.activeSession, ids.refreshedSession].sort(),
     );
     // Do par com token antigo, o vencido saiu e o atual ficou.
-    expect(state.tokens.sort()).toEqual([ids.activeToken, ids.currentToken].sort());
+    expect(state.tokens.sort()).toEqual(
+      [ids.activeToken, ids.currentToken].sort(),
+    );
   });
 
   test("rodar a limpeza de novo não encontra nada para apagar", async () => {
     const { t } = await seededSessions();
 
     await t.mutation(internal.sessions.cleanupInactiveSessions, {});
+    await t.finishAllScheduledFunctions(jest.runAllTimers);
     expect(
       await t.mutation(internal.sessions.cleanupInactiveSessions, {}),
     ).toEqual({ sessions: 0, refreshTokens: 0 });
+    await t.finishAllScheduledFunctions(jest.runAllTimers);
+  });
+
+  test("continua a limpeza em lotes sem perder sessões ativas", async () => {
+    const { t, ids } = await seededSessions();
+    await t.run(async (ctx) => {
+      const userId = (await ctx.db.get(ids.activeSession))!.userId;
+      for (let i = 0; i < 450; i++) {
+        const sessionId = await ctx.db.insert("authSessions", {
+          userId,
+          expirationTime: Date.now() - 1,
+        });
+        await ctx.db.insert("authRefreshTokens", {
+          sessionId,
+          expirationTime: Date.now() - 1,
+        });
+      }
+    });
+    await t.mutation(internal.sessions.cleanupInactiveSessions, {});
+    await t.finishAllScheduledFunctions(jest.runAllTimers);
+    const state = await remaining(t);
+    expect(state.sessions.sort()).toEqual(
+      [ids.activeSession, ids.refreshedSession].sort(),
+    );
+    expect(state.tokens.sort()).toEqual(
+      [ids.activeToken, ids.currentToken].sort(),
+    );
   });
 
   test("sessão vencida não renova: o refresh é recusado e a sessão é descartada", async () => {

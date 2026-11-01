@@ -1,28 +1,91 @@
-import { convexAuth } from "@convex-dev/auth/server";
+import {
+  convexAuth,
+  invalidateSessions,
+  modifyAccountCredentials,
+} from "@convex-dev/auth/server";
 import { Password } from "@convex-dev/auth/providers/Password";
-import { ConvexError } from "convex/values";
+import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
+import { ConvexError, type Value } from "convex/values";
+import {
+  LEGAL_VERSION,
+  codeDigest,
+  normalizedEmail,
+  validatePassword,
+} from "../data/access";
+import { internal } from "./_generated/api";
+import type { MutationCtx } from "./_generated/server";
 
-// A server-only invitation code prevents unrestricted public registrations.
 const invitedPassword = Password({
-  profile(params) {
-    const expected = process.env.SOCIAL_MEDIA_OS_SIGNUP_CODE;
-    const supplied = typeof params.inviteCode === "string" ? params.inviteCode.trim() : "";
-    if (params.flow === "signUp" && (!expected || supplied !== expected)) {
-      throw new ConvexError("Cadastro restrito. Solicite seu código de acesso ao administrador.");
+  profile(params): Record<string, Value> & { email: string } {
+    const email = normalizedEmail(params.email);
+    if (params.flow !== "signUp") return { email };
+    if (
+      params.legalVersion !== LEGAL_VERSION ||
+      params.acceptTerms !== "true"
+    ) {
+      throw new ConvexError(
+        "Leia e aceite os termos e a privacidade antes de criar a conta.",
+      );
     }
-    const email = typeof params.email === "string" ? params.email.trim().toLowerCase() : "";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
-      throw new ConvexError("Informe um e-mail válido.");
-    }
-    return { email };
+    const inviteCode =
+      typeof params.inviteCode === "string" ? params.inviteCode.trim() : "";
+    if (!/^[a-f0-9]{64}$/.test(inviteCode))
+      throw new ConvexError("Convite inválido ou expirado.");
+    return { email, signupInvitation: inviteCode, legalVersion: LEGAL_VERSION };
   },
-  validatePasswordRequirements(password: string) {
-    if (password.length < 12 || password.length > 128) {
-      throw new ConvexError("A senha precisa ter de 12 a 128 caracteres.");
-    }
+  validatePasswordRequirements: validatePassword,
+});
+
+const recovery = ConvexCredentials({
+  id: "recovery",
+  authorize: async (params, ctx) => {
+    const email = normalizedEmail(params.email);
+    validatePassword(params.newPassword);
+    const code =
+      typeof params.recoveryCode === "string" ? params.recoveryCode.trim() : "";
+    const userId = await ctx.runMutation(internal.access.consumeRecovery, {
+      email,
+      digest: await codeDigest(code),
+    });
+    await modifyAccountCredentials(ctx, {
+      provider: "password",
+      account: { id: email, secret: params.newPassword },
+    });
+    await invalidateSessions(ctx, { userId });
+    return { userId };
   },
 });
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
-  providers: [invitedPassword],
+  providers: [invitedPassword, recovery],
+  callbacks: {
+    createOrUpdateUser: async (ctx, { existingUserId, provider, profile }) => {
+      const db = (ctx as MutationCtx).db;
+      if (existingUserId) return existingUserId;
+      if (provider.id !== "password")
+        throw new ConvexError("Cadastro indisponível.");
+      const email = normalizedEmail(profile.email);
+      const digest = await codeDigest(String(profile.signupInvitation ?? ""));
+      const invite = await db
+        .query("signupInvitations")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .unique();
+      if (
+        !invite ||
+        invite.digest !== digest ||
+        invite.usedAt ||
+        invite.expiresAt <= Date.now()
+      ) {
+        throw new ConvexError("Convite inválido ou expirado.");
+      }
+      if (profile.legalVersion !== LEGAL_VERSION)
+        throw new ConvexError("Atualize a página e aceite os termos atuais.");
+      await db.patch(invite._id, { usedAt: Date.now() });
+      return await db.insert("users", {
+        email,
+        legalVersion: LEGAL_VERSION,
+        legalAcceptedAt: Date.now(),
+      });
+    },
+  },
 });

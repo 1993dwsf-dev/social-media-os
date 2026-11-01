@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertBackupLimits, BACKUP_MAX_RECORDS } from "../data/backup";
 
 /**
  * Validação de entrada para as mutations públicas do Social Media OS.
@@ -21,46 +22,33 @@ function validISODate(value: string): boolean {
 
   if (year < 1 || month < 1 || month > 12) return false;
 
-  const leap =
-    year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
 
-  const days = [
-    31,
-    leap ? 29 : 28,
-    31,
-    30,
-    31,
-    30,
-    31,
-    31,
-    30,
-    31,
-    30,
-    31,
-  ];
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
   return day >= 1 && day <= days[month - 1];
 }
 
-const dateOrBlank = z.string().refine(
-  (value) => value === "" || validISODate(value),
-  "Use uma data válida no formato AAAA-MM-DD",
-);
+const dateOrBlank = z
+  .string()
+  .refine(
+    (value) => value === "" || validISODate(value),
+    "Use uma data válida no formato AAAA-MM-DD",
+  );
 
-const dateRequired = z.string().refine(
-  validISODate,
-  "Use uma data válida no formato AAAA-MM-DD",
-);
+const dateRequired = z
+  .string()
+  .refine(validISODate, "Use uma data válida no formato AAAA-MM-DD");
 
-const timeOrBlank = z.string().refine(
-  (value) =>
-    value === "" || /^([01]\d|2[0-3]):[0-5]\d$/.test(value),
-  "Use um horário válido no formato HH:mm",
-);
+const timeOrBlank = z
+  .string()
+  .refine(
+    (value) => value === "" || /^([01]\d|2[0-3]):[0-5]\d$/.test(value),
+    "Use um horário válido no formato HH:mm",
+  );
 
 const emailOrBlank = text(254).refine(
-  (value) =>
-    value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+  (value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
   "E-mail inválido",
 );
 
@@ -203,13 +191,7 @@ const requestSchema = z
     category: text(150),
     priority: z.enum(["Low", "Medium", "High"]),
     dateSubmitted: dateOrBlank,
-    status: z.enum([
-      "New",
-      "In Progress",
-      "Waiting",
-      "Completed",
-      "Closed",
-    ]),
+    status: z.enum(["New", "In Progress", "Waiting", "Completed", "Closed"]),
     assignedTo: text(200),
     dueDate: dateOrBlank,
     comments: text(10_000),
@@ -290,8 +272,7 @@ export const WORKSPACE_RECORD_TABLES = [
   "finance",
 ] as const;
 
-export type WorkspaceRecordTable =
-  (typeof WORKSPACE_RECORD_TABLES)[number];
+export type WorkspaceRecordTable = (typeof WORKSPACE_RECORD_TABLES)[number];
 
 const recordSchemas = {
   clients: clientSchema,
@@ -316,9 +297,7 @@ const patchSchemas = {
 
 function firstIssue(error: z.ZodError): string {
   const issue = error.issues[0];
-  const field = issue?.path.length
-    ? `${issue.path.join(".")}: `
-    : "";
+  const field = issue?.path.length ? `${issue.path.join(".")}: ` : "";
 
   return `${field}${issue?.message ?? "valor inválido"}`;
 }
@@ -329,9 +308,7 @@ export function parseWorkspaceRecord(
   partial = false,
 ): Record<string, unknown> {
   const normalized =
-    input &&
-    typeof input === "object" &&
-    !Array.isArray(input)
+    input && typeof input === "object" && !Array.isArray(input)
       ? { ...(input as Record<string, unknown>) }
       : input;
 
@@ -350,16 +327,12 @@ export function parseWorkspaceRecord(
     }
   }
 
-  const schema = partial
-    ? patchSchemas[table]
-    : recordSchemas[table];
+  const schema = partial ? patchSchemas[table] : recordSchemas[table];
 
   const parsed = schema.safeParse(normalized);
 
   if (!parsed.success) {
-    throw new Error(
-      `Dados inválidos (${table}): ${firstIssue(parsed.error)}`,
-    );
+    throw new Error(`Dados inválidos (${table}): ${firstIssue(parsed.error)}`);
   }
 
   return parsed.data as unknown as Record<string, unknown>;
@@ -387,13 +360,13 @@ const backupEnvelopeSchema = z
     version: z.literal(1).optional(),
     exportedAt: text(100).optional(),
     profile: z.unknown().optional(),
-    clients: z.array(z.unknown()).max(1_000).default([]),
-    content: z.array(z.unknown()).max(1_000).default([]),
-    tasks: z.array(z.unknown()).max(1_000).default([]),
-    requests: z.array(z.unknown()).max(1_000).default([]),
-    meetings: z.array(z.unknown()).max(1_000).default([]),
-    deliverables: z.array(z.unknown()).max(1_000).default([]),
-    finance: z.array(z.unknown()).max(1_000).default([]),
+    clients: z.array(z.unknown()).max(BACKUP_MAX_RECORDS).default([]),
+    content: z.array(z.unknown()).max(BACKUP_MAX_RECORDS).default([]),
+    tasks: z.array(z.unknown()).max(BACKUP_MAX_RECORDS).default([]),
+    requests: z.array(z.unknown()).max(BACKUP_MAX_RECORDS).default([]),
+    meetings: z.array(z.unknown()).max(BACKUP_MAX_RECORDS).default([]),
+    deliverables: z.array(z.unknown()).max(BACKUP_MAX_RECORDS).default([]),
+    finance: z.array(z.unknown()).max(BACKUP_MAX_RECORDS).default([]),
   })
   .strict();
 
@@ -410,9 +383,8 @@ export interface WorkspaceBackup {
   finance: unknown[];
 }
 
-export function parseWorkspaceBackup(
-  input: unknown,
-): WorkspaceBackup {
+export function parseWorkspaceBackup(input: unknown): WorkspaceBackup {
+  assertBackupLimits(input);
   const parsed = backupEnvelopeSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -434,10 +406,7 @@ export function parseWorkspaceBackup(
     );
   }
 
-  if (
-    parsed.data.version !== undefined &&
-    parsed.data.version !== 1
-  ) {
+  if (parsed.data.version !== undefined && parsed.data.version !== 1) {
     throw new Error("Versão do backup não suportada.");
   }
 

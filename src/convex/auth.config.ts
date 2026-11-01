@@ -1,6 +1,6 @@
 import type { AuthConfig } from "convex/server";
 
-// Trust only JWTs issued by this Convex deployment.
+// Trust only tokens issued by this application deployment.
 export default {
   providers: [
     {

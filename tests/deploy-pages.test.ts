@@ -88,6 +88,7 @@ describe("publicação exclusiva da main", () => {
 
   for (const stage of [
     "convex codegen --typecheck disable",
+    "bun run audit",
     "bun run lint",
     "bun test",
     "bun run build",
@@ -109,6 +110,7 @@ describe("publicação exclusiva da main", () => {
     expect(deploy).toBeGreaterThan(-1);
     for (const check of [
       "convex codegen --typecheck disable",
+      "bun run audit",
       "bun run lint",
       "bun test",
       "bun run build",

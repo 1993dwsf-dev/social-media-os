@@ -2,6 +2,10 @@
 
 **Data:** 01/11/2026 • **Branch:** main • **Objetivo:** MVP único, sem novos módulos.
 
+## Registro da revisão anterior
+
+As verificações e a matriz abaixo descrevem a revisão `e36c7d3`, antes das correções posteriores. O estado atual de código e suas pendências estão em [correcoes-auditoria.md](correcoes-auditoria.md). Testes anteriores não validam automaticamente o novo deployment.
+
 ## Verificações objetivas
 
 - Validação funcional de referência: `e36c7d347683365641b4ae201d535114bfe39fef`, CI [41311175701](https://github.com/1993dwsf-dev/social-media-os/actions/runs/41311175701), concluída com sucesso. A CI executa lint, geração de tipos com Convex local e temporário, build Vite/TypeScript e testes. O [deployment Pages correspondente](https://dash.cloudflare.com/?to=/bb3055e676b5aff1531b35b7ab8eb90d/pages/view/social-media-os/cda0603c-3b4b-436f-8131-8c49834c6726) também concluiu com sucesso.

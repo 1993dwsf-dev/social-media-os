@@ -1,3 +1,4 @@
+import { signedIdentity } from "./identity";
 // Testes de isolamento entre contas do Social Media OS.
 //
 // Regra do produto: **cada gestor só acessa o que é dele**. Todo registro tem
@@ -118,7 +119,10 @@ async function twoWorkspaces() {
       "clients",
       clientRow(alice, "Segundo cliente da Alice"),
     );
-    const bobClient = await ctx.db.insert("clients", clientRow(bob, "Cliente do Bob"));
+    const bobClient = await ctx.db.insert(
+      "clients",
+      clientRow(bob, "Cliente do Bob"),
+    );
 
     return {
       alice,
@@ -130,7 +134,10 @@ async function twoWorkspaces() {
         "tasks",
         taskRow(alice, aliceClient, "Tarefa da Alice"),
       ),
-      bobTask: await ctx.db.insert("tasks", taskRow(bob, bobClient, "Tarefa do Bob")),
+      bobTask: await ctx.db.insert(
+        "tasks",
+        taskRow(bob, bobClient, "Tarefa do Bob"),
+      ),
       aliceContent: await ctx.db.insert(
         "content",
         contentRow(alice, aliceClient, "Conteúdo da Alice"),
@@ -139,16 +146,22 @@ async function twoWorkspaces() {
         "content",
         contentRow(bob, bobClient, "Conteúdo do Bob"),
       ),
-      aliceFinance: await ctx.db.insert("finance", financeRow(alice, "Receita da Alice")),
-      bobFinance: await ctx.db.insert("finance", financeRow(bob, "Receita do Bob")),
+      aliceFinance: await ctx.db.insert(
+        "finance",
+        financeRow(alice, "Receita da Alice"),
+      ),
+      bobFinance: await ctx.db.insert(
+        "finance",
+        financeRow(bob, "Receita do Bob"),
+      ),
     };
   });
 
   return {
     t,
     ids,
-    asAlice: t.withIdentity({ subject: ids.alice }),
-    asBob: t.withIdentity({ subject: ids.bob }),
+    asAlice: await signedIdentity(t, ids.alice),
+    asBob: await signedIdentity(t, ids.bob),
   };
 }
 
@@ -168,30 +181,29 @@ describe("isolamento entre contas — leitura", () => {
   test("cada conta vê apenas os próprios registros", async () => {
     const { asAlice, asBob } = await twoWorkspaces();
 
-    expect((await asAlice.query(api.portal.listClients)).map((c) => c.name)).toEqual([
-      "Cliente da Alice",
-      "Segundo cliente da Alice",
-    ]);
-    expect((await asBob.query(api.portal.listClients)).map((c) => c.name)).toEqual([
-      "Cliente do Bob",
-    ]);
+    expect(
+      (await asAlice.query(api.portal.listClients)).map((c) => c.name),
+    ).toEqual(["Cliente da Alice", "Segundo cliente da Alice"]);
+    expect(
+      (await asBob.query(api.portal.listClients)).map((c) => c.name),
+    ).toEqual(["Cliente do Bob"]);
 
-    expect((await asAlice.query(api.portal.listTasks)).map((t) => t.title)).toEqual([
-      "Tarefa da Alice",
-    ]);
-    expect((await asBob.query(api.portal.listTasks)).map((t) => t.title)).toEqual([
-      "Tarefa do Bob",
-    ]);
+    expect(
+      (await asAlice.query(api.portal.listTasks)).map((t) => t.title),
+    ).toEqual(["Tarefa da Alice"]);
+    expect(
+      (await asBob.query(api.portal.listTasks)).map((t) => t.title),
+    ).toEqual(["Tarefa do Bob"]);
 
-    expect((await asAlice.query(api.portal.listContent)).map((c) => c.topic)).toEqual([
-      "Conteúdo da Alice",
-    ]);
-    expect((await asAlice.query(api.portal.listFinance)).map((f) => f.description)).toEqual([
-      "Receita da Alice",
-    ]);
-    expect((await asBob.query(api.portal.listFinance)).map((f) => f.description)).toEqual([
-      "Receita do Bob",
-    ]);
+    expect(
+      (await asAlice.query(api.portal.listContent)).map((c) => c.topic),
+    ).toEqual(["Conteúdo da Alice"]);
+    expect(
+      (await asAlice.query(api.portal.listFinance)).map((f) => f.description),
+    ).toEqual(["Receita da Alice"]);
+    expect(
+      (await asBob.query(api.portal.listFinance)).map((f) => f.description),
+    ).toEqual(["Receita do Bob"]);
   });
 
   test("o perfil do espaço é de quem salvou", async () => {
@@ -330,22 +342,23 @@ describe("isolamento entre contas — escrita", () => {
       patch: { name: "Renomeado", ownerId: ids.bob },
     });
 
-    expect((await asAlice.query(api.portal.listClients)).map((c) => c.name)).toEqual([
-      "Renomeado",
-      "Segundo cliente da Alice",
-    ]);
-    expect((await asBob.query(api.portal.listClients)).map((c) => c.name)).toEqual([
-      "Cliente do Bob",
-    ]);
-    expect((await asBob.query(api.portal.listTasks)).map((t) => t.title)).toEqual([
-      "Tarefa do Bob",
-    ]);
+    expect(
+      (await asAlice.query(api.portal.listClients)).map((c) => c.name),
+    ).toEqual(["Renomeado", "Segundo cliente da Alice"]);
+    expect(
+      (await asBob.query(api.portal.listClients)).map((c) => c.name),
+    ).toEqual(["Cliente do Bob"]);
+    expect(
+      (await asBob.query(api.portal.listTasks)).map((t) => t.title),
+    ).toEqual(["Tarefa do Bob"]);
   });
 
   test("faturas recorrentes não podem ser geradas para o cliente de outra conta", async () => {
     const { asBob, ids, t } = await twoWorkspaces();
     await expect(
-      asBob.mutation(api.portal.generateInvoices, { clientId: ids.aliceClient }),
+      asBob.mutation(api.portal.generateInvoices, {
+        clientId: ids.aliceClient,
+      }),
     ).rejects.toThrow("Cliente não encontrado neste espaço de trabalho");
 
     const aliceFinance = await asAliceFinance(t, ids.alice);
@@ -357,15 +370,15 @@ describe("isolamento entre contas — escrita", () => {
     await asAlice.mutation(api.portal.removeClient, { id: ids.aliceClient });
 
     expect(await asBob.query(api.portal.listClients)).toHaveLength(1);
-    expect((await asBob.query(api.portal.listTasks)).map((t) => t.title)).toEqual([
-      "Tarefa do Bob",
-    ]);
-    expect((await asBob.query(api.portal.listContent)).map((c) => c.topic)).toEqual([
-      "Conteúdo do Bob",
-    ]);
-    expect((await asBob.query(api.portal.listFinance)).map((f) => f.description)).toEqual([
-      "Receita do Bob",
-    ]);
+    expect(
+      (await asBob.query(api.portal.listTasks)).map((t) => t.title),
+    ).toEqual(["Tarefa do Bob"]);
+    expect(
+      (await asBob.query(api.portal.listContent)).map((c) => c.topic),
+    ).toEqual(["Conteúdo do Bob"]);
+    expect(
+      (await asBob.query(api.portal.listFinance)).map((f) => f.description),
+    ).toEqual(["Receita do Bob"]);
     // Os registros da Alice presos àquele cliente foram junto com ele.
     expect(await asAlice.query(api.portal.listTasks)).toEqual([]);
   });
@@ -387,16 +400,18 @@ async function asAliceFinance(
 describe("dados de exemplo e limpeza", () => {
   test("carregar o exemplo só mexe no espaço de quem pediu", async () => {
     const { asAlice, asBob } = await twoWorkspaces();
-    await asAlice.mutation(api.demo.seedDemo, {});
+    await expect(asAlice.mutation(api.demo.seedDemo, {})).rejects.toThrow(
+      "espaço vazio",
+    );
 
-    expect((await asBob.query(api.portal.listClients)).map((c) => c.name)).toEqual([
-      "Cliente do Bob",
-    ]);
-    expect((await asBob.query(api.portal.listFinance)).map((f) => f.description)).toEqual([
-      "Receita do Bob",
-    ]);
-    // O exemplo substituiu o espaço da Alice (4 clientes da demonstração).
-    expect(await asAlice.query(api.portal.listClients)).toHaveLength(4);
+    expect(
+      (await asBob.query(api.portal.listClients)).map((c) => c.name),
+    ).toEqual(["Cliente do Bob"]);
+    expect(
+      (await asBob.query(api.portal.listFinance)).map((f) => f.description),
+    ).toEqual(["Receita do Bob"]);
+    // A carteira existente foi preservada.
+    expect(await asAlice.query(api.portal.listClients)).toHaveLength(2);
   });
 
   test("limpar o espaço não toca no espaço da outra conta", async () => {
@@ -407,12 +422,12 @@ describe("dados de exemplo e limpeza", () => {
     expect(await asAlice.query(api.portal.listTasks)).toEqual([]);
     expect(await asAlice.query(api.portal.getWorkspace)).toBeNull();
 
-    expect((await asBob.query(api.portal.listClients)).map((c) => c.name)).toEqual([
-      "Cliente do Bob",
-    ]);
-    expect((await asBob.query(api.portal.listTasks)).map((t) => t.title)).toEqual([
-      "Tarefa do Bob",
-    ]);
+    expect(
+      (await asBob.query(api.portal.listClients)).map((c) => c.name),
+    ).toEqual(["Cliente do Bob"]);
+    expect(
+      (await asBob.query(api.portal.listTasks)).map((t) => t.title),
+    ).toEqual(["Tarefa do Bob"]);
   });
 });
 
@@ -432,8 +447,12 @@ describe("caminho feliz do financeiro", () => {
 
     // Duas janelas de um mês, com o plano idempotente no banco: a segunda
     // passada não duplica as faturas do mês corrente.
-    expect(await asAlice.mutation(api.portal.generateInvoices, {})).toEqual({ created: 2 });
-    expect(await asAlice.mutation(api.portal.generateInvoices, { months: 1 })).toEqual({
+    expect(await asAlice.mutation(api.portal.generateInvoices, {})).toEqual({
+      created: 2,
+    });
+    expect(
+      await asAlice.mutation(api.portal.generateInvoices, { months: 1 }),
+    ).toEqual({
       created: 0,
     });
 
@@ -474,7 +493,11 @@ describe("caminho feliz do financeiro", () => {
     expect(paid?.paidDate).toBe(new Date().toISOString().slice(0, 10));
 
     // E o Bob segue sem fatura: a janela de um mês é por conta.
-    expect((await asBob.query(api.portal.listFinance)).filter((f) => f.kind === "invoice")).toEqual([]);
+    expect(
+      (await asBob.query(api.portal.listFinance)).filter(
+        (f) => f.kind === "invoice",
+      ),
+    ).toEqual([]);
   });
 
   test("as seis tabelas por cliente passam pelo ciclo completo criar → atualizar → remover", async () => {

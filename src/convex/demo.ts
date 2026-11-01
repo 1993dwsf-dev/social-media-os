@@ -4,8 +4,9 @@
 // tarefas, solicitações, reuniões, entregas e finanças distribuídos ao redor de
 // "hoje" para que calendário, painel e visão financeira já apareçam populados.
 
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { activeUser } from "./activeUser";
 
+import { assertWorkspaceCapacity } from "./workspaceData";
 import { mutation } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 
@@ -88,8 +89,10 @@ const CLIENTS: ClientSeed[] = [
     },
     notes:
       "Prefere ajustes em lote. Nunca publica preços. As fotos devem usar o conjunto de luz natural gravado na semana 12.",
-    audience: "Quem prepara café em casa, 25–40 anos, e já tem um suporte de coado.",
-    objectives: "Ampliar o interesse no atacado local e elevar os pedidos do site em 15% no trimestre.",
+    audience:
+      "Quem prepara café em casa, 25–40 anos, e já tem um suporte de coado.",
+    objectives:
+      "Ampliar o interesse no atacado local e elevar os pedidos do site em 15% no trimestre.",
     pillars: ["Education", "Behind the scenes", "Product", "Community"],
     topics: [
       "Cold brew x café gelado",
@@ -119,10 +122,17 @@ const CLIENTS: ClientSeed[] = [
     monthlyFee: 3200,
     startDate: iso(-120),
     status: "Active",
-    socials: { instagram: "@haleandharbor", pinterest: "haleandharbor", linkedin: "hale-harbor" },
-    notes: "Sempre marcar o fotógrafo. As aprovações vêm só da Débora — a gerente do estúdio fica em cópia.",
-    audience: "Quem está reformando a primeira casa, além de corretores locais.",
-    objectives: "Preencher a agenda de projetos da primavera e crescer os salvamentos no Pinterest.",
+    socials: {
+      instagram: "@haleandharbor",
+      pinterest: "haleandharbor",
+      linkedin: "hale-harbor",
+    },
+    notes:
+      "Sempre marcar o fotógrafo. As aprovações vêm só da Débora — a gerente do estúdio fica em cópia.",
+    audience:
+      "Quem está reformando a primeira casa, além de corretores locais.",
+    objectives:
+      "Preencher a agenda de projetos da primavera e crescer os salvamentos no Pinterest.",
     pillars: ["Education", "Product", "Community", "Promotion"],
     topics: [
       "Sala pequena, muito armário",
@@ -150,10 +160,16 @@ const CLIENTS: ClientSeed[] = [
     monthlyFee: 6500,
     startDate: iso(-75),
     status: "Active",
-    socials: { instagram: "@bloomlyskin", tiktok: "@bloomly", youtube: "@bloomlyskin" },
-    notes: "As alegações precisam seguir o texto aprovado. O jurídico acrescenta dois dias úteis nos posts de produto.",
+    socials: {
+      instagram: "@bloomlyskin",
+      tiktok: "@bloomly",
+      youtube: "@bloomlyskin",
+    },
+    notes:
+      "As alegações precisam seguir o texto aprovado. O jurídico acrescenta dois dias úteis nos posts de produto.",
     audience: "Pessoas com pele sensível, de 18 a 34 anos, que compram online.",
-    objectives: "Lançar o creme reparador e manter o custo por mil impressões sob controle no 4º trimestre.",
+    objectives:
+      "Lançar o creme reparador e manter o custo por mil impressões sob controle no 4º trimestre.",
     pillars: ["Education", "Product", "Behind the scenes", "Promotion"],
     topics: [
       "Teaser do lançamento do creme reparador",
@@ -182,7 +198,8 @@ const CLIENTS: ClientSeed[] = [
     startDate: iso(0),
     status: "Prospect",
     socials: { instagram: "@velafitness" },
-    notes: "Aguardando a proposta assinada. Querem começar com um sprint de relançamento de 30 dias.",
+    notes:
+      "Aguardando a proposta assinada. Querem começar com um sprint de relançamento de 30 dias.",
     audience: "Novos alunos em um raio de 5 km do estúdio.",
     objectives: "Relançar a conta e lotar as aulas da manhã.",
     pillars: ["Education", "Community", "Promotion"],
@@ -199,30 +216,126 @@ const CLIENTS: ClientSeed[] = [
 ];
 
 const TASK_SEEDS: [string, string, string, string, string, number, number][] = [
-  ["Finalizar o briefing de conteúdo do mês", "Planejamento mensal", "Strategy", "High", "In Progress", -2, 3],
+  [
+    "Finalizar o briefing de conteúdo do mês",
+    "Planejamento mensal",
+    "Strategy",
+    "High",
+    "In Progress",
+    -2,
+    3,
+  ],
   ["Gravar lote: 10 peças", "Produção", "Production", "High", "Backlog", 1, 6],
-  ["Agendar os posts da próxima semana", "Publicação", "Publishing", "Medium", "Backlog", 0, 2],
-  ["Relatório mensal de desempenho", "Relatórios", "Reporting", "Medium", "Backlog", 2, 6],
-  ["Reunir os materiais pendentes do cliente", "Administração do cliente", "Admin", "Medium", "Blocked", -3, 1],
-  ["Atualizar a página de links da bio", "Sincronia do site", "Content", "Low", "Done", -8, -4],
+  [
+    "Agendar os posts da próxima semana",
+    "Publicação",
+    "Publishing",
+    "Medium",
+    "Backlog",
+    0,
+    2,
+  ],
+  [
+    "Relatório mensal de desempenho",
+    "Relatórios",
+    "Reporting",
+    "Medium",
+    "Backlog",
+    2,
+    6,
+  ],
+  [
+    "Reunir os materiais pendentes do cliente",
+    "Administração do cliente",
+    "Admin",
+    "Medium",
+    "Blocked",
+    -3,
+    1,
+  ],
+  [
+    "Atualizar a página de links da bio",
+    "Sincronia do site",
+    "Content",
+    "Low",
+    "Done",
+    -8,
+    -4,
+  ],
 ];
 
 const REQUEST_SEEDS: [string, string, string, string, string, number][] = [
-  ["Adicionar um segundo Reel esta semana", "Content", "High", "In Progress", "Priya Raman", 2],
-  ["Precisamos de novas fotos de produto", "Design", "Medium", "Waiting", "Jonas Feld", 5],
-  ["Levantar os números de engajamento para o conselho", "Report", "Medium", "New", "Ana Moreira", 4],
-  ["Atualizar a pasta compartilhada no drive", "Access", "Low", "Completed", "Ana Moreira", -3],
-  ["Aumento de verba para posts impulsionados", "Budget", "High", "New", "Ana Moreira", 7],
+  [
+    "Adicionar um segundo Reel esta semana",
+    "Content",
+    "High",
+    "In Progress",
+    "Priya Raman",
+    2,
+  ],
+  [
+    "Precisamos de novas fotos de produto",
+    "Design",
+    "Medium",
+    "Waiting",
+    "Jonas Feld",
+    5,
+  ],
+  [
+    "Levantar os números de engajamento para o conselho",
+    "Report",
+    "Medium",
+    "New",
+    "Ana Moreira",
+    4,
+  ],
+  [
+    "Atualizar a pasta compartilhada no drive",
+    "Access",
+    "Low",
+    "Completed",
+    "Ana Moreira",
+    -3,
+  ],
+  [
+    "Aumento de verba para posts impulsionados",
+    "Budget",
+    "High",
+    "New",
+    "Ana Moreira",
+    7,
+  ],
 ];
 
 const FINANCE_SEEDS: [string, string, number, number, string, string][] = [
   ["Mensalidade", "Retainer", 4800, 0, "Income", "Northwind Coffee Roasters"],
   ["Mensalidade", "Retainer", 3200, -1, "Income", "Hale & Harbor Interiors"],
-  ["Taxa de gestão de anúncios", "Project fee", 1200, -1, "Income", "Bloomly Skincare"],
-  ["Short patrocinado — sinal", "Collab", 450, -2, "Income", "Northwind Coffee Roasters"],
+  [
+    "Taxa de gestão de anúncios",
+    "Project fee",
+    1200,
+    -1,
+    "Income",
+    "Bloomly Skincare",
+  ],
+  [
+    "Short patrocinado — sinal",
+    "Collab",
+    450,
+    -2,
+    "Income",
+    "Northwind Coffee Roasters",
+  ],
   ["Verba de impulsionamento", "Ads", 600, -1, "Expense", "Bloomly Skincare"],
   ["Assinatura do suíte de edição", "Software", 89, -1, "Expense", ""],
-  ["Videomaker freelancer", "Contractor", 1200, -2, "Expense", "Northwind Coffee Roasters"],
+  [
+    "Videomaker freelancer",
+    "Contractor",
+    1200,
+    -2,
+    "Expense",
+    "Northwind Coffee Roasters",
+  ],
   ["Ring light + fundo fotográfico", "Equipment", 340, -3, "Expense", ""],
   ["Ferramenta de agendamento (anual)", "Software", 288, -1, "Expense", ""],
 ];
@@ -230,16 +343,19 @@ const FINANCE_SEEDS: [string, string, number, number, string, string][] = [
 export const seedDemo = mutation({
   args: {},
   handler: async (ctx) => {
-    const ownerId = await getAuthUserId(ctx);
+    const ownerId = await activeUser(ctx);
     if (!ownerId) throw new Error("Não autenticado");
     const store = db(ctx);
 
     for (const table of OWNED_TABLES) {
-      const rows = (await store
+      const first = await store
         .query(table)
         .withIndex("by_owner", (q: any) => q.eq("ownerId", ownerId))
-        .collect()) as any[];
-      for (const row of rows) await ctx.db.delete(row._id);
+        .first();
+      if (first)
+        throw new Error(
+          "Os exemplos só podem ser carregados em um espaço vazio. Seus dados foram preservados.",
+        );
     }
 
     const clientIds: Record<string, Id<"clients">> = {};
@@ -270,8 +386,10 @@ export const seedDemo = mutation({
           objectives: c.objectives,
           competitors: "Acompanhados nas observações da estratégia.",
           contentPreferences: `Prefere ${c.formats.slice(0, 2).join(" e ")}.`,
-          approvalPreferences: "Aprovações por e-mail, 2 dias úteis antes do agendamento.",
-          importantDates: "Janelas de lançamento e novidades de produto registradas no calendário de conteúdo.",
+          approvalPreferences:
+            "Aprovações por e-mail, 2 dias úteis antes do agendamento.",
+          importantDates:
+            "Janelas de lançamento e novidades de produto registradas no calendário de conteúdo.",
           brandAssets: "Drive compartilhado: marca, fontes, fotografias.",
           notes: c.notes,
         },
@@ -300,7 +418,11 @@ export const seedDemo = mutation({
           {
             key: "kpis",
             title: "Indicadores",
-            items: ["Posts publicados por mês", "Prazo de aprovação (dias)", "Salvamentos por post"],
+            items: [
+              "Posts publicados por mês",
+              "Prazo de aprovação (dias)",
+              "Salvamentos por post",
+            ],
           },
         ],
         kpis: [
@@ -344,7 +466,10 @@ export const seedDemo = mutation({
             status === "Published"
               ? `${topic} — publicado e rendendo como esperado.`
               : `Legenda em rascunho para "${topic}".`,
-          assetNote: format === "Reel" || format === "Video" || format === "Short" ? "Edição de vídeo + legendas" : "Arte estática",
+          assetNote:
+            format === "Reel" || format === "Video" || format === "Short"
+              ? "Edição de vídeo + legendas"
+              : "Arte estática",
           status,
           managerNotes:
             status === "Changes Requested"
@@ -352,7 +477,12 @@ export const seedDemo = mutation({
               : status === "In Review"
                 ? "Com o cliente para aprovação."
                 : "",
-          clientComments: status === "Published" ? "" : status === "In Review" ? "No geral está ótimo — um ajuste no gancho." : "",
+          clientComments:
+            status === "Published"
+              ? ""
+              : status === "In Review"
+                ? "No geral está ótimo — um ajuste no gancho."
+                : "",
           pillar: c.pillars[i % c.pillars.length],
           owner: c.owner,
         });
@@ -361,7 +491,15 @@ export const seedDemo = mutation({
       // Tarefas escalonadas para o painel sempre ter trabalho atrasado e a vencer.
       const taskOffsets = [0, 1, 3, 4, 6, 7];
       for (let i = 0; i < TASK_SEEDS.length; i++) {
-        const [title, project, category, priority, status, startOffset, dueOffset] = TASK_SEEDS[i];
+        const [
+          title,
+          project,
+          category,
+          priority,
+          status,
+          startOffset,
+          dueOffset,
+        ] = TASK_SEEDS[i];
         const shift = taskOffsets[(i + c.slug.length) % taskOffsets.length];
         await store.insert("tasks", {
           ownerId,
@@ -375,13 +513,17 @@ export const seedDemo = mutation({
           dueDate: iso(dueOffset + shift - 4),
           completedAt: status === "Done" ? iso(-2) : "",
           dependsOn: "",
-          notes: c.status === "Prospect" ? "Só começar depois da proposta assinada." : "",
+          notes:
+            c.status === "Prospect"
+              ? "Só começar depois da proposta assinada."
+              : "",
         });
       }
 
       // Algumas solicitações de cada cliente.
       for (let i = 0; i < 2; i++) {
-        const [title, category, priority, status, assignedTo, dueOffset] = REQUEST_SEEDS[(i + c.slug.length) % REQUEST_SEEDS.length];
+        const [title, category, priority, status, assignedTo, dueOffset] =
+          REQUEST_SEEDS[(i + c.slug.length) % REQUEST_SEEDS.length];
         await store.insert("requests", {
           ownerId,
           clientId: id,
@@ -392,7 +534,8 @@ export const seedDemo = mutation({
           status,
           assignedTo,
           dueDate: iso(dueOffset),
-          comments: status === "Waiting" ? "Precisa de informação do cliente." : "",
+          comments:
+            status === "Waiting" ? "Precisa de informação do cliente." : "",
         });
       }
 
@@ -403,7 +546,8 @@ export const seedDemo = mutation({
         title: "Chamada de planejamento mensal",
         date: iso(3 + c.slug.length),
         time: "10:00",
-        agenda: "Revisar o conteúdo do último mês, confirmar a próxima campanha, reunir materiais.",
+        agenda:
+          "Revisar o conteúdo do último mês, confirmar a próxima campanha, reunir materiais.",
         participants: `${c.contactName}, Ana Moreira`,
         status: "Scheduled",
         notes: "",
@@ -419,7 +563,8 @@ export const seedDemo = mutation({
         participants: `${c.contactName}, Ana Moreira`,
         status: "Completed",
         notes: "O cliente quer mais bastidores e menos posts de produto.",
-        actionItems: "Rascunhar 2 conceitos de bastidores antes da próxima gravação em lote.",
+        actionItems:
+          "Rascunhar 2 conceitos de bastidores antes da próxima gravação em lote.",
       });
 
       // Entregas.
@@ -454,6 +599,7 @@ export const seedDemo = mutation({
           amount: c.monthlyFee,
           category: "Retainer",
           description: `Mensalidade — ${c.name}`,
+          kind: "invoice",
           status: m === 0 ? "Pending" : "Paid",
           dueDate: monthDay(-m, 12),
           paidDate: m === 0 ? "" : monthDay(-m, 10),
@@ -462,7 +608,14 @@ export const seedDemo = mutation({
     }
 
     // Receitas avulsas e despesas fixas, sem vínculo com um cliente específico.
-    for (const [description, category, amount, monthOffset, type, clientName] of FINANCE_SEEDS) {
+    for (const [
+      description,
+      category,
+      amount,
+      monthOffset,
+      type,
+      clientName,
+    ] of FINANCE_SEEDS) {
       const slug = CLIENTS.find((c) => c.name === clientName)?.slug;
       await store.insert("finance", {
         ownerId,
@@ -495,8 +648,8 @@ export const seedDemo = mutation({
       notifyFinance: true,
       density: "comfortable",
     };
-    if (existingWorkspace) await ctx.db.replace(existingWorkspace._id, workspace);
-    else await store.insert("workspaces", workspace);
+    if (!existingWorkspace) await store.insert("workspaces", workspace);
+    await assertWorkspaceCapacity(ctx, ownerId);
 
     return { clients: CLIENTS.length };
   },

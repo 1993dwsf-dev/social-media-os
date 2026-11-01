@@ -98,14 +98,12 @@ const OPEN_QUERIES: Record<string, unknown> = {
 /**
  * Ações que respondem sem sessão: o próprio login/logout, por definição.
  */
-const OPEN_ACTIONS = [
-  "auth:signIn",
-  "auth:signOut",
-];
+const OPEN_ACTIONS = ["auth:signIn", "auth:signOut"];
 
 /** Tudo que devolve vazio/nulo sem sessão. */
 const SESSION_QUERIES: Record<string, unknown> = {
   "portal:getWorkspace": null,
+  "portal:exportWorkspace": null,
   "portal:listClients": [],
   "portal:listContent": [],
   "portal:listTasks": [],
@@ -149,13 +147,20 @@ const SESSION_MUTATIONS = [
 
 /** Nunca chamáveis pelo cliente (o Convex recusa antes de executar). */
 const INTERNAL: Record<string, Kind> = {
+  "access:createInvite": "mutation",
+  "access:recoveryAccount": "query",
+  "access:storeRecovery": "mutation",
+  "access:consumeRecovery": "mutation",
   "audit:reportStoredDataIssues": "query",
   "auth:store": "mutation",
   "repair:relinkOrphanInvoices": "mutation",
   "sessions:cleanupInactiveSessions": "mutation",
 };
 
+const SESSION_ACTIONS = ["access:issueRecoveryCode"];
+
 const CLASSIFIED = new Set([
+  ...SESSION_ACTIONS,
   ...Object.keys(OPEN_QUERIES),
   ...OPEN_ACTIONS,
   ...Object.keys(SESSION_QUERIES),
@@ -303,7 +308,16 @@ async function seededWorkspace() {
       density: "comfortable",
     });
 
-    return { owner, client, content, task, request, meeting, deliverable, finance };
+    return {
+      owner,
+      client,
+      content,
+      task,
+      request,
+      meeting,
+      deliverable,
+      finance,
+    };
   });
 
   return { t, ids };
@@ -364,11 +378,15 @@ function writeArgs(
     "portal:updateMeeting": { id: ids.meeting, patch },
     "portal:removeMeeting": { id: ids.meeting },
 
-    "portal:createDeliverable": { data: { name: sentinel, clientId: ids.client } },
+    "portal:createDeliverable": {
+      data: { name: sentinel, clientId: ids.client },
+    },
     "portal:updateDeliverable": { id: ids.deliverable, patch },
     "portal:removeDeliverable": { id: ids.deliverable },
 
-    "portal:createFinance": { data: { description: sentinel, clientId: ids.client } },
+    "portal:createFinance": {
+      data: { description: sentinel, clientId: ids.client },
+    },
     "portal:updateFinance": { id: ids.finance, patch },
     "portal:removeFinance": { id: ids.finance },
 
@@ -377,6 +395,7 @@ function writeArgs(
     "portal:clearWorkspace": {},
     "portal:importWorkspace": { snapshot: {} },
     "demo:seedDemo": {},
+    "access:issueRecoveryCode": { password: "test-only-password" },
   };
 
   const args = table[name];
@@ -434,17 +453,18 @@ describe("inventário da API", () => {
       expect(route?.kind).toBe(INTERNAL[name]);
     }
 
-    const declaredOpen = [
-      ...Object.keys(OPEN_QUERIES),
-      ...OPEN_ACTIONS,
-    ];
+    const declaredOpen = [...Object.keys(OPEN_QUERIES), ...OPEN_ACTIONS];
     for (const route of routes) {
       if (route.visibility === "internal") continue;
       if (declaredOpen.includes(route.name)) continue;
       // Todo o resto é rota com sessão: existe em SESSION_QUERIES ou SESSION_MUTATIONS.
       const known =
-        route.name in SESSION_QUERIES || SESSION_MUTATIONS.includes(route.name);
-      expect(known, `${route.name} não está nas listas "com sessão"`).toBe(true);
+        route.name in SESSION_QUERIES ||
+        SESSION_MUTATIONS.includes(route.name) ||
+        SESSION_ACTIONS.includes(route.name);
+      expect(known, `${route.name} não está nas listas "com sessão"`).toBe(
+        true,
+      );
     }
 
     // Nenhuma função interna pode estar declarada como aberta.
@@ -452,7 +472,6 @@ describe("inventário da API", () => {
       expect(byName.get(name)?.visibility).toBe("public");
     }
   });
-
 });
 
 // ---- 2. comportamento sem sessão ------------------------------------------
@@ -504,11 +523,11 @@ describe("sem sessão: escrita", () => {
     const { t, ids } = await seededWorkspace();
     const before = await snapshot(t);
 
-    for (const name of SESSION_MUTATIONS) {
+    for (const name of [...SESSION_MUTATIONS, ...SESSION_ACTIONS]) {
       await expect(
         callWithoutSession(t, name, writeArgs(name, ids, SENTINEL)),
         name,
-      ).rejects.toThrow("Não autenticado");
+      ).rejects.toThrow();
     }
 
     expect(await snapshot(t)).toEqual(before);

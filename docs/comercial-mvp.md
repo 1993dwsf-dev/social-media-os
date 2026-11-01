@@ -21,17 +21,17 @@
 3. Mostre a estratégia e crie uma pauta no calendário.
 4. Converta a pauta em tarefa e mostre o fluxo de aprovação.
 5. Registre uma receita manual e mostre o painel.
-6. Exporte o JSON; explique que a planilha CSV é modelo independente.
+6. Exporte JSON e um CSV real em Configurações; a planilha de referência continua independente.
 
 Duração desejada: 8 a 12 minutos. Não usar integrações simuladas como se fossem reais.
 
 ## Primeiro acesso do cliente pagante
 
 1. Assine proposta/contrato com preço, vencimento, cancelamento e contato de suporte definidos.
-2. Gere e configure no Convex um código de convite aleatório `SOCIAL_MEDIA_OS_SIGNUP_CODE`.
+2. Emita convite individual via função interna `access:createInvite` com o e-mail do gestor (48 horas, uso único).
 3. Envie URL real de login e código por canal privado. Não compartilhe variáveis de backend.
 4. Usuário clica em “Recebi um convite — criar conta”, informa e-mail, senha forte e convite.
-5. Confirme login, cadastro, persistência e saída. Troque o convite no backend após o onboarding.
+5. Confirme login, cadastro, persistência e saída. O convite é consumido automaticamente; acompanhe a geração da chave de emergência em Configurações.
 6. Oriente backup JSON periódico e cautela com “Limpar espaço de trabalho”.
 7. Registre contato para suporte, respeitando LGPD, e trate cobranças fora do app.
 
@@ -46,3 +46,5 @@ Duração desejada: 8 a 12 minutos. Não usar integrações simuladas como se fo
 ## Critérios para iniciar cobrança
 
 Não vender antes de concluir os itens de [auditoria-mvp.md](auditoria-mvp.md) marcados como bloqueantes; principalmente rotação de segredos, implantação real, dois logins isolados e contato/termos revisados.
+
+Capacidade do piloto: 1.000 registros / 500 KB por conta. Recuperação por chave de emergência previamente gerada; sem reset por e-mail. Consulte [primeiro-acesso.md](primeiro-acesso.md).

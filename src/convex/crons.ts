@@ -16,6 +16,7 @@ crons.daily(
   "cleanup-inactive-sessions",
   { hourUTC: 6, minuteUTC: 30 },
   internal.sessions.cleanupInactiveSessions,
+  {},
 );
 
 export default crons;

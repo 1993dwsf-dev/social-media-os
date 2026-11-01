@@ -1,3 +1,4 @@
+import { signedIdentity } from "./identity";
 // Testes da importação atômica de backup.
 // Execute com: bun test
 
@@ -11,13 +12,10 @@ const modules = {
   "../src/convex/_generated/api.js": () =>
     import("../src/convex/_generated/api"),
 
-  "../src/convex/portal.ts": () =>
-    import("../src/convex/portal"),
+  "../src/convex/portal.ts": () => import("../src/convex/portal"),
 };
 
-function backup(
-  overrides: Record<string, unknown> = {},
-) {
+function backup(overrides: Record<string, unknown> = {}) {
   const client = {
     id: "source-client-1",
     name: "Cliente de teste",
@@ -94,118 +92,88 @@ async function signedInTest() {
 
   return {
     t,
-    asUser: t.withIdentity({
-      subject: userId,
-    }),
+    asUser: await signedIdentity(t, userId),
   };
 }
 
 describe("importWorkspace", () => {
-  test(
-    "importa dados e reconstrói o vínculo entre conteúdo e cliente",
-    async () => {
-      const { asUser } = await signedInTest();
+  test("importa dados e reconstrói o vínculo entre conteúdo e cliente", async () => {
+    const { asUser } = await signedInTest();
 
-      const result = await asUser.mutation(
-        api.portal.importWorkspace,
+    const result = await asUser.mutation(api.portal.importWorkspace, {
+      snapshot: backup(),
+    });
+
+    expect(result.clients).toBe(1);
+    expect(result.content).toBe(1);
+
+    const clients = await asUser.query(api.portal.listClients);
+
+    const contents = await asUser.query(api.portal.listContent);
+
+    expect(clients).toHaveLength(1);
+    expect(contents).toHaveLength(1);
+
+    expect(contents[0].clientId).toBe(clients[0]._id);
+  });
+
+  test("rejeita referência a cliente ausente antes de gravar os dados", async () => {
+    const { asUser } = await signedInTest();
+
+    const badBackup = backup({
+      content: [
         {
-          snapshot: backup(),
+          id: "source-content-1",
+          clientId: "missing-client",
+          date: "2026-10-15",
+          platform: "Instagram",
+          format: "Reel",
+          topic: "Tema de teste",
+          caption: "",
+          assetNote: "",
+          status: "Idea",
+          managerNotes: "",
+          clientComments: "",
+          pillar: "Education",
+          owner: "Gestor",
         },
-      );
+      ],
+    });
 
-      expect(result.clients).toBe(1);
-      expect(result.content).toBe(1);
+    await expect(
+      asUser.mutation(api.portal.importWorkspace, {
+        snapshot: badBackup,
+      }),
+    ).rejects.toThrow("cliente ausente");
 
-      const clients = await asUser.query(
-        api.portal.listClients,
-      );
+    expect(await asUser.query(api.portal.listClients)).toHaveLength(0);
 
-      const contents = await asUser.query(
-        api.portal.listContent,
-      );
+    expect(await asUser.query(api.portal.listContent)).toHaveLength(0);
+  });
 
-      expect(clients).toHaveLength(1);
-      expect(contents).toHaveLength(1);
+  test("rejeita propriedades desconhecidas no registro do backup", async () => {
+    const { asUser } = await signedInTest();
 
-      expect(contents[0].clientId).toBe(
-        clients[0]._id,
-      );
-    },
-  );
+    const sourceClient = backup().clients[0] as unknown as Record<
+      string,
+      unknown
+    >;
 
-  test(
-    "rejeita referência a cliente ausente antes de gravar os dados",
-    async () => {
-      const { asUser } = await signedInTest();
+    const badClient = {
+      ...sourceClient,
+      isAdmin: true,
+    };
 
-      const badBackup = backup({
-        content: [
-          {
-            id: "source-content-1",
-            clientId: "missing-client",
-            date: "2026-10-15",
-            platform: "Instagram",
-            format: "Reel",
-            topic: "Tema de teste",
-            caption: "",
-            assetNote: "",
-            status: "Idea",
-            managerNotes: "",
-            clientComments: "",
-            pillar: "Education",
-            owner: "Gestor",
-          },
-        ],
-      });
+    const badBackup = backup({
+      clients: [badClient],
+    });
 
-      await expect(
-        asUser.mutation(
-          api.portal.importWorkspace,
-          {
-            snapshot: badBackup,
-          },
-        ),
-      ).rejects.toThrow("cliente ausente");
+    await expect(
+      asUser.mutation(api.portal.importWorkspace, {
+        snapshot: badBackup,
+      }),
+    ).rejects.toThrow("isAdmin");
 
-      expect(
-        await asUser.query(api.portal.listClients),
-      ).toHaveLength(0);
-
-      expect(
-        await asUser.query(api.portal.listContent),
-      ).toHaveLength(0);
-    },
-  );
-
-  test(
-    "rejeita propriedades desconhecidas no registro do backup",
-    async () => {
-      const { asUser } = await signedInTest();
-
-      const sourceClient = backup().clients[0] as unknown as
-        Record<string, unknown>;
-
-      const badClient = {
-        ...sourceClient,
-        isAdmin: true,
-      };
-
-      const badBackup = backup({
-        clients: [badClient],
-      });
-
-      await expect(
-        asUser.mutation(
-          api.portal.importWorkspace,
-          {
-            snapshot: badBackup,
-          },
-        ),
-      ).rejects.toThrow("isAdmin");
-
-      expect(
-        await asUser.query(api.portal.listClients),
-      ).toHaveLength(0);
-    },
-  );
+    expect(await asUser.query(api.portal.listClients)).toHaveLength(0);
+  });
 });

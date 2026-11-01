@@ -65,7 +65,7 @@ export default defineConfig({
     // Increase chunk size warning limit for better chunking
     chunkSizeWarningLimit: 1000,
     // Target modern browsers for better optimization
-    target: 'esnext',
+    target: 'es2020',
     // Minify options - using esbuild (faster than terser)
     minify: 'esbuild',
   },

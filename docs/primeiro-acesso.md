@@ -1,61 +1,55 @@
 # Primeiro acesso e suporte — Social Media OS
 
-## Endereços oficiais desta instalação
+## Instalação
 
 - Aplicação: https://social-media-os-b0c.pages.dev/auth
-- Backend exclusivo: `charming-leopard-770`.
-- Painel do operador: https://dashboard.convex.dev/t/david-william/social-media-os/charming-leopard-770
-- Código e publicações: somente a branch `main` de `1993dwsf-dev/social-media-os`.
+- Convex exclusivo: `david-william/social-media-os/charming-leopard-770`.
+- Código e publicação: exclusivamente `main` de `1993dwsf-dev/social-media-os`.
 
-## Primeiro acesso do David
+## Convite individual
 
-1. Entre no painel Convex acima e confirme o projeto `social-media-os` e o deployment `charming-leopard-770`.
-2. Em configurações de variáveis de ambiente, consulte `SOCIAL_MEDIA_OS_SIGNUP_CODE` no próprio painel. O valor é privado: não o publique em arquivos, prints ou conversas de suporte. Não use `JWT_PRIVATE_KEY` nem `CONVEX_DEPLOY_KEY` como convite.
-3. Abra o endereço da aplicação e clique em **Recebi um convite — criar conta**.
-4. Informe seu e-mail, uma senha própria de 12 a 128 caracteres e o convite. A senha é escolhida por você; o suporte não precisa recebê-la.
-5. Entre em **Configurações**, preencha seu perfil e salve. Em **Clientes**, cadastre o primeiro cliente.
-6. Saia e entre novamente usando apenas e-mail e senha. O convite não é pedido nos próximos logins.
-7. Após concluir esse acesso, substitua o convite no Convex por outro valor aleatório forte. A troca bloqueia novos cadastros com o convite anterior e não altera as senhas das contas existentes.
+1. No dashboard Convex do projeto correto, abra a função **interna** `access:createInvite`.
+2. Informe somente o e-mail do gestor contratado, em `{"email":"gestor@exemplo.com"}`.
+3. Execute a função. O retorno contém um código de 64 caracteres e a validade de 48 horas. Entregue o código ao destinatário por canal privado. Não registre o código em issues, logs, prints ou documentos públicos.
+4. O gestor escolhe “Recebi um convite — criar conta”, informa o mesmo e-mail, sua própria senha de 12 a 128 caracteres, convite e aceite dos documentos.
+5. O convite é vinculado ao e-mail e consumido na mesma transação da criação da conta. Um novo convite para o mesmo e-mail invalida o anterior.
 
-Cada conta é um espaço independente de gestor. Este MVP não possui um painel de administração da plataforma nem acesso próprio para os clientes cadastrados pelo gestor.
+O antigo `SOCIAL_MEDIA_OS_SIGNUP_CODE` compartilhado não libera novos cadastros. Contas existentes continuam usando suas senhas e conservam os mesmos IDs e registros. O convite individual não é uma verificação automática de propriedade do e-mail.
 
-## Onboarding do primeiro cliente pagante — aproximadamente 15 minutos
+## Onboarding do primeiro pagante
 
-| Etapa | Ação | Resultado esperado |
-| --- | --- | --- |
-| Contratação | Confirmar preço, vencimento, cancelamento e canal de suporte em proposta específica. | Condições entendidas antes da cobrança. |
-| Convite | Enviar URL e convite por canal privado ao gestor contratado. | O gestor cria sua própria senha. |
-| Perfil | Salvar nome do gestor e nome do negócio em Configurações. | Perfil reaparece após recarregar. |
-| Cliente | Cadastrar uma empresa de teste com dados fictícios. | Cliente aparece somente nessa conta. |
-| Produção | Criar conteúdo no calendário e uma tarefa ligada ao cliente. | Conteúdo e tarefa persistem após novo login. |
-| Financeiro | Registrar um lançamento manual. | Não prometer cobrança ou conciliação automática. |
-| Backup | Exportar JSON e explicar que a importação acrescenta registros. | Cliente sabe preservar os dados e evitar duplicação. |
-| Encerramento | Remover apenas os dados demonstrativos e trocar o convite após o cadastro. | A conta segue acessível com sua senha. |
+1. Concluir identificação do responsável, canal de suporte, contrato e documentos legais antes de cobrar. As páginas atuais continuam identificadas como minutas.
+2. Criar o convite individual e acompanhar o primeiro login.
+3. Em Configurações, salvar o perfil e gerar uma **chave de emergência**, confirmando a senha atual. O usuário deve guardar essa chave em local seguro, separado do dispositivo.
+4. Cadastrar um cliente fictício, um conteúdo, uma tarefa e um lançamento. Reentrar e confirmar persistência.
+5. Exportar JSON e CSV real em Configurações. A página “Planilha do gestor” continua sendo um modelo estático separado.
+6. Se demonstrar a base fictícia, usar uma conta vazia: o backend recusa exemplos em espaços com registros e preserva o perfil existente.
 
-A proposta existente sugere um piloto de R$ 49 por mês por gestor; esse valor ainda precisa ser adotado pelo operador na proposta de venda. A cobrança é externa e manual.
+A conta é individual. Clientes cadastrados são registros; não possuem login. Não há equipe com permissões compartilhadas, publicação automática em redes, métricas conectadas ou cobrança integrada.
 
-## Suporte de acesso
+## Recuperar senha sem serviço de e-mail
 
-- A primeira verificação é o endereço oficial e se o usuário está em **Entrar**, sem tentar criar outra conta.
-- Oriente o uso do e-mail de cadastro e da senha correta. Convite só é necessário no cadastro.
-- Não peça senha, token de sessão, chave de deploy ou exportação completa de clientes por mensagem.
-- O e-mail de cadastro não é automaticamente verificado neste MVP. Não use apenas a declaração de um e-mail como prova suficiente para transferir dados.
-- A biblioteca de autenticação limita tentativas malsucedidas por identificador. Isso não equivale a proteção por IP ou captcha ativo no cadastro.
-- Não há botão de recuperação de senha por e-mail. Não apague uma conta para tentar recriá-la: os registros são ligados ao ID original.
-- Se o gestor ainda tem uma sessão ativa em outro dispositivo, ele pode exportar seu JSON. Qualquer migração para uma nova conta deve ser acompanhada, autorizada pelo titular e validada antes de remover dados da conta anterior.
-- Sem sessão ativa ou backup disponível, o caso exige avaliação técnica específica. Não prometa um procedimento de recuperação que ainda não foi implementado e testado.
+1. Na entrada, escolher “Esqueci minha senha — usar chave de emergência”.
+2. Informar e-mail da conta, a chave previamente guardada e nova senha forte.
+3. O sistema consome a chave, altera a senha da conta original e revoga sessões antigas. Os dados continuam com o mesmo proprietário.
+4. Após recuperar, gerar uma nova chave em Configurações. A anterior não pode ser reutilizada.
 
-## Suporte de dados e cobrança
+A chave tem 256 bits aleatórios; só seu hash fica armazenado. Não é incluída nos backups operacionais. Confirmar a senha é necessário para emitir ou substituir a chave. O suporte nunca deve pedir a senha ou a chave do usuário por mensagem.
 
-- Limpar o armazenamento do navegador encerra a sessão local; não remove os registros do Convex.
-- **Limpar espaço de trabalho** exclui registros operacionais da própria conta. A exclusão da conta de autenticação é uma operação distinta.
-- Restaure primeiro em uma conta vazia: importar duas vezes pode duplicar registros.
-- A planilha de referência exporta CSV, mas não consulta os clientes e lançamentos do workspace. O backup dos dados reais é JSON.
-- Se houver divergência financeira, confira os lançamentos manuais e a conta em uso. Não atribua a confirmação a um webhook ou banco que o produto não integra.
+Sem chave, sessão ativa ou backup, é necessária análise técnica específica com comprovação de identidade; não apague nem recrie contas para tentar recuperar acesso. Não há reset ou verificação automática por e-mail. Se uma recuperação falhar após consumir a chave, procure suporte; não prometa reutilização dela.
 
-## Antes de iniciar cobrança
+## Backups, restauração e capacidade do piloto
 
-- Preencher a identificação pública do responsável e o e-mail de suporte; a publicação ainda mostra esse contato como pendente.
-- Revisar termos e privacidade com os dados reais e definir proposta/contrato, cancelamento e atendimento.
-- Não reutilizar a chave histórica dotenvx, já identificada na auditoria. Se houver arquivos cifrados fora deste repositório, substituir seu par de chaves e as credenciais contidas nesses arquivos; a instalação atual usa outras credenciais.
-- Não prometer publicação automática, métricas conectadas, portal do cliente, reset automático de senha ou cobrança automatizada.
+- JSON usa uma única leitura consistente do backend, com todas as coleções e perfil. Não depende do carregamento parcial da interface.
+- Capacidade suportada: **1.000 registros somados entre as sete coleções e 500.000 bytes (500 KB) de JSON compacto**, incluindo perfil e metadados. Novas gravações que excedam a capacidade são revertidas na própria transação. Dados antigos não são apagados.
+- Se uma base legada já exceder a capacidade, não limpe nem exclua dados para contornar o bloqueio: procure o suporte para uma exportação administrativa e plano de migração. O limite do piloto não é uma estratégia para grandes carteiras.
+- Restauração valida formato e relações, cria IDs novos e associa os registros à conta atual. Primeiro teste em uma conta vazia.
+- Importação acrescenta dados. A interface mostra o arquivo e exige confirmação; o backend exige `allowMerge: true` quando a conta já tem registros. Não há deduplicação automática ao confirmar uma importação adicional.
+- Guarde o JSON fora do aplicativo. Ele contém dados pessoais e financeiros em texto legível.
+- CSV real: escolher coleção e cliente em Configurações. Arquivo UTF-8 com BOM, separador `;`, valores decimais com vírgula e proteção de textos contra fórmulas de planilhas. CSV é relatório; JSON é o formato de restauração.
+
+## Suporte e operação
+
+Limpar o cache pode encerrar o login, mas não apaga o Convex. “Limpar espaço” apaga registros operacionais e exige confirmação. Conta, sessões e chave de recuperação são separadas dos registros do workspace.
+
+Cobrança e cancelamento permanecem manuais e externos. O piloto não oferece bloqueio automático por inadimplência. Mantenha registro dos contratos e não compartilhe credenciais entre pessoas.

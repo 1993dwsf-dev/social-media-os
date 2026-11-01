@@ -1,3 +1,4 @@
+import { signedIdentity } from "./identity";
 // Testes do reparo das faturas antigas gravadas sem `clientId`.
 //
 // O `portal.generateInvoices` já gravou faturas órfãs: o planejador puro espera
@@ -12,8 +13,6 @@
 // duplicata.
 //
 // Rode com: bun test
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, expect, test } from "bun:test";
 import { convexTest } from "convex-test";
@@ -205,20 +204,17 @@ async function brokenInvoices() {
       }),
     );
     // Despesa fixa sem cliente: idem.
-    const despesa = await ctx.db.insert(
-      "finance",
-      {
-        ownerId: alice,
-        date: monthStart(-1),
-        type: "Expense",
-        amount: 89,
-        category: "Software",
-        description: "Assinatura do suíte de edição",
-        status: "Paid",
-        dueDate: monthStart(-1),
-        paidDate: monthStart(-1),
-      },
-    );
+    const despesa = await ctx.db.insert("finance", {
+      ownerId: alice,
+      date: monthStart(-1),
+      type: "Expense",
+      amount: 89,
+      category: "Software",
+      description: "Assinatura do suíte de edição",
+      status: "Paid",
+      dueDate: monthStart(-1),
+      paidDate: monthStart(-1),
+    });
 
     return {
       alice,
@@ -248,8 +244,8 @@ async function brokenInvoices() {
   return {
     t,
     ids,
-    asAlice: t.withIdentity({ subject: ids.alice }),
-    asBob: t.withIdentity({ subject: ids.bob }),
+    asAlice: await signedIdentity(t, ids.alice),
+    asBob: await signedIdentity(t, ids.bob),
   };
 }
 
@@ -312,8 +308,10 @@ describe("casamento da fatura órfã com o cliente", () => {
       candidates: ["Clínica Já", "Clínica Já"],
     });
     expect(
-      matchInvoiceToClient({ description: "Ajuste avulso", amount: 1500 }, clientes)
-        .outcome,
+      matchInvoiceToClient(
+        { description: "Ajuste avulso", amount: 1500 },
+        clientes,
+      ).outcome,
     ).toBe("unmatched");
   });
 
@@ -454,7 +452,9 @@ describe("religação das faturas órfãs", () => {
       invoices.filter((row) => row.clientId === ids.aliceJa1500),
     ).toHaveLength(1);
     expect(
-      invoices.filter((row) => row.clientId === undefined).map((row) => row._id),
+      invoices
+        .filter((row) => row.clientId === undefined)
+        .map((row) => row._id),
     ).toEqual([ids.orfaDuplicata]);
   });
 });

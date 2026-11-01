@@ -9,16 +9,16 @@ Aplicação React + TypeScript + Vite + Convex para **um gestor de social media 
 - Planejamento e calendário de conteúdo, tarefas, aprovações e solicitações
 - Reuniões, registros de entregas e financeiro manual
 - Exportação/importação de backup JSON do workspace
-- Planilha de referência com 29 abas e exportação CSV (NÃO sincronizada com o workspace)
+- CSV dos dados reais em Configurações, com filtro por cliente; planilha de referência de 29 abas separada.
 
 **Não inclui** postagem automática, métricas conectadas às redes sociais, portal do cliente, cobrança automática, envio de e-mail ou sincronização da planilha com o banco. Não prometa esses recursos.
 
 ## Arquitetura única
 - Frontend: Cloudflare Pages (uma única branch `main`, um único endereço público).
 - Backend e banco: **um único deployment Convex**, com autenticação Convex Auth e dados isolados por `ownerId`.
-- Login: Convex Auth com e-mail/senha, cadastro restrito por `SOCIAL_MEDIA_OS_SIGNUP_CODE` configurado APENAS no backend Convex. Sem login social ou envio de OTP.
+- Login: e-mail/senha, convites individuais de uso único via função interna `access:createInvite`; recuperação com chave de emergência gerada pelo gestor.
 - Sem domínio próprio obrigatório para a URL `*.pages.dev`.
-- Recuperação automática de senha não existe neste MVP; o operador precisará prestar suporte ao usuário que perder acesso, mediante verificação de identidade.
+- Recuperação por chave de emergência previamente gerada em Configurações. Sem reset ou verificação automática por e-mail.
 
 ## Operação e implantação
 Consulte [docs/implantacao-mvp.md](docs/implantacao-mvp.md) para a configuração exata de Convex, Cloudflare Pages, ações necessárias, testes de segurança e entrega do primeiro cliente.
@@ -27,7 +27,7 @@ Consulte [docs/implantacao-mvp.md](docs/implantacao-mvp.md) para a configuraçã
 1. Operador cria convite privado (env do Convex) e o informa ao novo gestor.
 2. Gestor abre `/auth`, cria a conta com e-mail, senha de 12+ caracteres e convite.
 3. Gestor cadastra o primeiro cliente e utiliza painel, calendário, tarefas e financeiro.
-4. Faz backup regular em Configurações > Exportar JSON; planilha CSV é separada dos registros reais.
+4. Gere sua chave de emergência, faça backups JSON e exporte relatórios CSV reais em Configurações.
 5. Cancelamento, suporte e recebimento de assinatura são feitos **fora do app**.
 
 ## Desenvolvimento
@@ -49,3 +49,7 @@ Os tipos em `src/convex/_generated` são gerados pelo CLI Convex; o CI usa uma i
 - Atualize e revise os textos legais e informe os dados reais de contato do responsável.
 
 Este repositório não é evidência de que o deploy está ativo. O lançamento só é confirmado depois do build, deploy e smoke test em `*.pages.dev`.
+
+## Correções comerciais e operação
+
+Consulte [correcoes-auditoria.md](docs/correcoes-auditoria.md) e [primeiro-acesso.md](docs/primeiro-acesso.md). Capacidade do piloto: 1.000 registros e 500 KB de JSON compacto por conta. As gravações excedentes são recusadas sem apagar dados. Termos finais e identificação comercial permanecem pendentes.
