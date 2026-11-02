@@ -108,7 +108,7 @@ export default function Auth({
               ? "Acesse seu espaço de trabalho com e-mail e senha."
               : mode === "recovery"
                 ? "Use a chave de emergência gerada anteriormente em Configurações."
-                : "Use o convite individual enviado para o seu e-mail."}
+                : "Solicite seu convite ao suporte pelo canal combinado na contratação."}
           </CardDescription>
         </CardHeader>
         <form onSubmit={submit}>
@@ -167,6 +167,11 @@ export default function Auth({
                   placeholder="Código fornecido pelo administrador"
                   disabled={busy || checkingSession}
                 />
+                <p className="text-xs text-muted-foreground">
+                  O administrador fornece o convite por contato privado. Use o
+                  mesmo e-mail informado na contratação. O código vale por 48
+                  horas e é necessário somente no cadastro.
+                </p>
               </label>
             )}
             {mode === "recovery" && (

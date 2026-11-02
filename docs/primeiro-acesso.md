@@ -8,13 +8,17 @@
 
 ## Convite individual
 
+O procedimento atual é **assistido**, seguindo a solução sem domínio documentada no Barber OS: o operador entrega o código pelo contato privado combinado com o cliente. Não há disparo automático de e-mail. O Social Media OS usa exclusivamente seu próprio Convex e seus próprios convites; não utiliza credenciais, códigos ou dados do Barber OS.
+
 1. No dashboard Convex do projeto correto, abra a função **interna** `access:createInvite`.
-2. Informe somente o e-mail do gestor contratado, em `{"email":"gestor@exemplo.com"}`.
-3. Para enviar automaticamente, configure o Resend conforme [convites-resend.md](convites-resend.md) e execute a ação interna `access:sendInvite` com o mesmo argumento de e-mail. Ela gera e envia o convite; o retorno informa aceitação da API e validade, sem revelar o código. A função manual `access:createInvite` continua retornando um código de 64 caracteres e a validade de 48 horas para entrega por canal privado. Não registre o código em issues, logs, prints ou documentos públicos.
+2. Confirme a identidade e o vínculo com o e-mail pelo contato combinado na contratação. Informe somente o e-mail do gestor contratado, em `{"email":"gestor@exemplo.com"}`.
+3. Execute a função e entregue o código retornado, junto do endereço de cadastro, diretamente ao destinatário por esse canal privado. Não registre o código em issues, logs, prints, documentos públicos ou grupos. Não peça a senha do cliente.
 4. O gestor escolhe “Recebi um convite — criar conta”, informa o mesmo e-mail, sua própria senha de 12 a 128 caracteres, convite e aceite dos documentos.
 5. O convite é vinculado ao e-mail e consumido na mesma transação da criação da conta. Um novo convite para o mesmo e-mail invalida o anterior.
 
 O antigo `SOCIAL_MEDIA_OS_SIGNUP_CODE` compartilhado não libera novos cadastros. Contas existentes continuam usando suas senhas e conservam os mesmos IDs e registros. O convite individual não é uma verificação automática de propriedade do e-mail.
+
+Não é necessário configurar domínio, Resend, Brevo ou SMTP para este procedimento. A integração opcional de e-mail permanece descrita em [convites-resend.md](convites-resend.md), sem envio ativo. Referência do procedimento assistido no Barber OS: [acesso-manual-primeiro-cliente.md](https://github.com/1993dwsf-dev/barber-os/blob/e8d7f46d7aacf4420af39d41067a79e7b26911f9/docs/acesso-manual-primeiro-cliente.md). Os códigos de autenticação do Barber OS e o convite de cadastro deste sistema têm finalidades distintas; não se deve transferir códigos entre produtos nem marcar verificação de e-mail manualmente.
 
 ## Onboarding do primeiro pagante
 

@@ -1,5 +1,7 @@
 # Convites por e-mail — Resend
 
+**Estado atual:** integração opcional, sem envio ativo. Como o operador não possui domínio próprio, o acesso inicial usa entrega assistida do convite conforme [primeiro-acesso.md](primeiro-acesso.md). Não é necessário contratar domínio ou configurar um serviço de e-mail para esse procedimento. Aceitação da API, recebimento e cadastro por e-mail ainda não foram testados com uma conta Resend configurada para este sistema.
+
 O operador informa um e-mail no Convex e executa a ação interna `access:sendInvite`. O sistema cria o convite individual e envia a mensagem em português com código e link de cadastro. Não existe uma rota pública para enviar convites nem um cadastro aberto.
 
 ## Configuração no único backend do Social Media OS

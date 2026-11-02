@@ -52,7 +52,7 @@ Se a conta Cloudflare/Convex não estiver conectada ao agente, estas ações exi
 ## 4. Primeiro cliente — fluxo sem extras
 
 1. Definir valor e periodicidade de cobrança fora do sistema, em contrato simples.
-2. Configurar o Resend conforme [convites-resend.md](convites-resend.md) e emitir/enviar o convite de 48 horas pela ação interna `access:sendInvite`. A alternativa manual é `access:createInvite` com entrega por canal privado.
+2. Conferir a identidade do gestor pelo contato combinado na contratação, emitir o convite de 48 horas via `access:createInvite` e entregá-lo diretamente por esse canal privado. O procedimento assistido funciona sem domínio e sem serviço de e-mail.
 3. Entregar o endereço `/auth`, acompanhar criação da conta e primeiro login.
 4. Demonstrar cadastro de cliente, conteúdo, calendário, tarefas, financeiro e exportação do backup.
 5. Suporte inicial por contato informado no contrato; sem prometer integração com redes sociais ou portal para os clientes do gestor.
@@ -76,4 +76,4 @@ Para criar a conta do operador e atender o primeiro cliente, siga [primeiro-aces
 
 ## Revisão posterior
 
-As mudanças de acesso e dados de 01/11/2026 passaram em 14 cenários reais no deployment da revisão `e0794d2c2448a40ac7f4020de89ded92dfea4498`; consulte [correcoes-auditoria.md](correcoes-auditoria.md). A integração posterior com o Resend depende da configuração privada e de seu próprio teste de entrega e cadastro.
+As mudanças de acesso e dados de 01/11/2026 passaram em 14 cenários reais no deployment da revisão `e0794d2c2448a40ac7f4020de89ded92dfea4498`; consulte [correcoes-auditoria.md](correcoes-auditoria.md). O procedimento atual de entrega do convite é assistido. A integração opcional com o Resend continua sem envio ativo e depende de configuração privada e de seu próprio teste de entrega e cadastro; não é necessária para a operação assistida.

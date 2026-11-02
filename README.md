@@ -12,13 +12,13 @@ Aplicação React + TypeScript + Vite + Convex para **um gestor de social media 
 - Exportação/importação de backup JSON do workspace
 - CSV dos dados reais em Configurações, com filtro por cliente; planilha de referência de 29 abas separada.
 
-**Não inclui** postagem automática, métricas conectadas às redes sociais, portal do cliente, cobrança automática, campanhas por e-mail ou sincronização da planilha com o banco. Não prometa esses recursos. O envio de convites individuais usa o Resend após configuração privada e validação de entrega; consulte [convites-resend.md](docs/convites-resend.md).
+**Não inclui** postagem automática, métricas conectadas às redes sociais, portal do cliente, cobrança automática, campanhas por e-mail ou sincronização da planilha com o banco. Não prometa esses recursos. O acesso inicial usa **entrega assistida do convite**, sem domínio próprio ou serviço de e-mail. A integração Resend é opcional e permanece sem configuração de envio; consulte [convites-resend.md](docs/convites-resend.md).
 
 ## Arquitetura única
 
 - Frontend: Cloudflare Pages (uma única branch `main`, um único endereço público).
 - Backend e banco: **um único deployment Convex**, com autenticação Convex Auth e dados isolados por `ownerId`.
-- Login: e-mail/senha, convites individuais de uso único via ação interna `access:sendInvite` (Resend) ou emissão manual `access:createInvite`; recuperação com chave de emergência gerada pelo gestor.
+- Login: e-mail/senha, convites individuais de uso único emitidos pelo operador via função interna `access:createInvite` e entregues por contato privado; recuperação com chave de emergência gerada pelo gestor.
 - Sem domínio próprio obrigatório para a URL `*.pages.dev`.
 - Recuperação por chave de emergência previamente gerada em Configurações. Sem reset ou verificação automática por e-mail.
 
@@ -28,7 +28,7 @@ Consulte [docs/implantacao-mvp.md](docs/implantacao-mvp.md) para a configuraçã
 
 ## Fluxo de uso
 
-1. Operador libera o e-mail do novo gestor pela ação interna `access:sendInvite`, que gera e envia o convite pelo Resend configurado. A emissão manual permanece disponível.
+1. Operador confere a identidade do novo gestor pelo contato combinado na contratação, gera o convite pela função interna `access:createInvite` e o entrega por esse canal privado. O código é exigido apenas no cadastro; os próximos acessos usam e-mail e senha.
 2. Gestor abre `/auth`, cria a conta com e-mail, senha de 12+ caracteres e convite.
 3. Gestor cadastra o primeiro cliente e utiliza painel, calendário, tarefas e financeiro.
 4. Gere sua chave de emergência, faça backups JSON e exporte relatórios CSV reais em Configurações.
