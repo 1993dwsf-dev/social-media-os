@@ -49,7 +49,9 @@ function isoFromSerial(serial: number): string {
 /** Excel-style EOMONTH: last day of the month `months` away from `serial`. */
 function endOfMonth(serial: number, months: number): number {
   const d = new Date(serial * MS_DAY);
-  const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + months + 1, 0));
+  const last = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + months + 1, 0),
+  );
   return Math.round(last.getTime() / MS_DAY);
 }
 
@@ -87,7 +89,10 @@ export function matchesCriteria(value: CellValue, criteria: string): boolean {
   const actualNumber = Number(raw);
   const expectedNumber = Number(expected);
   const numeric =
-    raw !== "" && expected !== "" && Number.isFinite(actualNumber) && Number.isFinite(expectedNumber);
+    raw !== "" &&
+    expected !== "" &&
+    Number.isFinite(actualNumber) &&
+    Number.isFinite(expectedNumber);
 
   if (numeric) {
     switch (op) {
@@ -128,7 +133,8 @@ export function matchesCriteria(value: CellValue, criteria: string): boolean {
 
 function columnIndex(letters: string): number {
   let index = 0;
-  for (const ch of letters.toUpperCase()) index = index * 26 + (ch.charCodeAt(0) - 64);
+  for (const ch of letters.toUpperCase())
+    index = index * 26 + (ch.charCodeAt(0) - 64);
   return index - 1;
 }
 
@@ -144,18 +150,28 @@ function resolveRange(
   startRef: string,
   endRef: string,
 ): CellValue[] {
-  const sheet = sheets.find((s) => s.name.toLowerCase() === sheetName.trim().toLowerCase());
+  const sheet = sheets.find(
+    (s) => s.name.toLowerCase() === sheetName.trim().toLowerCase(),
+  );
   if (!sheet) throw new Error(`Unknown sheet: ${sheetName}`);
   const start = parseRef(startRef);
   const end = parseRef(endRef);
   const out: CellValue[] = [];
   // Spreadsheet row 1 is the header (rendered from `columns`), so data row `r`
   // lives at `rows[r - 2]` — hence the usual `A2:A1000` ranges.
-  for (let row = Math.min(start.row, end.row); row <= Math.max(start.row, end.row); row++) {
+  for (
+    let row = Math.min(start.row, end.row);
+    row <= Math.max(start.row, end.row);
+    row++
+  ) {
     const cells = sheet.rows[row - 2];
     if (!cells) continue;
     // Flat, row-major order so parallel ranges (COUNTIFS / SUMIF) stay aligned.
-    for (let col = Math.min(start.col, end.col); col <= Math.max(start.col, end.col); col++) {
+    for (
+      let col = Math.min(start.col, end.col);
+      col <= Math.max(start.col, end.col);
+      col++
+    ) {
       out.push(normalize(cells[col]));
     }
   }
@@ -175,7 +191,9 @@ const FUNCTIONS: Record<string, (args: Value[]) => Value> = {
   TEXT: (args) => {
     const value = toNumber(args[0]);
     const format = toText(args[1]);
-    return /y{2,4}-m{2}-d{2}/i.test(format) ? isoFromSerial(value) : String(value);
+    return /y{2,4}-m{2}-d{2}/i.test(format)
+      ? isoFromSerial(value)
+      : String(value);
   },
   COUNTA: (args) => {
     let count = 0;
@@ -187,18 +205,24 @@ const FUNCTIONS: Record<string, (args: Value[]) => Value> = {
   },
   COUNTIF: (args) => {
     const criteria = toText(args[1]);
-    return firstRange(args).filter((value) => matchesCriteria(value, criteria)).length;
+    return firstRange(args).filter((value) => matchesCriteria(value, criteria))
+      .length;
   },
   COUNTIFS: (args) => {
-    if (args.length < 2 || args.length % 2 !== 0) throw new Error("COUNTIFS needs range/criteria pairs");
+    if (args.length < 2 || args.length % 2 !== 0)
+      throw new Error("COUNTIFS needs range/criteria pairs");
     const pairs: { values: CellValue[]; criteria: string }[] = [];
     for (let i = 0; i < args.length; i += 2) {
-      pairs.push({ values: firstRange([args[i]]), criteria: toText(args[i + 1]) });
+      pairs.push({
+        values: firstRange([args[i]]),
+        criteria: toText(args[i + 1]),
+      });
     }
     const rows = Math.min(...pairs.map((pair) => pair.values.length));
     let count = 0;
     for (let i = 0; i < rows; i++) {
-      if (pairs.every((pair) => matchesCriteria(pair.values[i], pair.criteria))) count++;
+      if (pairs.every((pair) => matchesCriteria(pair.values[i], pair.criteria)))
+        count++;
     }
     return count;
   },
@@ -213,11 +237,13 @@ const FUNCTIONS: Record<string, (args: Value[]) => Value> = {
   SUMIF: (args) => {
     const criteriaValues = firstRange([args[0]]);
     const criteria = toText(args[1]);
-    const sumValues = args[2] !== undefined ? firstRange([args[2]]) : criteriaValues;
+    const sumValues =
+      args[2] !== undefined ? firstRange([args[2]]) : criteriaValues;
     const rows = Math.min(criteriaValues.length, sumValues.length);
     let total = 0;
     for (let i = 0; i < rows; i++) {
-      if (matchesCriteria(criteriaValues[i], criteria)) total += toNumber(sumValues[i]);
+      if (matchesCriteria(criteriaValues[i], criteria))
+        total += toNumber(sumValues[i]);
     }
     return total;
   },
@@ -228,12 +254,20 @@ const FUNCTIONS: Record<string, (args: Value[]) => Value> = {
     const sumValues = firstRange([args[0]]);
     const pairs: { values: CellValue[]; criteria: string }[] = [];
     for (let i = 1; i < args.length; i += 2) {
-      pairs.push({ values: firstRange([args[i]]), criteria: toText(args[i + 1]) });
+      pairs.push({
+        values: firstRange([args[i]]),
+        criteria: toText(args[i + 1]),
+      });
     }
-    const rows = Math.min(sumValues.length, ...pairs.map((pair) => pair.values.length));
+    const rows = Math.min(
+      sumValues.length,
+      ...pairs.map((pair) => pair.values.length),
+    );
     let total = 0;
     for (let i = 0; i < rows; i++) {
-      if (pairs.every((pair) => matchesCriteria(pair.values[i], pair.criteria))) {
+      if (
+        pairs.every((pair) => matchesCriteria(pair.values[i], pair.criteria))
+      ) {
         total += toNumber(sumValues[i]);
       }
     }
@@ -292,7 +326,8 @@ function tokenize(source: string): Token[] {
     }
     if (/[A-Za-z_$]/.test(ch)) {
       let text = "";
-      while (i < source.length && /[A-Za-z0-9_$]/.test(source[i])) text += source[i++];
+      while (i < source.length && /[A-Za-z0-9_$]/.test(source[i]))
+        text += source[i++];
       tokens.push({ kind: "ident", value: text });
       continue;
     }
@@ -320,7 +355,8 @@ class Parser {
 
   parseValue(): Value {
     const value = this.parseConcat();
-    if (this.pos !== this.tokens.length) throw new Error("Unexpected trailing input");
+    if (this.pos !== this.tokens.length)
+      throw new Error("Unexpected trailing input");
     return value;
   }
 
@@ -356,7 +392,8 @@ class Parser {
     let left = this.parseUnary();
     for (;;) {
       if (this.eatOp("+")) left = toNumber(left) + toNumber(this.parseUnary());
-      else if (this.eatOp("-")) left = toNumber(left) - toNumber(this.parseUnary());
+      else if (this.eatOp("-"))
+        left = toNumber(left) - toNumber(this.parseUnary());
       else return left;
     }
   }
@@ -378,7 +415,8 @@ class Parser {
       return inner;
     }
 
-    if (token.kind !== "ident") throw new Error(`Unexpected token: ${token.value}`);
+    if (token.kind !== "ident")
+      throw new Error(`Unexpected token: ${token.value}`);
 
     if (this.eatOp("(")) {
       const args: Value[] = [];
@@ -404,7 +442,9 @@ class Parser {
         if (candidate.kind !== "ident") throw new Error("Bad range end");
         end = candidate;
       }
-      return { __range: resolveRange(this.sheets, token.value, start.value, end.value) };
+      return {
+        __range: resolveRange(this.sheets, token.value, start.value, end.value),
+      };
     }
 
     throw new Error(`Unknown name: ${token.value}`);
@@ -412,7 +452,10 @@ class Parser {
 }
 
 /** Evaluate one formula string (with or without a leading `=`) against `sheets`. */
-export function evaluateFormula(formula: string, sheets: SheetDef[]): CellValue {
+export function evaluateFormula(
+  formula: string,
+  sheets: SheetDef[],
+): CellValue {
   try {
     const source = formula.trim().replace(/^=/, "");
     const value = new Parser(tokenize(source), sheets).parseValue();
@@ -425,7 +468,9 @@ export function evaluateFormula(formula: string, sheets: SheetDef[]): CellValue 
 
 /** Trim floating-point noise (money and counts should render cleanly). */
 function round(value: number): number {
-  return Math.abs(value - Math.round(value)) < 1e-9 ? Math.round(value) : Number(value.toFixed(4));
+  return Math.abs(value - Math.round(value)) < 1e-9
+    ? Math.round(value)
+    : Number(value.toFixed(4));
 }
 
 /**
@@ -437,7 +482,9 @@ export function computeWorkbook(sheets: SheetDef[]): SheetDef[] {
     ...sheet,
     computed: sheet.rows.map((row) =>
       row.map((cell) =>
-        typeof cell === "string" && cell.startsWith("=") ? evaluateFormula(cell, sheets) : cell,
+        typeof cell === "string" && cell.startsWith("=")
+          ? evaluateFormula(cell, sheets)
+          : cell,
       ),
     ),
   }));

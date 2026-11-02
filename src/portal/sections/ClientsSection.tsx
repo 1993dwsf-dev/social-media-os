@@ -32,7 +32,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ClientAvatar, ClientChip, EmptyState, SectionHeader, StatusChip } from "@/components/portal/Shared";
+import {
+  ClientAvatar,
+  ClientChip,
+  EmptyState,
+  SectionHeader,
+  StatusChip,
+} from "@/components/portal/Shared";
 import { formatDate, todayISO } from "@/data/constants";
 import { label } from "@/data/labels";
 import { CLIENT_STATUSES, PLATFORMS } from "@/data/types";
@@ -111,7 +117,10 @@ export function ClientsSection({
   const [saving, setSaving] = useState(false);
 
   const stats = useMemo(() => {
-    const map = new Map<string, { planned: number; openTasks: number; overdue: number }>();
+    const map = new Map<
+      string,
+      { planned: number; openTasks: number; overdue: number }
+    >();
     for (const client of ws.clients) {
       map.set(client.id, { planned: 0, openTasks: 0, overdue: 0 });
     }
@@ -134,7 +143,8 @@ export function ClientsSection({
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return ws.clients.filter((client) => {
-      if (statusFilter !== "all" && client.status !== statusFilter) return false;
+      if (statusFilter !== "all" && client.status !== statusFilter)
+        return false;
       if (!needle) return true;
       return [
         client.name,
@@ -181,7 +191,9 @@ export function ClientsSection({
         startDate: form.startDate,
         notes: form.notes,
         socials: Object.fromEntries(
-          Object.entries(form.socials).filter(([, value]) => value.trim() !== ""),
+          Object.entries(form.socials).filter(
+            ([, value]) => value.trim() !== "",
+          ),
         ) as ClientRecord["socials"],
       };
       if (!editing) {
@@ -191,11 +203,17 @@ export function ClientsSection({
         payload.createdAt = Date.now();
       }
       await ws.saveClient(payload, editing?.id);
-      toast.success(editing ? "Cliente atualizado" : `${payload.name} adicionado`);
+      toast.success(
+        editing ? "Cliente atualizado" : `${payload.name} adicionado`,
+      );
       setOpen(false);
       setEditing(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o cliente");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar o cliente",
+      );
     } finally {
       setSaving(false);
     }
@@ -206,7 +224,11 @@ export function ClientsSection({
       await ws.deleteClient(client.id);
       toast.success(`${client.name} e seus registros foram excluídos`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível excluir o cliente");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível excluir o cliente",
+      );
     } finally {
       setConfirmId(null);
     }
@@ -255,11 +277,18 @@ export function ClientsSection({
           hint="Adicione seu primeiro cliente para começar a planejar conteúdo, tarefas e faturas."
         />
       ) : visible.length === 0 ? (
-        <EmptyState title="Nenhum cliente corresponde a este filtro" hint="Tente outro status ou termo de busca." />
+        <EmptyState
+          title="Nenhum cliente corresponde a este filtro"
+          hint="Tente outro status ou termo de busca."
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((client) => {
-            const stat = stats.get(client.id) ?? { planned: 0, openTasks: 0, overdue: 0 };
+            const stat = stats.get(client.id) ?? {
+              planned: 0,
+              openTasks: 0,
+              overdue: 0,
+            };
             return (
               <article
                 key={client.id}
@@ -269,7 +298,9 @@ export function ClientsSection({
                   <div className="flex min-w-0 items-center gap-2.5">
                     <ClientAvatar name={client.name} />
                     <div className="min-w-0">
-                      <h2 className="truncate text-sm font-semibold tracking-tight">{client.name}</h2>
+                      <h2 className="truncate text-sm font-semibold tracking-tight">
+                        {client.name}
+                      </h2>
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">
                         {client.industry || "Sem segmento definido"}
                       </p>
@@ -312,28 +343,39 @@ export function ClientsSection({
                 </dl>
 
                 <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                  {PLATFORMS.filter((p) => (client.socials as Record<string, string>)[p.toLowerCase()]).map(
-                    (platform: Platform) => (
-                      <ClientChip
-                        key={platform}
-                        name={`${platform} ${(client.socials as Record<string, string>)[platform.toLowerCase()]}`}
-                      />
-                    ),
-                  )}
+                  {PLATFORMS.filter(
+                    (p) =>
+                      (client.socials as Record<string, string>)[
+                        p.toLowerCase()
+                      ],
+                  ).map((platform: Platform) => (
+                    <ClientChip
+                      key={platform}
+                      name={`${platform} ${(client.socials as Record<string, string>)[platform.toLowerCase()]}`}
+                    />
+                  ))}
                   {(client.socials as Record<string, string>).other ? (
-                    <ClientChip name={String((client.socials as Record<string, string>).other)} />
+                    <ClientChip
+                      name={String(
+                        (client.socials as Record<string, string>).other,
+                      )}
+                    />
                   ) : null}
                 </div>
 
                 <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg border border-border/60 bg-muted/30 p-2 text-center">
                   <div>
-                    <p className="tabular text-sm font-semibold">{stat.planned}</p>
+                    <p className="tabular text-sm font-semibold">
+                      {stat.planned}
+                    </p>
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
                       Planejados
                     </p>
                   </div>
                   <div>
-                    <p className="tabular text-sm font-semibold">{stat.openTasks}</p>
+                    <p className="tabular text-sm font-semibold">
+                      {stat.openTasks}
+                    </p>
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
                       Tarefas abertas
                     </p>
@@ -355,8 +397,13 @@ export function ClientsSection({
 
                 {client.packageName || client.monthlyFee > 0 ? (
                   <div className="mt-3 flex items-center justify-between gap-2 text-xs">
-                    <span className="truncate text-muted-foreground">{client.packageName || "—"}</span>
-                    <Badge variant="outline" className="tabular whitespace-nowrap">
+                    <span className="truncate text-muted-foreground">
+                      {client.packageName || "—"}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="tabular whitespace-nowrap"
+                    >
                       {ws.money(client.monthlyFee)}/mês
                     </Badge>
                   </div>
@@ -437,7 +484,8 @@ export function ClientsSection({
               {editing ? editing.name : "Novo cliente"}
             </DialogTitle>
             <DialogDescription>
-              Dados da empresa e anotações privadas. Só você vê este espaço de trabalho.
+              Dados da empresa e anotações privadas. Só você vê este espaço de
+              trabalho.
             </DialogDescription>
           </DialogHeader>
 
@@ -480,7 +528,9 @@ export function ClientsSection({
               <Input
                 id="client-contact"
                 value={form.contactName}
-                onChange={(e) => setForm({ ...form, contactName: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, contactName: e.target.value })
+                }
                 placeholder="Marina Okada"
               />
             </div>
@@ -517,7 +567,9 @@ export function ClientsSection({
               <Input
                 id="client-package"
                 value={form.packageName}
-                onChange={(e) => setForm({ ...form, packageName: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, packageName: e.target.value })
+                }
                 placeholder="Mensalidade — 12 posts/mês"
               />
             </div>
@@ -528,7 +580,9 @@ export function ClientsSection({
                 type="number"
                 step="0.01"
                 value={form.monthlyFee}
-                onChange={(e) => setForm({ ...form, monthlyFee: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, monthlyFee: e.target.value })
+                }
                 placeholder="4800"
               />
             </div>
@@ -538,7 +592,9 @@ export function ClientsSection({
                 id="client-start"
                 type="date"
                 value={form.startDate}
-                onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, startDate: e.target.value })
+                }
               />
             </div>
           </div>
@@ -557,7 +613,10 @@ export function ClientsSection({
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        socials: { ...form.socials, [platform.toLowerCase()]: e.target.value },
+                        socials: {
+                          ...form.socials,
+                          [platform.toLowerCase()]: e.target.value,
+                        },
                       })
                     }
                     placeholder={`@brand`}
@@ -569,7 +628,12 @@ export function ClientsSection({
                 <Input
                   id="social-other"
                   value={form.socials.other ?? ""}
-                  onChange={(e) => setForm({ ...form, socials: { ...form.socials, other: e.target.value } })}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      socials: { ...form.socials, other: e.target.value },
+                    })
+                  }
                   placeholder="Threads, newsletter…"
                 />
               </div>
@@ -592,7 +656,11 @@ export function ClientsSection({
               Cancelar
             </Button>
             <Button onClick={() => void submit()} disabled={saving}>
-              {saving ? "Salvando…" : editing ? "Salvar alterações" : "Adicionar cliente"}
+              {saving
+                ? "Salvando…"
+                : editing
+                  ? "Salvar alterações"
+                  : "Adicionar cliente"}
             </Button>
           </DialogFooter>
         </DialogContent>

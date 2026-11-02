@@ -23,7 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ClientChip, KpiCard, SectionHeader, StatusChip } from "@/components/portal/Shared";
+import {
+  ClientChip,
+  KpiCard,
+  SectionHeader,
+  StatusChip,
+} from "@/components/portal/Shared";
 import { formatDate, todayISO } from "@/data/constants";
 import type { SectionId } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
@@ -47,9 +52,12 @@ export function DashboardSection({
 
   const metrics = useMemo(() => {
     const activeClients = ws.clients.filter((c) => c.status === "Active");
-    const monthContent = ws.content.filter((item) => item.date.startsWith(month));
+    const monthContent = ws.content.filter((item) =>
+      item.date.startsWith(month),
+    );
     const waiting = ws.content.filter(
-      (item) => item.status === "In Review" || item.status === "Changes Requested",
+      (item) =>
+        item.status === "In Review" || item.status === "Changes Requested",
     );
     const openTasks = ws.tasks.filter((t) => t.status !== "Done");
     const overdue = openTasks.filter((t) => t.dueDate && t.dueDate < today);
@@ -62,25 +70,70 @@ export function DashboardSection({
     const awaitingPayment = ws.finance
       .filter((f) => f.type === "Income" && f.status !== "Paid")
       .reduce((sum, f) => sum + f.amount, 0);
-    return { activeClients, monthContent, waiting, openTasks, overdue, income, expenses, awaitingPayment };
+    return {
+      activeClients,
+      monthContent,
+      waiting,
+      openTasks,
+      overdue,
+      income,
+      expenses,
+      awaitingPayment,
+    };
   }, [ws.clients, ws.content, ws.tasks, ws.finance, month, today]);
 
   const agenda = useMemo(() => {
     const horizon = addDays(today, 7);
-    const entries: { date: string; kind: string; title: string; clientId: string; extra?: string }[] = [];
+    const entries: {
+      date: string;
+      kind: string;
+      title: string;
+      clientId: string;
+      extra?: string;
+    }[] = [];
     for (const item of ws.content) {
-      if (item.date >= today && item.date <= horizon && item.status !== "Published") {
-        entries.push({ date: item.date, kind: "content", title: item.topic, clientId: item.clientId, extra: item.platform });
+      if (
+        item.date >= today &&
+        item.date <= horizon &&
+        item.status !== "Published"
+      ) {
+        entries.push({
+          date: item.date,
+          kind: "content",
+          title: item.topic,
+          clientId: item.clientId,
+          extra: item.platform,
+        });
       }
     }
     for (const task of ws.tasks) {
-      if (task.dueDate >= today && task.dueDate <= horizon && task.status !== "Done") {
-        entries.push({ date: task.dueDate, kind: "task", title: task.title, clientId: task.clientId, extra: task.priority });
+      if (
+        task.dueDate >= today &&
+        task.dueDate <= horizon &&
+        task.status !== "Done"
+      ) {
+        entries.push({
+          date: task.dueDate,
+          kind: "task",
+          title: task.title,
+          clientId: task.clientId,
+          extra: task.priority,
+        });
       }
     }
     for (const meeting of ws.meetings) {
-      if (meeting.date >= today && meeting.date <= horizon && meeting.status === "Scheduled") {
-        entries.push({ date: meeting.date, kind: "meeting", title: meeting.title, clientId: meeting.clientId, extra: meeting.time });
+      if (
+        meeting.date >= today &&
+        meeting.date <= horizon &&
+        meeting.status === "Scheduled"
+      ) {
+        entries.push({
+          date: meeting.date,
+          kind: "meeting",
+          title: meeting.title,
+          clientId: meeting.clientId,
+          extra: meeting.time,
+        });
       }
     }
     return entries.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 12);
@@ -92,13 +145,29 @@ export function DashboardSection({
         const planned = ws.content.filter(
           (item) => item.clientId === client.id && item.date.startsWith(month),
         );
-        const published = planned.filter((item) => item.status === "Published").length;
-        const open = ws.tasks.filter((t) => t.clientId === client.id && t.status !== "Done");
-        const overdue = open.filter((t) => t.dueDate && t.dueDate < today).length;
+        const published = planned.filter(
+          (item) => item.status === "Published",
+        ).length;
+        const open = ws.tasks.filter(
+          (t) => t.clientId === client.id && t.status !== "Done",
+        );
+        const overdue = open.filter(
+          (t) => t.dueDate && t.dueDate < today,
+        ).length;
         const net = ws.finance
           .filter((f) => f.clientId === client.id && f.date.startsWith(month))
-          .reduce((sum, f) => sum + (f.type === "Income" ? f.amount : -f.amount), 0);
-        return { client, planned: planned.length, published, open: open.length, overdue, net };
+          .reduce(
+            (sum, f) => sum + (f.type === "Income" ? f.amount : -f.amount),
+            0,
+          );
+        return {
+          client,
+          planned: planned.length,
+          published,
+          open: open.length,
+          overdue,
+          net,
+        };
       }),
     [ws.clients, ws.content, ws.tasks, ws.finance, month, today],
   );
@@ -109,13 +178,27 @@ export function DashboardSection({
         title={`Olá${ws.profile.managerName ? `, ${ws.profile.managerName.split(" ")[0]}` : ""}`}
         description={`${metrics.activeClients.length} cliente${metrics.activeClients.length === 1 ? "" : "s"} ativo${metrics.activeClients.length === 1 ? "" : "s"} · ${metrics.monthContent.length} posts planejados no mês · ${metrics.openTasks.length} tarefas abertas.`}
       >
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("clients")}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          onClick={() => navigate("clients")}
+        >
           <Plus className="size-4" /> Novo cliente
         </Button>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate("tasks")}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          onClick={() => navigate("tasks")}
+        >
           <ListChecks className="size-4" /> Adicionar tarefa
         </Button>
-        <Button size="sm" className="gap-1.5" onClick={() => navigate("calendar")}>
+        <Button
+          size="sm"
+          className="gap-1.5"
+          onClick={() => navigate("calendar")}
+        >
           <CalendarPlus className="size-4" /> Adicionar conteúdo
         </Button>
       </SectionHeader>
@@ -135,13 +218,21 @@ export function DashboardSection({
         <KpiCard
           label="Tarefas abertas"
           value={String(metrics.openTasks.length)}
-          delta={metrics.overdue.length > 0 ? `-${metrics.overdue.length} atrasadas` : undefined}
+          delta={
+            metrics.overdue.length > 0
+              ? `-${metrics.overdue.length} atrasadas`
+              : undefined
+          }
           icon={<ListChecks className="size-4" />}
         />
         <KpiCard
           label="Receita do mês"
           value={ws.money(metrics.income)}
-          delta={metrics.awaitingPayment > 0 ? `${ws.money(metrics.awaitingPayment)} a receber` : undefined}
+          delta={
+            metrics.awaitingPayment > 0
+              ? `${ws.money(metrics.awaitingPayment)} a receber`
+              : undefined
+          }
           icon={<ArrowUpRight className="size-4" />}
         />
       </div>
@@ -175,7 +266,9 @@ export function DashboardSection({
           <header className="flex items-center justify-between gap-2 border-b border-border/70 px-4 py-3">
             <div>
               <h2 className="text-sm font-semibold">Próximos 7 dias</h2>
-              <p className="text-[11px] text-muted-foreground">Conteúdos no ar, prazos e chamadas</p>
+              <p className="text-[11px] text-muted-foreground">
+                Conteúdos no ar, prazos e chamadas
+              </p>
             </div>
             <Badge variant="outline" className="tabular">
               {agenda.length}
@@ -188,7 +281,10 @@ export function DashboardSection({
           ) : (
             <ul className="divide-y divide-border/60">
               {agenda.map((entry, index) => (
-                <li key={`${entry.kind}-${index}`} className="flex items-center gap-2.5 px-4 py-2.5">
+                <li
+                  key={`${entry.kind}-${index}`}
+                  className="flex items-center gap-2.5 px-4 py-2.5"
+                >
                   <span
                     className={cn(
                       "size-1.5 shrink-0 rounded-full",
@@ -202,7 +298,11 @@ export function DashboardSection({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm">{entry.title}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      {entry.kind === "content" ? "Conteúdo" : entry.kind === "task" ? "Tarefa" : "Reunião"}
+                      {entry.kind === "content"
+                        ? "Conteúdo"
+                        : entry.kind === "task"
+                          ? "Tarefa"
+                          : "Reunião"}
                       {entry.extra ? ` · ${entry.extra}` : ""}
                     </p>
                   </div>
@@ -219,17 +319,23 @@ export function DashboardSection({
         <section className="rounded-xl border border-border/70 bg-card">
           <header className="border-b border-border/70 px-4 py-3">
             <h2 className="text-sm font-semibold">Precisa de atenção</h2>
-            <p className="text-[11px] text-muted-foreground">Trabalho atrasado e valores a receber</p>
+            <p className="text-[11px] text-muted-foreground">
+              Trabalho atrasado e valores a receber
+            </p>
           </header>
           <div className="space-y-3 p-4">
             {metrics.overdue.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma tarefa atrasada. Ótimo.</p>
+              <p className="text-sm text-muted-foreground">
+                Nenhuma tarefa atrasada. Ótimo.
+              </p>
             ) : (
               <ul className="space-y-1.5">
                 {metrics.overdue.slice(0, 6).map((task) => (
                   <li key={task.id} className="flex items-center gap-2 text-sm">
                     <AlertTriangle className="size-3.5 shrink-0 text-rose-500" />
-                    <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      {task.title}
+                    </span>
                     <ClientChip name={ws.clientName(task.clientId)} />
                     <span className="tabular text-[11px] text-rose-600 dark:text-rose-400">
                       {formatDate(task.dueDate)}
@@ -240,8 +346,8 @@ export function DashboardSection({
             )}
             {metrics.awaitingPayment > 0 ? (
               <p className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                {ws.money(metrics.awaitingPayment)} em receitas ainda estão marcados como não
-                pagos.{" "}
+                {ws.money(metrics.awaitingPayment)} em receitas ainda estão
+                marcados como não pagos.{" "}
                 <button
                   type="button"
                   className="font-medium underline"
@@ -263,7 +369,12 @@ export function DashboardSection({
               Posts planejados, trabalho em aberto e resultado por cliente
             </p>
           </div>
-          <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => navigate("clients")}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-xs"
+            onClick={() => navigate("clients")}
+          >
             Gerenciar clientes <ArrowUpRight className="size-3.5" />
           </Button>
         </header>
@@ -297,13 +408,20 @@ export function DashboardSection({
                     <TableCell>
                       <StatusChip status={row.client.status} />
                     </TableCell>
-                    <TableCell className="tabular text-right">{row.planned}</TableCell>
-                    <TableCell className="tabular text-right">{row.published}</TableCell>
-                    <TableCell className="tabular text-right">{row.open}</TableCell>
+                    <TableCell className="tabular text-right">
+                      {row.planned}
+                    </TableCell>
+                    <TableCell className="tabular text-right">
+                      {row.published}
+                    </TableCell>
+                    <TableCell className="tabular text-right">
+                      {row.open}
+                    </TableCell>
                     <TableCell
                       className={cn(
                         "tabular text-right",
-                        row.overdue > 0 && "font-medium text-rose-600 dark:text-rose-400",
+                        row.overdue > 0 &&
+                          "font-medium text-rose-600 dark:text-rose-400",
                       )}
                     >
                       {row.overdue}

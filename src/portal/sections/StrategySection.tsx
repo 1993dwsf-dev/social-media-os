@@ -9,7 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmptyState, SectionHeader } from "@/components/portal/Shared";
-import type { ClientRecord, KpiItem, StrategySection as StrategyBlock } from "@/data/types";
+import type {
+  ClientRecord,
+  KpiItem,
+  StrategySection as StrategyBlock,
+} from "@/data/types";
 import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
 import { cn } from "@/lib/utils";
@@ -27,12 +31,22 @@ const DEFAULT_SECTIONS: { key: string; title: string }[] = [
 
 function normalize(client: ClientRecord): StrategyBlock[] {
   return DEFAULT_SECTIONS.map((definition) => {
-    const existing = client.strategy.find((block) => block.key === definition.key);
-    return existing ?? { key: definition.key, title: definition.title, items: [] };
+    const existing = client.strategy.find(
+      (block) => block.key === definition.key,
+    );
+    return (
+      existing ?? { key: definition.key, title: definition.title, items: [] }
+    );
   });
 }
 
-export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
+export function StrategySection({
+  ws,
+  focus,
+}: {
+  ws: Workspace;
+  focus: ClientFocus;
+}) {
   // A seção segue o foco do workspace; sem cliente em foco, usa o primeiro
   // cliente para que o editor ainda tenha um destino.
   const client = ws.clientOf(focus.clientId) ?? ws.clients[0];
@@ -54,7 +68,10 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
   }
 
   const totals = useMemo(() => {
-    const filled = blocks.reduce((sum, block) => sum + block.items.filter((i) => i.trim()).length, 0);
+    const filled = blocks.reduce(
+      (sum, block) => sum + block.items.filter((i) => i.trim()).length,
+      0,
+    );
     const targets = kpis.length
       ? kpis.reduce((sum, kpi) => {
           const target = Number(kpi.target || 0);
@@ -67,14 +84,19 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
   }, [blocks, kpis]);
 
   const updateBlock = (key: string, items: string[]) => {
-    setBlocks((prev) => prev.map((block) => (block.key === key ? { ...block, items } : block)));
+    setBlocks((prev) =>
+      prev.map((block) => (block.key === key ? { ...block, items } : block)),
+    );
     setDirty(true);
   };
 
   if (!client) {
     return (
       <div>
-        <SectionHeader title="Estratégia" description="O plano por trás do conteúdo de cada cliente." />
+        <SectionHeader
+          title="Estratégia"
+          description="O plano por trás do conteúdo de cada cliente."
+        />
         <EmptyState
           title="Adicione um cliente primeiro"
           hint="A estratégia fica dentro de cada cliente — crie um cliente e volte aqui."
@@ -90,7 +112,11 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
       setDirty(false);
       toast.success(`Estratégia salva para ${client.name}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível salvar a estratégia");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar a estratégia",
+      );
     } finally {
       setSaving(false);
     }
@@ -128,8 +154,10 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-muted/30 px-4 py-3">
         <Sparkles className="size-4 text-primary" />
         <p className="text-xs text-muted-foreground">
-          {totals.filled} linha{totals.filled === 1 ? "" : "s"} de estratégia preenchida
-          {totals.filled === 1 ? "" : "s"} · {kpis.length} indicador{kpis.length === 1 ? "" : "es"} acompanhado
+          {totals.filled} linha{totals.filled === 1 ? "" : "s"} de estratégia
+          preenchida
+          {totals.filled === 1 ? "" : "s"} · {kpis.length} indicador
+          {kpis.length === 1 ? "" : "es"} acompanhado
           {kpis.length === 1 ? "" : "s"}
         </p>
         {kpis.length > 0 ? (
@@ -141,14 +169,22 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
 
       <div className="grid gap-4 lg:grid-cols-2">
         {blocks.map((block) => (
-          <section key={block.key} className="rounded-xl border border-border/70 bg-card p-4">
+          <section
+            key={block.key}
+            className="rounded-xl border border-border/70 bg-card p-4"
+          >
             <h2 className="text-sm font-semibold">{block.title}</h2>
             <div className="mt-3 space-y-2">
               {block.items.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nada adicionado ainda.</p>
+                <p className="text-xs text-muted-foreground">
+                  Nada adicionado ainda.
+                </p>
               ) : null}
               {block.items.map((item, index) => (
-                <div key={`${block.key}-${index}`} className="flex items-center gap-2">
+                <div
+                  key={`${block.key}-${index}`}
+                  className="flex items-center gap-2"
+                >
                   <Input
                     value={item}
                     onChange={(e) => {
@@ -203,7 +239,14 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
             onClick={() => {
               setKpis((prev) => [
                 ...prev,
-                { name: "", baseline: "", target: "", actual: "", unit: "", deadline: "" },
+                {
+                  name: "",
+                  baseline: "",
+                  target: "",
+                  actual: "",
+                  unit: "",
+                  deadline: "",
+                },
               ]);
               setDirty(true);
             }}
@@ -213,21 +256,31 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
         </div>
 
         {kpis.length === 0 ? (
-          <p className="mt-4 text-sm text-muted-foreground">Nenhum indicador definido ainda.</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Nenhum indicador definido ainda.
+          </p>
         ) : (
           <div className="mt-4 space-y-3">
             {kpis.map((kpi, index) => {
               const target = Number(kpi.target || 0);
               const actual = Number(kpi.actual || 0);
-              const progress = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 0;
+              const progress =
+                target > 0
+                  ? Math.min(100, Math.round((actual / target) * 100))
+                  : 0;
               const patch = (values: Partial<KpiItem>) => {
                 setKpis((prev) =>
-                  prev.map((row, i) => (i === index ? { ...row, ...values } : row)),
+                  prev.map((row, i) =>
+                    i === index ? { ...row, ...values } : row,
+                  ),
                 );
                 setDirty(true);
               };
               return (
-                <div key={index} className="rounded-lg border border-border/60 p-3">
+                <div
+                  key={index}
+                  className="rounded-lg border border-border/60 p-3"
+                >
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
                     <div className="grid gap-1 lg:col-span-2">
                       <Label className="text-[11px]">Indicador</Label>
@@ -283,7 +336,11 @@ export function StrategySection({ ws, focus }: { ws: Workspace; focus: ClientFoc
                       <div
                         className={cn(
                           "h-full rounded-full",
-                          progress >= 100 ? "bg-teal-500" : progress >= 50 ? "bg-amber-500" : "bg-rose-400",
+                          progress >= 100
+                            ? "bg-teal-500"
+                            : progress >= 50
+                              ? "bg-amber-500"
+                              : "bg-rose-400",
                         )}
                         style={{ width: `${progress}%` }}
                       />

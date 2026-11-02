@@ -53,7 +53,9 @@ export function RecordDialog({
       <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
+          {description ? (
+            <DialogDescription>{description}</DialogDescription>
+          ) : null}
         </DialogHeader>
         <form
           className="grid gap-3 py-1"
@@ -63,7 +65,10 @@ export function RecordDialog({
             try {
               const form = new FormData(event.currentTarget);
               const values = Object.fromEntries(
-                fields.map((field) => [field.key, String(form.get(field.key) ?? "")]),
+                fields.map((field) => [
+                  field.key,
+                  String(form.get(field.key) ?? ""),
+                ]),
               );
               await onSubmit(values);
             } finally {
@@ -101,7 +106,9 @@ export function RecordDialog({
                     </>
                   ) : (
                     <>
-                      {!field.required ? <option value="">— Nenhum —</option> : null}
+                      {!field.required ? (
+                        <option value="">— Nenhum —</option>
+                      ) : null}
                       {(field.options ?? []).map((option) => (
                         <option key={option} value={option}>
                           {label(option)}
@@ -132,7 +139,11 @@ export function RecordDialog({
             </div>
           ))}
           <DialogFooter className="pt-2">
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+            >
               Cancelar
             </Button>
             <Button type="submit" disabled={saving}>

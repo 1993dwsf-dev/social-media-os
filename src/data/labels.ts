@@ -1,4 +1,4 @@
-// Rótulos em português (pt-BR) para os valores internos do sistema.
+// Tradução dos valores internos para os rótulos de interface em português (pt-BR).
 //
 // O produto guarda valores estáveis em inglês (no Convex, nos formulários e nas
 // comparações do código) e traduz apenas na hora de exibir. Assim, trocar o

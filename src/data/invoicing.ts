@@ -127,7 +127,9 @@ export function planInvoices(
   now = new Date(),
 ): PlannedInvoice[] {
   const count = Math.max(1, Math.min(12, Math.floor(months) || 1));
-  const window = Array.from({ length: count }, (_, m) => monthStart(m, now).slice(0, 7));
+  const window = Array.from({ length: count }, (_, m) =>
+    monthStart(m, now).slice(0, 7),
+  );
 
   const plan: PlannedInvoice[] = [];
   for (const client of clients) {

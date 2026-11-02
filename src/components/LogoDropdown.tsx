@@ -1,4 +1,4 @@
-// Menu suspenso do logo: leva à página inicial ou encerra a sessão do usuário.
+// Menu do logotipo: navegação para o início e encerramento da sessão.
 
 import { Button } from "@/components/ui/button";
 import {

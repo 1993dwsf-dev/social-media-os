@@ -1,4 +1,4 @@
-// Relinkação das faturas antigas gravadas sem `clientId`.
+// Reparo interno dos vínculos de faturas antigas gravadas sem `clientId`.
 //
 // Contexto: o `portal.generateInvoices` já entregou faturas órfãs. O planejador
 // puro (`src/data/invoicing.ts`) espera clientes no formato `{ id, ... }`, mas o

@@ -1,6 +1,6 @@
-# Ignore artifacts:
+# Build and test artifacts
 build
 coverage
 
-
+# Generated dependency resolutions
 bun.lock

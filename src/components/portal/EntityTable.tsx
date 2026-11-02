@@ -144,7 +144,8 @@ export function EntityTable<T extends { id: string }>({
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return rows.filter((row) => {
-      if (clientFilter !== "all" && clientIdOf(row) !== clientFilter) return false;
+      if (clientFilter !== "all" && clientIdOf(row) !== clientFilter)
+        return false;
       if (statusFilter !== "all") {
         const value = String((row as Record<string, unknown>)[statusKey] ?? "");
         if (value !== statusFilter) return false;
@@ -152,7 +153,15 @@ export function EntityTable<T extends { id: string }>({
       if (!needle) return true;
       return searchText(row).toLowerCase().includes(needle);
     });
-  }, [rows, query, clientFilter, statusFilter, clientIdOf, searchText, statusKey]);
+  }, [
+    rows,
+    query,
+    clientFilter,
+    statusFilter,
+    clientIdOf,
+    searchText,
+    statusKey,
+  ]);
 
   const nameOf = (id?: string) => clients.find((c) => c.id === id)?.name ?? "—";
 
@@ -162,8 +171,12 @@ export function EntityTable<T extends { id: string }>({
   };
 
   const initialValues = (row: T | null) => {
-    const source: Record<string, unknown> = row ? (row as unknown as Record<string, unknown>) : defaults;
-    return Object.fromEntries(fields.map((f) => [f.key, String(source[f.key] ?? "")]));
+    const source: Record<string, unknown> = row
+      ? (row as unknown as Record<string, unknown>)
+      : defaults;
+    return Object.fromEntries(
+      fields.map((f) => [f.key, String(source[f.key] ?? "")]),
+    );
   };
 
   const tableFields = fields.filter((f) => !f.compact);
@@ -218,8 +231,14 @@ export function EntityTable<T extends { id: string }>({
 
       {filtered.length === 0 ? (
         <EmptyState
-          title={rows.length === 0 ? emptyTitle : "Nada corresponde a estes filtros"}
-          hint={rows.length === 0 ? emptyHint : "Tente outro cliente, status ou termo de busca."}
+          title={
+            rows.length === 0 ? emptyTitle : "Nada corresponde a estes filtros"
+          }
+          hint={
+            rows.length === 0
+              ? emptyHint
+              : "Tente outro cliente, status ou termo de busca."
+          }
           icon={emptyIcon}
         />
       ) : (
@@ -254,8 +273,11 @@ export function EntityTable<T extends { id: string }>({
                             </span>
                           ) : isChipValue(raw) ? (
                             <StatusChip status={raw as never} />
-                          ) : field.key === statusKey || field.key === "priority" ? (
-                            <span className="text-sm">{raw ? label(raw) : "—"}</span>
+                          ) : field.key === statusKey ||
+                            field.key === "priority" ? (
+                            <span className="text-sm">
+                              {raw ? label(raw) : "—"}
+                            </span>
                           ) : field.options?.includes(raw) ? (
                             <span className="text-sm">{label(raw)}</span>
                           ) : (
@@ -346,9 +368,13 @@ export function EntityTable<T extends { id: string }>({
       >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? `Editar ${entityName}` : addLabel}</DialogTitle>
+            <DialogTitle>
+              {editing ? `Editar ${entityName}` : addLabel}
+            </DialogTitle>
             <DialogDescription>
-              {editing ? rowTitle(editing) : `Adicionar em ${entityName.toLowerCase()}.`}
+              {editing
+                ? rowTitle(editing)
+                : `Adicionar em ${entityName.toLowerCase()}.`}
             </DialogDescription>
           </DialogHeader>
           <form
@@ -359,7 +385,10 @@ export function EntityTable<T extends { id: string }>({
               try {
                 const form = new FormData(event.currentTarget);
                 const values = Object.fromEntries(
-                  fields.map((field) => [field.key, String(form.get(field.key) ?? "")]),
+                  fields.map((field) => [
+                    field.key,
+                    String(form.get(field.key) ?? ""),
+                  ]),
                 );
                 await onSave(values, editing?.id);
                 setCreating(false);
@@ -400,7 +429,9 @@ export function EntityTable<T extends { id: string }>({
                       </>
                     ) : (
                       <>
-                        {!field.required ? <option value="">— Nenhum —</option> : null}
+                        {!field.required ? (
+                          <option value="">— Nenhum —</option>
+                        ) : null}
                         {(field.options ?? []).map((option) => (
                           <option key={option} value={option}>
                             {label(option)}
@@ -413,7 +444,15 @@ export function EntityTable<T extends { id: string }>({
                   <Input
                     id={`${field.key}-input`}
                     name={field.key}
-                    type={field.type === "number" ? "number" : field.type === "date" ? "date" : field.type === "time" ? "time" : "text"}
+                    type={
+                      field.type === "number"
+                        ? "number"
+                        : field.type === "date"
+                          ? "date"
+                          : field.type === "time"
+                            ? "time"
+                            : "text"
+                    }
                     step={field.type === "number" ? "0.01" : undefined}
                     defaultValue={initialValues(editing)[field.key]}
                     placeholder={field.placeholder}

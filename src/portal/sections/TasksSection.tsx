@@ -14,11 +14,26 @@ import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
-  { key: "title", label: "Tarefa", required: true, placeholder: "Gravar lote: 10 peças" },
+  {
+    key: "title",
+    label: "Tarefa",
+    required: true,
+    placeholder: "Gravar lote: 10 peças",
+  },
   { key: "clientId", label: "Cliente", type: "client", required: true },
   { key: "project", label: "Projeto / campanha" },
-  { key: "category", label: "Categoria", type: "select", options: TASK_CATEGORIES },
-  { key: "priority", label: "Prioridade", type: "select", options: ["Low", "Medium", "High"] },
+  {
+    key: "category",
+    label: "Categoria",
+    type: "select",
+    options: TASK_CATEGORIES,
+  },
+  {
+    key: "priority",
+    label: "Prioridade",
+    type: "select",
+    options: ["Low", "Medium", "High"],
+  },
   { key: "status", label: "Status", type: "select", options: TASK_STATUSES },
   { key: "dueDate", label: "Prazo", type: "date" },
   { key: "startDate", label: "Data de início", type: "date", compact: true },
@@ -27,14 +42,22 @@ const FIELDS: FieldSpec[] = [
   { key: "notes", label: "Observações", type: "textarea", compact: true },
 ];
 
-export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
+export function TasksSection({
+  ws,
+  focus,
+}: {
+  ws: Workspace;
+  focus: ClientFocus;
+}) {
   const today = todayISO();
   const summary = useMemo(() => {
     const scoped = focus.clientId
       ? ws.tasks.filter((t) => t.clientId === focus.clientId)
       : ws.tasks;
     const open = scoped.filter((t) => t.status !== "Done");
-    const week = open.filter((t) => t.dueDate && t.dueDate <= addDays(today, 7));
+    const week = open.filter(
+      (t) => t.dueDate && t.dueDate <= addDays(today, 7),
+    );
     const overdue = open.filter((t) => t.dueDate && t.dueDate < today);
     const done = scoped.filter((t) => t.status === "Done");
     return { open, week, overdue, done };
@@ -77,7 +100,13 @@ export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
         clientIdOf={(row) => row.clientId}
         rowTitle={(row) => row.title}
         searchText={(row) =>
-          [row.title, row.project, row.category, row.notes, ws.clientName(row.clientId)].join(" ")
+          [
+            row.title,
+            row.project,
+            row.category,
+            row.notes,
+            ws.clientName(row.clientId),
+          ].join(" ")
         }
         addLabel="Nova tarefa"
         entityName="Tarefas"
@@ -106,7 +135,8 @@ export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
                 startDate: values.startDate,
                 dueDate: values.dueDate,
                 completedAt:
-                  values.completedAt || (values.status === "Done" ? todayISO() : ""),
+                  values.completedAt ||
+                  (values.status === "Done" ? todayISO() : ""),
                 dependsOn: values.dependsOn,
                 notes: values.notes,
               },
@@ -114,7 +144,11 @@ export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
             );
             toast.success(id ? "Tarefa atualizada" : "Tarefa adicionada");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Não foi possível salvar a tarefa");
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível salvar a tarefa",
+            );
           }
         }}
         onDelete={async (id) => {
@@ -122,7 +156,11 @@ export function TasksSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
             await ws.remove("task", id);
             toast.success("Tarefa excluída");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Não foi possível excluir a tarefa");
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível excluir a tarefa",
+            );
           }
         }}
       />

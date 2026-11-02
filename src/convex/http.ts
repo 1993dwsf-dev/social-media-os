@@ -1,3 +1,4 @@
+// HTTP routes registered by Convex Auth for this deployment.
 import { httpRouter } from "convex/server";
 import { auth } from "./auth";
 

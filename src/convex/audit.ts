@@ -56,17 +56,13 @@ export const reportStoredDataIssues = internalQuery({
             table,
             id: String(_id),
             reason:
-              error instanceof Error
-                ? error.message
-                : "Registro inválido",
+              error instanceof Error ? error.message : "Registro inválido",
           });
         }
       }
     }
 
-    const workspaces = await ctx.db
-      .query("workspaces")
-      .collect();
+    const workspaces = await ctx.db.query("workspaces").collect();
 
     for (const row of workspaces) {
       checked += 1;
@@ -84,10 +80,7 @@ export const reportStoredDataIssues = internalQuery({
         findings.push({
           table: "workspaces",
           id: String(_id),
-          reason:
-            error instanceof Error
-              ? error.message
-              : "Perfil inválido",
+          reason: error instanceof Error ? error.message : "Perfil inválido",
         });
       }
     }

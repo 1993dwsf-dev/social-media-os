@@ -16,10 +16,21 @@ import { toast } from "sonner";
 import { RecordDialog } from "@/components/portal/RecordDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClientChip, PlatformChip, SectionHeader, StatusChip } from "@/components/portal/Shared";
+import {
+  ClientChip,
+  PlatformChip,
+  SectionHeader,
+  StatusChip,
+} from "@/components/portal/Shared";
 import type { FieldSpec } from "@/components/portal/EntityTable";
 import { CONTENT_FORMATS } from "@/data/constants";
-import { PILLARS, PLATFORMS, TASK_CATEGORIES, TASK_STATUSES, WORKFLOW_STATUSES } from "@/data/types";
+import {
+  PILLARS,
+  PLATFORMS,
+  TASK_CATEGORIES,
+  TASK_STATUSES,
+  WORKFLOW_STATUSES,
+} from "@/data/types";
 import type { ContentItem, TaskItem } from "@/data/types";
 import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
@@ -29,13 +40,34 @@ const SELECT_CLASS =
   "flex h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
 const CONTENT_FIELDS: FieldSpec[] = [
-  { key: "topic", label: "Tema", required: true, placeholder: "Cold brew x café gelado" },
+  {
+    key: "topic",
+    label: "Tema",
+    required: true,
+    placeholder: "Cold brew x café gelado",
+  },
   { key: "clientId", label: "Cliente", type: "client", required: true },
   { key: "date", label: "Data", type: "date", required: true },
-  { key: "platform", label: "Plataforma", type: "select", options: PLATFORMS, required: true },
+  {
+    key: "platform",
+    label: "Plataforma",
+    type: "select",
+    options: PLATFORMS,
+    required: true,
+  },
   { key: "format", label: "Formato", type: "select", options: CONTENT_FORMATS },
-  { key: "pillar", label: "Pilar de conteúdo", type: "select", options: PILLARS },
-  { key: "status", label: "Status", type: "select", options: WORKFLOW_STATUSES },
+  {
+    key: "pillar",
+    label: "Pilar de conteúdo",
+    type: "select",
+    options: PILLARS,
+  },
+  {
+    key: "status",
+    label: "Status",
+    type: "select",
+    options: WORKFLOW_STATUSES,
+  },
   { key: "owner", label: "Responsável" },
   { key: "assetNote", label: "Material necessário" },
   { key: "caption", label: "Legenda", type: "textarea" },
@@ -44,12 +76,27 @@ const CONTENT_FIELDS: FieldSpec[] = [
 ];
 
 const TASK_FIELDS: FieldSpec[] = [
-  { key: "title", label: "Tarefa", required: true, placeholder: "Gravar lote: 10 peças" },
+  {
+    key: "title",
+    label: "Tarefa",
+    required: true,
+    placeholder: "Gravar lote: 10 peças",
+  },
   { key: "clientId", label: "Cliente", type: "client", required: true },
   { key: "dueDate", label: "Prazo", type: "date", required: true },
   { key: "status", label: "Status", type: "select", options: TASK_STATUSES },
-  { key: "priority", label: "Prioridade", type: "select", options: ["Low", "Medium", "High"] },
-  { key: "category", label: "Categoria", type: "select", options: TASK_CATEGORIES },
+  {
+    key: "priority",
+    label: "Prioridade",
+    type: "select",
+    options: ["Low", "Medium", "High"],
+  },
+  {
+    key: "category",
+    label: "Categoria",
+    type: "select",
+    options: TASK_CATEGORIES,
+  },
   { key: "project", label: "Projeto / campanha" },
   { key: "notes", label: "Observações", type: "textarea" },
 ];
@@ -73,15 +120,22 @@ export function CalendarSection({
   const [showContent, setShowContent] = useState(true);
   const [showTasks, setShowTasks] = useState(true);
   const [view, setView] = useState<"month" | "list">("month");
-  const [contentDraft, setContentDraft] = useState<{ date: string; item?: ContentItem } | null>(null);
-  const [taskDraft, setTaskDraft] = useState<{ date: string; item?: TaskItem } | null>(null);
+  const [contentDraft, setContentDraft] = useState<{
+    date: string;
+    item?: ContentItem;
+  } | null>(null);
+  const [taskDraft, setTaskDraft] = useState<{
+    date: string;
+    item?: TaskItem;
+  } | null>(null);
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
   const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
 
   const matches = useMemo(
-    () => (clientId: string) => clientFilter === "all" || clientId === clientFilter,
+    () => (clientId: string) =>
+      clientFilter === "all" || clientId === clientFilter,
     [clientFilter],
   );
 
@@ -105,25 +159,37 @@ export function CalendarSection({
   );
 
   const monthTasks = useMemo(
-    () => ws.tasks.filter((task) => task.dueDate.startsWith(monthPrefix) && matches(task.clientId)),
+    () =>
+      ws.tasks.filter(
+        (task) =>
+          task.dueDate.startsWith(monthPrefix) && matches(task.clientId),
+      ),
     [ws.tasks, monthPrefix, matches],
   );
 
   const byDay = useMemo(() => {
-    const map = new Map<string, { content: ContentItem[]; tasks: TaskItem[] }>();
+    const map = new Map<
+      string,
+      { content: ContentItem[]; tasks: TaskItem[] }
+    >();
     const ensure = (date: string) => {
       if (!map.has(date)) map.set(date, { content: [], tasks: [] });
       return map.get(date)!;
     };
-    if (showContent) for (const item of monthContent) ensure(item.date).content.push(item);
-    if (showTasks) for (const task of monthTasks) ensure(task.dueDate).tasks.push(task);
+    if (showContent)
+      for (const item of monthContent) ensure(item.date).content.push(item);
+    if (showTasks)
+      for (const task of monthTasks) ensure(task.dueDate).tasks.push(task);
     return map;
   }, [monthContent, monthTasks, showContent, showTasks]);
 
   const listDays = useMemo(() => [...byDay.keys()].sort(), [byDay]);
 
   const firstDay = new Date(year, month, 1);
-  const leading = ws.profile.weekStart === "Sunday" ? firstDay.getDay() : (firstDay.getDay() + 6) % 7;
+  const leading =
+    ws.profile.weekStart === "Sunday"
+      ? firstDay.getDay()
+      : (firstDay.getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const weekdays =
     ws.profile.weekStart === "Sunday"
@@ -132,8 +198,10 @@ export function CalendarSection({
 
   const todayIso = iso(new Date());
 
-  const openContent = (date: string, item?: ContentItem) => setContentDraft({ date, item });
-  const openTask = (date: string, item?: TaskItem) => setTaskDraft({ date, item });
+  const openContent = (date: string, item?: ContentItem) =>
+    setContentDraft({ date, item });
+  const openTask = (date: string, item?: TaskItem) =>
+    setTaskDraft({ date, item });
 
   const saveContent = async (values: Record<string, string>) => {
     try {
@@ -155,10 +223,16 @@ export function CalendarSection({
         },
         existing?.id,
       );
-      toast.success(existing ? "Conteúdo atualizado" : "Conteúdo adicionado ao calendário");
+      toast.success(
+        existing ? "Conteúdo atualizado" : "Conteúdo adicionado ao calendário",
+      );
       setContentDraft(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o conteúdo");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar o conteúdo",
+      );
     }
   };
 
@@ -181,14 +255,23 @@ export function CalendarSection({
         },
         existing?.id,
       );
-      toast.success(existing ? "Tarefa atualizada" : "Tarefa adicionada ao calendário");
+      toast.success(
+        existing ? "Tarefa atualizada" : "Tarefa adicionada ao calendário",
+      );
       setTaskDraft(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível salvar a tarefa");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar a tarefa",
+      );
     }
   };
 
-  const monthLabel = cursor.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const monthLabel = cursor.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div>
@@ -196,11 +279,20 @@ export function CalendarSection({
         title="Calendário de conteúdo"
         description="Posts planejados e tarefas de todos os clientes em uma só visão. Clique em um dia ou item para adicionar e editar."
       >
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => openTask(iso(new Date()))}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          onClick={() => openTask(iso(new Date()))}
+        >
           <ListChecks className="size-4" />
           Adicionar tarefa
         </Button>
-        <Button size="sm" className="gap-1.5" onClick={() => openContent(iso(new Date()))}>
+        <Button
+          size="sm"
+          className="gap-1.5"
+          onClick={() => openContent(iso(new Date()))}
+        >
           <Plus className="size-4" />
           Adicionar conteúdo
         </Button>
@@ -217,7 +309,9 @@ export function CalendarSection({
           >
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="min-w-36 text-center text-sm font-medium">{monthLabel}</span>
+          <span className="min-w-36 text-center text-sm font-medium">
+            {monthLabel}
+          </span>
           <Button
             variant="ghost"
             size="icon"
@@ -228,7 +322,11 @@ export function CalendarSection({
             <ChevronRight className="size-4" />
           </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setCursor(new Date())}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setCursor(new Date())}
+        >
           Hoje
         </Button>
 
@@ -315,14 +413,23 @@ export function CalendarSection({
           </div>
           <div className="grid grid-cols-7">
             {Array.from({ length: leading }).map((_, i) => (
-              <div key={`lead-${i}`} className="min-h-28 border-b border-r border-border/50 bg-muted/10" />
+              <div
+                key={`lead-${i}`}
+                className="min-h-28 border-b border-r border-border/50 bg-muted/10"
+              />
             ))}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const date = iso(new Date(year, month, i + 1));
               const day = byDay.get(date);
               const items = [
-                ...(day?.content ?? []).map((item) => ({ kind: "content" as const, item })),
-                ...(day?.tasks ?? []).map((item) => ({ kind: "task" as const, item })),
+                ...(day?.content ?? []).map((item) => ({
+                  kind: "content" as const,
+                  item,
+                })),
+                ...(day?.tasks ?? []).map((item) => ({
+                  kind: "task" as const,
+                  item,
+                })),
               ];
               return (
                 <div
@@ -336,7 +443,9 @@ export function CalendarSection({
                     <span
                       className={cn(
                         "text-xs font-medium",
-                        date === todayIso ? "text-primary" : "text-muted-foreground",
+                        date === todayIso
+                          ? "text-primary"
+                          : "text-muted-foreground",
                       )}
                     >
                       {i + 1}
@@ -361,9 +470,14 @@ export function CalendarSection({
                           title={`${entry.item.topic} · ${ws.clientName(entry.item.clientId)}`}
                         >
                           <span className="mr-1 inline-flex align-middle">
-                            <PlatformChip platform={entry.item.platform} className="px-1 py-0" />
+                            <PlatformChip
+                              platform={entry.item.platform}
+                              className="px-1 py-0"
+                            />
                           </span>
-                          <span className="align-middle">{entry.item.topic}</span>
+                          <span className="align-middle">
+                            {entry.item.topic}
+                          </span>
                         </button>
                       ) : (
                         <button
@@ -405,16 +519,24 @@ export function CalendarSection({
             listDays.map((date) => {
               const day = byDay.get(date)!;
               return (
-                <div key={date} className="rounded-xl border border-border/70 bg-card p-3">
+                <div
+                  key={date}
+                  className="rounded-xl border border-border/70 bg-card p-3"
+                >
                   <div className="mb-2 flex items-center gap-2">
                     <p className="text-sm font-semibold">
-                      {new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                      })}
+                      {new Date(`${date}T00:00:00`).toLocaleDateString(
+                        "pt-BR",
+                        {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "short",
+                        },
+                      )}
                     </p>
-                    {date === todayIso ? <Badge variant="outline">Hoje</Badge> : null}
+                    {date === todayIso ? (
+                      <Badge variant="outline">Hoje</Badge>
+                    ) : null}
                     <div className="ml-auto flex gap-1">
                       <Button
                         variant="ghost"
@@ -443,7 +565,9 @@ export function CalendarSection({
                           className="flex w-full items-center gap-2 rounded-lg border border-border/60 px-2 py-1.5 text-left text-sm hover:border-primary/40"
                         >
                           <PlatformChip platform={item.platform} />
-                          <span className="min-w-0 flex-1 truncate">{item.topic}</span>
+                          <span className="min-w-0 flex-1 truncate">
+                            {item.topic}
+                          </span>
                           <ClientChip name={ws.clientName(item.clientId)} />
                           <StatusChip status={item.status} />
                         </button>
@@ -457,7 +581,9 @@ export function CalendarSection({
                           className="flex w-full items-center gap-2 rounded-lg border border-dashed border-border/70 px-2 py-1.5 text-left text-sm hover:border-primary/40"
                         >
                           <ListChecks className="size-3.5 text-muted-foreground" />
-                          <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                          <span className="min-w-0 flex-1 truncate">
+                            {task.title}
+                          </span>
                           <ClientChip name={ws.clientName(task.clientId)} />
                           <StatusChip status={task.status} />
                           <StatusChip status={task.priority} />
@@ -486,14 +612,20 @@ export function CalendarSection({
           }
           fields={CONTENT_FIELDS}
           clients={ws.clients}
-          submitLabel={contentDraft.item ? "Salvar conteúdo" : "Adicionar ao calendário"}
+          submitLabel={
+            contentDraft.item ? "Salvar conteúdo" : "Adicionar ao calendário"
+          }
           initial={{
             topic: contentDraft.item?.topic ?? "",
             clientId:
               contentDraft.item?.clientId ??
-              (clientFilter !== "all" ? clientFilter : ws.clients[0]?.id ?? ""),
+              (clientFilter !== "all"
+                ? clientFilter
+                : (ws.clients[0]?.id ?? "")),
             date: contentDraft.item?.date ?? contentDraft.date,
-            platform: contentDraft.item?.platform ?? (platformFilter !== "all" ? platformFilter : "Instagram"),
+            platform:
+              contentDraft.item?.platform ??
+              (platformFilter !== "all" ? platformFilter : "Instagram"),
             format: contentDraft.item?.format ?? "Single post",
             pillar: contentDraft.item?.pillar ?? PILLARS[0],
             status: contentDraft.item?.status ?? "Idea",
@@ -524,7 +656,11 @@ export function CalendarSection({
           submitLabel={taskDraft.item ? "Salvar tarefa" : "Adicionar tarefa"}
           initial={{
             title: taskDraft.item?.title ?? "",
-            clientId: taskDraft.item?.clientId ?? (clientFilter !== "all" ? clientFilter : ws.clients[0]?.id ?? ""),
+            clientId:
+              taskDraft.item?.clientId ??
+              (clientFilter !== "all"
+                ? clientFilter
+                : (ws.clients[0]?.id ?? "")),
             dueDate: taskDraft.item?.dueDate ?? taskDraft.date,
             status: taskDraft.item?.status ?? "Backlog",
             priority: taskDraft.item?.priority ?? "Medium",

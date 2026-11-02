@@ -12,17 +12,38 @@ import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
-  { key: "name", label: "Nome do arquivo", required: true, placeholder: "Manual de marca v2.pdf" },
+  {
+    key: "name",
+    label: "Nome do arquivo",
+    required: true,
+    placeholder: "Manual de marca v2.pdf",
+  },
   { key: "clientId", label: "Cliente", type: "client", required: true },
-  { key: "category", label: "Categoria", type: "select", options: FILE_CATEGORIES },
-  { key: "status", label: "Status", type: "select", options: ["Shared", "In progress", "Archived"] },
+  {
+    key: "category",
+    label: "Categoria",
+    type: "select",
+    options: FILE_CATEGORIES,
+  },
+  {
+    key: "status",
+    label: "Status",
+    type: "select",
+    options: ["Shared", "In progress", "Archived"],
+  },
   { key: "date", label: "Data", type: "date" },
   { key: "relatedProject", label: "Projeto relacionado" },
   { key: "description", label: "Descrição", type: "textarea", compact: true },
   { key: "relatedContent", label: "Conteúdo relacionado", compact: true },
 ];
 
-export function FilesSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
+export function FilesSection({
+  ws,
+  focus,
+}: {
+  ws: Workspace;
+  focus: ClientFocus;
+}) {
   const scoped = focus.clientId
     ? ws.deliverables.filter((d) => d.clientId === focus.clientId)
     : ws.deliverables;
@@ -43,9 +64,13 @@ export function FilesSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
         clientIdOf={(row) => row.clientId}
         rowTitle={(row) => row.name}
         searchText={(row) =>
-          [row.name, row.description, row.category, row.relatedProject, ws.clientName(row.clientId)].join(
-            " ",
-          )
+          [
+            row.name,
+            row.description,
+            row.category,
+            row.relatedProject,
+            ws.clientName(row.clientId),
+          ].join(" ")
         }
         addLabel="Novo arquivo"
         entityName="Arquivos"
@@ -66,10 +91,12 @@ export function FilesSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
               {
                 clientId: values.clientId,
                 name: values.name,
-                category: (values.category || "Graphics") as DeliverableItem["category"],
+                category: (values.category ||
+                  "Graphics") as DeliverableItem["category"],
                 description: values.description,
                 date: values.date || todayISO(),
-                status: (values.status || "In progress") as DeliverableItem["status"],
+                status: (values.status ||
+                  "In progress") as DeliverableItem["status"],
                 relatedContent: values.relatedContent,
                 relatedProject: values.relatedProject,
               },
@@ -77,7 +104,11 @@ export function FilesSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
             );
             toast.success(id ? "Arquivo atualizado" : "Arquivo adicionado");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Não foi possível salvar o arquivo");
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível salvar o arquivo",
+            );
           }
         }}
         onDelete={async (id) => {
@@ -85,7 +116,11 @@ export function FilesSection({ ws, focus }: { ws: Workspace; focus: ClientFocus 
             await ws.remove("deliverable", id);
             toast.success("Arquivo excluído");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Não foi possível excluir o arquivo");
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível excluir o arquivo",
+            );
           }
         }}
       />

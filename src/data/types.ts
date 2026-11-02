@@ -272,9 +272,19 @@ export const REQUEST_STATUSES: RequestStatus[] = [
   "Closed",
 ];
 
-export const TASK_STATUSES: TaskStatus[] = ["Backlog", "In Progress", "Blocked", "Done"];
+export const TASK_STATUSES: TaskStatus[] = [
+  "Backlog",
+  "In Progress",
+  "Blocked",
+  "Done",
+];
 
-export const CLIENT_STATUSES: ClientStatus[] = ["Active", "Paused", "Prospect", "Archived"];
+export const CLIENT_STATUSES: ClientStatus[] = [
+  "Active",
+  "Paused",
+  "Prospect",
+  "Archived",
+];
 
 export const FINANCE_CATEGORIES = [
   "Retainer",

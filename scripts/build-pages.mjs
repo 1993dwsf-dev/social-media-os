@@ -21,6 +21,9 @@ const cli = fileURLToPath(
 );
 const env = {
   ...process.env,
+  // Convex 1.49 skips error telemetry in CI unless Vercel mode overrides it.
+  CI: "true",
+  VERCEL: undefined,
   VITE_CONVEX_URL: `https://${deployment}.convex.cloud`,
 };
 

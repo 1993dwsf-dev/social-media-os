@@ -1,3 +1,4 @@
+// Acompanhamento do checklist de entrada de cada cliente.
 // Checklist de integração do cliente — o cadastro que você preenche uma vez
 // por cliente. O progresso é simplesmente quantas etapas têm conteúdo.
 

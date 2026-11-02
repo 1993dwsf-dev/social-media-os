@@ -8,7 +8,13 @@ import { toast } from "sonner";
 import { RecordDialog } from "@/components/portal/RecordDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClientChip, EmptyState, PlatformChip, SectionHeader, StatusChip } from "@/components/portal/Shared";
+import {
+  ClientChip,
+  EmptyState,
+  PlatformChip,
+  SectionHeader,
+  StatusChip,
+} from "@/components/portal/Shared";
 import { formatDate, todayISO } from "@/data/constants";
 import { label } from "@/data/labels";
 import type { ContentItem, ContentStatus } from "@/data/types";
@@ -16,7 +22,12 @@ import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
 import { cn } from "@/lib/utils";
 
-const COLUMNS: { key: string; title: string; hint: string; statuses: ContentStatus[] }[] = [
+const COLUMNS: {
+  key: string;
+  title: string;
+  hint: string;
+  statuses: ContentStatus[];
+}[] = [
   {
     key: "review",
     title: "Aguardando o cliente",
@@ -68,15 +79,26 @@ export function ApprovalsSection({
 
   const setStatus = async (item: ContentItem, status: ContentStatus) => {
     try {
-      await ws.saveContent({ ...item, status } as Omit<ContentItem, "id">, item.id);
-      toast.success(`“${item.topic}” marcado como ${label(status).toLowerCase()}`);
+      await ws.saveContent(
+        { ...item, status } as Omit<ContentItem, "id">,
+        item.id,
+      );
+      toast.success(
+        `“${item.topic}” marcado como ${label(status).toLowerCase()}`,
+      );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível atualizar o item");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar o item",
+      );
     }
   };
 
   const waiting = COLUMNS.reduce(
-    (sum, column) => sum + scoped.filter((item) => column.statuses.includes(item.status)).length,
+    (sum, column) =>
+      sum +
+      scoped.filter((item) => column.statuses.includes(item.status)).length,
     0,
   );
 
@@ -107,11 +129,16 @@ export function ApprovalsSection({
             .filter((item) => column.statuses.includes(item.status))
             .sort((a, b) => a.date.localeCompare(b.date));
           return (
-            <section key={column.key} className="rounded-xl border border-border/70 bg-card">
+            <section
+              key={column.key}
+              className="rounded-xl border border-border/70 bg-card"
+            >
               <header className="flex items-center justify-between gap-2 border-b border-border/70 px-3 py-2.5">
                 <div>
                   <h2 className="text-sm font-semibold">{column.title}</h2>
-                  <p className="text-[11px] text-muted-foreground">{column.hint}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {column.hint}
+                  </p>
                 </div>
                 <Badge variant="outline" className="tabular">
                   {items.length}
@@ -137,10 +164,14 @@ export function ApprovalsSection({
                           <StatusChip status={item.status} />
                         </span>
                       </div>
-                      <p className="mt-1.5 text-sm font-medium leading-snug">{item.topic}</p>
+                      <p className="mt-1.5 text-sm font-medium leading-snug">
+                        {item.topic}
+                      </p>
                       <div className="mt-1 flex items-center gap-1.5">
                         <ClientChip name={ws.clientName(item.clientId)} />
-                        <span className="text-[11px] text-muted-foreground">{item.format}</span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {item.format}
+                        </span>
                       </div>
                       {item.clientComments ? (
                         <p className="mt-2 rounded-md bg-amber-50 p-1.5 text-[11px] leading-relaxed text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
@@ -148,10 +179,13 @@ export function ApprovalsSection({
                         </p>
                       ) : null}
                       {item.managerNotes ? (
-                        <p className="mt-1.5 text-[11px] text-muted-foreground">{item.managerNotes}</p>
+                        <p className="mt-1.5 text-[11px] text-muted-foreground">
+                          {item.managerNotes}
+                        </p>
                       ) : null}
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {item.status === "In Review" || item.status === "Changes Requested" ? (
+                        {item.status === "In Review" ||
+                        item.status === "Changes Requested" ? (
                           <Button
                             size="sm"
                             variant="outline"
@@ -161,12 +195,15 @@ export function ApprovalsSection({
                             <Check className="size-3" /> Aprovar
                           </Button>
                         ) : null}
-                        {(item.status === "In Review" || item.status === "Approved") && (
+                        {(item.status === "In Review" ||
+                          item.status === "Approved") && (
                           <Button
                             size="sm"
                             variant="outline"
                             className="h-7 gap-1 px-2 text-[11px]"
-                            onClick={() => void setStatus(item, "Changes Requested")}
+                            onClick={() =>
+                              void setStatus(item, "Changes Requested")
+                            }
                           >
                             <MessageSquare className="size-3" /> Alterações
                           </Button>
@@ -181,7 +218,8 @@ export function ApprovalsSection({
                             <Clock className="size-3" /> Agendar
                           </Button>
                         ) : null}
-                        {item.status === "Approved" || item.status === "Scheduled" ? (
+                        {item.status === "Approved" ||
+                        item.status === "Scheduled" ? (
                           <Button
                             size="sm"
                             className="h-7 gap-1 px-2 text-[11px]"
@@ -222,12 +260,17 @@ export function ApprovalsSection({
               {published.length} no ar
             </span>
           </span>
-          <Badge variant="outline">{showPublished ? "Ocultar" : "Mostrar"}</Badge>
+          <Badge variant="outline">
+            {showPublished ? "Ocultar" : "Mostrar"}
+          </Badge>
         </button>
         {showPublished ? (
           published.length === 0 ? (
             <div className="mt-3">
-              <EmptyState title="Nada publicado ainda" hint="Marque os itens como publicados conforme forem ao ar." />
+              <EmptyState
+                title="Nada publicado ainda"
+                hint="Marque os itens como publicados conforme forem ao ar."
+              />
             </div>
           ) : (
             <ul className="mt-3 space-y-1.5">
@@ -239,7 +282,9 @@ export function ApprovalsSection({
                   <PlatformChip platform={item.platform} />
                   <span className="min-w-0 flex-1 truncate">{item.topic}</span>
                   <ClientChip name={ws.clientName(item.clientId)} />
-                  <span className="text-xs text-muted-foreground">{formatDate(item.date)}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDate(item.date)}
+                  </span>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -265,9 +310,28 @@ export function ApprovalsSection({
           description={`${editing.topic} · ${ws.clientName(editing.clientId)}`}
           clients={ws.clients}
           fields={[
-            { key: "status", label: "Status de aprovação", type: "select", options: ["In Review", "Changes Requested", "Approved", "Scheduled", "Published"] },
-            { key: "clientComments", label: "O que o cliente disse", type: "textarea" },
-            { key: "managerNotes", label: "Minhas observações", type: "textarea" },
+            {
+              key: "status",
+              label: "Status de aprovação",
+              type: "select",
+              options: [
+                "In Review",
+                "Changes Requested",
+                "Approved",
+                "Scheduled",
+                "Published",
+              ],
+            },
+            {
+              key: "clientComments",
+              label: "O que o cliente disse",
+              type: "textarea",
+            },
+            {
+              key: "managerNotes",
+              label: "Minhas observações",
+              type: "textarea",
+            },
           ]}
           initial={{
             status: editing.status,
@@ -290,7 +354,11 @@ export function ApprovalsSection({
               toast.success("Retorno salvo");
               setEditing(null);
             } catch (error) {
-              toast.error(error instanceof Error ? error.message : "Não foi possível salvar o retorno");
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : "Não foi possível salvar o retorno",
+              );
             }
           }}
         />

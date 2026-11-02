@@ -1,3 +1,4 @@
+// Visão financeira do workspace: lançamentos e faturas por cliente.
 // Dinheiro que entra e que sai: mensalidades, projetos, ferramentas e
 // freelancers. As mensalidades podem ser faturadas em um clique a partir do
 // valor de cada cliente; o resto o gestor mantém à mão — sem integração bancária.

@@ -32,9 +32,9 @@ const client = {
 
 describe("validação estrita dos registros", () => {
   test("aceita um cliente válido", () => {
-    expect(
-      parseWorkspaceRecord("clients", client).name,
-    ).toBe("Cliente de teste");
+    expect(parseWorkspaceRecord("clients", client).name).toBe(
+      "Cliente de teste",
+    );
   });
 
   test("rejeita status desconhecido", () => {

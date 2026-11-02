@@ -1,4 +1,5 @@
 {
+  // Referências da aplicação e das ferramentas de build.
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },

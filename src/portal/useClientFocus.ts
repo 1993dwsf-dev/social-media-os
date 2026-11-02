@@ -1,4 +1,4 @@
-// Foco de cliente: uma seleção única compartilhada por todo o workspace.
+// Seleção do cliente ativo, compartilhada pelas seções do workspace.
 //
 // O seletor da barra superior define o "cliente ativo" para que todas as seções
 // (calendário, tarefas, estratégia, integração, financeiro…) sigam o mesmo foco

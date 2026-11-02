@@ -13,10 +13,25 @@ import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
-  { key: "title", label: "Solicitação", required: true, placeholder: "Adicionar um segundo Reel esta semana" },
+  {
+    key: "title",
+    label: "Solicitação",
+    required: true,
+    placeholder: "Adicionar um segundo Reel esta semana",
+  },
   { key: "clientId", label: "Cliente", type: "client", required: true },
-  { key: "category", label: "Categoria", type: "select", options: REQUEST_CATEGORIES },
-  { key: "priority", label: "Prioridade", type: "select", options: ["Low", "Medium", "High"] },
+  {
+    key: "category",
+    label: "Categoria",
+    type: "select",
+    options: REQUEST_CATEGORIES,
+  },
+  {
+    key: "priority",
+    label: "Prioridade",
+    type: "select",
+    options: ["Low", "Medium", "High"],
+  },
   { key: "status", label: "Status", type: "select", options: REQUEST_STATUSES },
   { key: "dateSubmitted", label: "Solicitado em", type: "date" },
   { key: "dueDate", label: "Prazo", type: "date" },
@@ -24,8 +39,16 @@ const FIELDS: FieldSpec[] = [
   { key: "comments", label: "Comentários", type: "textarea", compact: true },
 ];
 
-export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
-  const open = ws.requests.filter((r) => r.status !== "Completed" && r.status !== "Closed").length;
+export function RequestsSection({
+  ws,
+  focus,
+}: {
+  ws: Workspace;
+  focus: ClientFocus;
+}) {
+  const open = ws.requests.filter(
+    (r) => r.status !== "Completed" && r.status !== "Closed",
+  ).length;
 
   return (
     <div>
@@ -41,7 +64,13 @@ export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
         clientIdOf={(row) => row.clientId}
         rowTitle={(row) => row.title}
         searchText={(row) =>
-          [row.title, row.category, row.comments, row.assignedTo, ws.clientName(row.clientId)].join(" ")
+          [
+            row.title,
+            row.category,
+            row.comments,
+            row.assignedTo,
+            ws.clientName(row.clientId),
+          ].join(" ")
         }
         addLabel="Nova solicitação"
         entityName="Solicitações"
@@ -64,7 +93,8 @@ export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
                 clientId: values.clientId,
                 title: values.title,
                 category: values.category,
-                priority: (values.priority || "Medium") as RequestItem["priority"],
+                priority: (values.priority ||
+                  "Medium") as RequestItem["priority"],
                 dateSubmitted: values.dateSubmitted || todayISO(),
                 status: (values.status || "New") as RequestItem["status"],
                 assignedTo: values.assignedTo,
@@ -73,9 +103,15 @@ export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
               },
               id,
             );
-            toast.success(id ? "Solicitação atualizada" : "Solicitação registrada");
+            toast.success(
+              id ? "Solicitação atualizada" : "Solicitação registrada",
+            );
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Não foi possível salvar a solicitação");
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível salvar a solicitação",
+            );
           }
         }}
         onDelete={async (id) => {
@@ -83,7 +119,11 @@ export function RequestsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
             await ws.remove("request", id);
             toast.success("Solicitação excluída");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Não foi possível excluir a solicitação");
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível excluir a solicitação",
+            );
           }
         }}
       />

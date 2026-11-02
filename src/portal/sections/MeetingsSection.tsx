@@ -11,18 +11,39 @@ import type { Workspace } from "@/data/workspace";
 import type { ClientFocus } from "../useClientFocus";
 
 const FIELDS: FieldSpec[] = [
-  { key: "title", label: "Reunião", required: true, placeholder: "Chamada de planejamento mensal" },
+  {
+    key: "title",
+    label: "Reunião",
+    required: true,
+    placeholder: "Chamada de planejamento mensal",
+  },
   { key: "clientId", label: "Cliente", type: "client", required: true },
   { key: "date", label: "Data", type: "date" },
   { key: "time", label: "Horário", type: "time" },
-  { key: "status", label: "Status", type: "select", options: ["Scheduled", "Completed", "Cancelled"] },
+  {
+    key: "status",
+    label: "Status",
+    type: "select",
+    options: ["Scheduled", "Completed", "Cancelled"],
+  },
   { key: "participants", label: "Participantes" },
   { key: "agenda", label: "Pauta", type: "textarea", compact: true },
   { key: "notes", label: "Observações", type: "textarea", compact: true },
-  { key: "actionItems", label: "Itens de ação", type: "textarea", compact: true },
+  {
+    key: "actionItems",
+    label: "Itens de ação",
+    type: "textarea",
+    compact: true,
+  },
 ];
 
-export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFocus }) {
+export function MeetingsSection({
+  ws,
+  focus,
+}: {
+  ws: Workspace;
+  focus: ClientFocus;
+}) {
   const next = ws.meetings
     .filter((m) => m.status === "Scheduled" && m.date >= todayISO())
     .slice(0, 1)[0];
@@ -45,7 +66,13 @@ export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
         clientIdOf={(row) => row.clientId}
         rowTitle={(row) => row.title}
         searchText={(row) =>
-          [row.title, row.agenda, row.notes, row.participants, ws.clientName(row.clientId)].join(" ")
+          [
+            row.title,
+            row.agenda,
+            row.notes,
+            row.participants,
+            ws.clientName(row.clientId),
+          ].join(" ")
         }
         addLabel="Nova reunião"
         entityName="Reuniões"
@@ -78,7 +105,11 @@ export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
             );
             toast.success(id ? "Reunião atualizada" : "Reunião agendada");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Não foi possível salvar a reunião");
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível salvar a reunião",
+            );
           }
         }}
         onDelete={async (id) => {
@@ -86,7 +117,11 @@ export function MeetingsSection({ ws, focus }: { ws: Workspace; focus: ClientFoc
             await ws.remove("meeting", id);
             toast.success("Reunião excluída");
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Não foi possível excluir a reunião");
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Não foi possível excluir a reunião",
+            );
           }
         }}
       />

@@ -1,6 +1,13 @@
 import { cn } from "@/lib/utils";
 import { label } from "@/data/labels";
-import { Facebook, Instagram, Linkedin, Music2, Pin, Youtube } from "lucide-react";
+import {
+  Facebook,
+  Instagram,
+  Linkedin,
+  Music2,
+  Pin,
+  Youtube,
+} from "lucide-react";
 import {
   CLIENT_CHIP,
   FILE_CHIP,
@@ -44,7 +51,9 @@ function styleFor(kind: ChipKind): ChipStyle {
   if (kind in TASK_CHIP) return TASK_CHIP[kind];
   if (kind in FINANCE_CHIP) return FINANCE_CHIP[kind];
   if (kind in CLIENT_CHIP) return CLIENT_CHIP[kind];
-  return FILE_CHIP[kind as "Shared" | "In progress" | "Archived"] ?? NEUTRAL_CHIP;
+  return (
+    FILE_CHIP[kind as "Shared" | "In progress" | "Archived"] ?? NEUTRAL_CHIP
+  );
 }
 
 export function StatusChip({
@@ -161,15 +170,25 @@ export function SectionHeader({
       <div>
         <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
         {description ? (
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            {description}
+          </p>
         ) : null}
       </div>
-      {children ? <div className="flex flex-wrap items-center gap-2">{children}</div> : null}
+      {children ? (
+        <div className="flex flex-wrap items-center gap-2">{children}</div>
+      ) : null}
     </div>
   );
 }
 
-export function ClientChip({ name, className }: { name: string; className?: string }) {
+export function ClientChip({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
   return (
     <span
       className={cn(
@@ -193,7 +212,13 @@ const AVATAR_TINTS = [
   "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200",
 ];
 
-export function ClientAvatar({ name, className }: { name: string; className?: string }) {
+export function ClientAvatar({
+  name,
+  className,
+}: {
+  name: string;
+  className?: string;
+}) {
   const initials = name
     .split(/\s+/)
     .filter(Boolean)
@@ -236,7 +261,9 @@ export function EmptyState({
         </div>
       ) : null}
       <p className="text-sm font-medium text-foreground">{title}</p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? (
+        <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+      ) : null}
     </div>
   );
 }
