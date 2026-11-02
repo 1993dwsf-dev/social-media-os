@@ -21,11 +21,15 @@ Validação local: **94 testes aprovados, zero falhas; build aprovado; lint sem 
 
 A execução local usa `convex-test` e os geradores oficiais de tipos do Convex. Testes em memória não comprovam sozinhos o estado do deployment ou a configuração das contas externas.
 
+Em 02/11/2026, a revisão publicada `e0794d2c2448a40ac7f4020de89ded92dfea4498` passou em **14 cenários reais** no Pages/Convex de produção (execução `7a0baebb-3c74-468d-9efe-4fb6920f55e4`). Foram exercitados convite individual e substituição, vínculo ao e-mail e uso único, aceite, cadastro de duas contas, isolamento, bloqueio de demonstração sobre dados, JSON das sete coleções, CSV real e filtro, chave de emergência e substituição, recuperação preservando dados, revogação de senha/sessões/tokens antigos, limites de importação, confirmação e remapeamento da restauração, proteção de mescla e logout. Não houve erro de execução capturado no navegador. Os registros operacionais das duas contas de teste foram limpos; as contas técnicas de autenticação permaneceram vazias.
+
+O envio de convites por Resend foi acrescentado posteriormente. Sua configuração privada e entrega real têm validação própria descrita em [convites-resend.md](convites-resend.md); os 14 cenários anteriores não comprovam essa entrega.
+
 ## Limites e pendências
 
 - Verificação e reset automático por e-mail não foram adicionados. Não há dependência de Brevo ou outro envio pago.
 - A recuperação exige que o gestor tenha gerado e guardado sua chave previamente. Sem ela, o suporte deve investigar sem excluir a conta.
 - O modelo continua individual; equipe e portal do cliente não foram acrescentados.
 - A capacidade limitada evita crescimento ilimitado de consultas; paginação do workspace exige projeto posterior para carteiras maiores.
-- Preencher nome do responsável e suporte, finalizar documentos/contrato e testar os novos fluxos no endereço público antes de declarar lançamento liberado.
+- Preencher nome do responsável e suporte e finalizar documentos/contrato. Os novos fluxos de acesso e dados já foram testados no endereço público, conforme o registro acima.
 - A chave dotenvx identificada no histórico anterior continua sem uso. Não houve reescrita de histórico nem varredura de arquivos externos.

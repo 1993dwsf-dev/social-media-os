@@ -148,6 +148,7 @@ const SESSION_MUTATIONS = [
 /** Nunca chamáveis pelo cliente (o Convex recusa antes de executar). */
 const INTERNAL: Record<string, Kind> = {
   "access:createInvite": "mutation",
+  "access:sendInvite": "action",
   "access:recoveryAccount": "query",
   "access:storeRecovery": "mutation",
   "access:consumeRecovery": "mutation",

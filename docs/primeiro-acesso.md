@@ -10,7 +10,7 @@
 
 1. No dashboard Convex do projeto correto, abra a função **interna** `access:createInvite`.
 2. Informe somente o e-mail do gestor contratado, em `{"email":"gestor@exemplo.com"}`.
-3. Execute a função. O retorno contém um código de 64 caracteres e a validade de 48 horas. Entregue o código ao destinatário por canal privado. Não registre o código em issues, logs, prints ou documentos públicos.
+3. Para enviar automaticamente, configure o Resend conforme [convites-resend.md](convites-resend.md) e execute a ação interna `access:sendInvite` com o mesmo argumento de e-mail. Ela gera e envia o convite; o retorno informa aceitação da API e validade, sem revelar o código. A função manual `access:createInvite` continua retornando um código de 64 caracteres e a validade de 48 horas para entrega por canal privado. Não registre o código em issues, logs, prints ou documentos públicos.
 4. O gestor escolhe “Recebi um convite — criar conta”, informa o mesmo e-mail, sua própria senha de 12 a 128 caracteres, convite e aceite dos documentos.
 5. O convite é vinculado ao e-mail e consumido na mesma transação da criação da conta. Um novo convite para o mesmo e-mail invalida o anterior.
 

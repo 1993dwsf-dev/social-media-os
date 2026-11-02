@@ -5,32 +5,37 @@ Um produto de David William.
 Aplicação React + TypeScript + Vite + Convex para **um gestor de social media por conta**, com vários clientes cadastrados no seu espaço. Clientes não possuem login e não veem o painel.
 
 ## O que já existe
+
 - Cadastro e acompanhamento de clientes, estratégia e onboarding
 - Planejamento e calendário de conteúdo, tarefas, aprovações e solicitações
 - Reuniões, registros de entregas e financeiro manual
 - Exportação/importação de backup JSON do workspace
 - CSV dos dados reais em Configurações, com filtro por cliente; planilha de referência de 29 abas separada.
 
-**Não inclui** postagem automática, métricas conectadas às redes sociais, portal do cliente, cobrança automática, envio de e-mail ou sincronização da planilha com o banco. Não prometa esses recursos.
+**Não inclui** postagem automática, métricas conectadas às redes sociais, portal do cliente, cobrança automática, campanhas por e-mail ou sincronização da planilha com o banco. Não prometa esses recursos. O envio de convites individuais usa o Resend após configuração privada e validação de entrega; consulte [convites-resend.md](docs/convites-resend.md).
 
 ## Arquitetura única
+
 - Frontend: Cloudflare Pages (uma única branch `main`, um único endereço público).
 - Backend e banco: **um único deployment Convex**, com autenticação Convex Auth e dados isolados por `ownerId`.
-- Login: e-mail/senha, convites individuais de uso único via função interna `access:createInvite`; recuperação com chave de emergência gerada pelo gestor.
+- Login: e-mail/senha, convites individuais de uso único via ação interna `access:sendInvite` (Resend) ou emissão manual `access:createInvite`; recuperação com chave de emergência gerada pelo gestor.
 - Sem domínio próprio obrigatório para a URL `*.pages.dev`.
 - Recuperação por chave de emergência previamente gerada em Configurações. Sem reset ou verificação automática por e-mail.
 
 ## Operação e implantação
+
 Consulte [docs/implantacao-mvp.md](docs/implantacao-mvp.md) para a configuração exata de Convex, Cloudflare Pages, ações necessárias, testes de segurança e entrega do primeiro cliente.
 
 ## Fluxo de uso
-1. Operador cria convite privado (env do Convex) e o informa ao novo gestor.
+
+1. Operador libera o e-mail do novo gestor pela ação interna `access:sendInvite`, que gera e envia o convite pelo Resend configurado. A emissão manual permanece disponível.
 2. Gestor abre `/auth`, cria a conta com e-mail, senha de 12+ caracteres e convite.
 3. Gestor cadastra o primeiro cliente e utiliza painel, calendário, tarefas e financeiro.
 4. Gere sua chave de emergência, faça backups JSON e exporte relatórios CSV reais em Configurações.
 5. Cancelamento, suporte e recebimento de assinatura são feitos **fora do app**.
 
 ## Desenvolvimento
+
 ```bash
 bun install --frozen-lockfile
 # Backend: configurar CONVEX_DEPLOY_KEY e variáveis de Convex Auth
@@ -39,9 +44,11 @@ bun run lint
 bun test
 bun run build
 ```
+
 Os tipos em `src/convex/_generated` são gerados pelo CLI Convex; o CI usa uma instância Convex local e temporária para validar o build e os testes sem segredos de produção. A publicação real precisa de autorização no Convex. Não inclua chaves em `VITE_*`, commits ou issues.
 
 ## Segurança
+
 - Backend exige autenticação em mutations, filtra listagens por `ownerId` e valida referências de clientes nas escritas.
 - As importações de JSON são validadas, limitadas e transacionais; os IDs de origem não viram identidades de destino.
 - A chave privada `.env.keys` foi removida da branch principal; **rotacione-a se foi utilizada, pois o histórico do Git é público**.

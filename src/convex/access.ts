@@ -1,8 +1,17 @@
 import { retrieveAccount } from "@convex-dev/auth/server";
 import { ConvexError, v } from "convex/values";
 import { codeDigest, normalizedEmail, randomAccessCode } from "../data/access";
+import {
+  invitationEmailConfig,
+  sendInvitationEmail,
+} from "../data/invitation-email";
 import { internal } from "./_generated/api";
-import { action, internalMutation, internalQuery } from "./_generated/server";
+import {
+  action,
+  internalAction,
+  internalMutation,
+  internalQuery,
+} from "./_generated/server";
 import { activeUser } from "./activeUser";
 
 /** Operator-only, via the Convex dashboard/CLI. Never available to app users. */
@@ -23,6 +32,32 @@ export const createInvite = internalMutation({
       expiresAt,
     });
     return { code, expiresAt };
+  },
+});
+
+/** Operator-only: create the invitation and send it without exposing the code. */
+export const sendInvite = internalAction({
+  args: { email: v.string() },
+  handler: async (
+    ctx,
+    { email: rawEmail },
+  ): Promise<{ status: "accepted"; emailId: string; expiresAt: number }> => {
+    const email = normalizedEmail(rawEmail);
+    // Fail before replacing an existing invitation if configuration is missing.
+    const config = invitationEmailConfig();
+    const invite = await ctx.runMutation(internal.access.createInvite, {
+      email,
+    });
+    let emailId: string;
+    try {
+      emailId = await sendInvitationEmail(config, email, invite);
+    } catch {
+      throw new ConvexError(
+        "O Resend não confirmou o envio. Confira os registros no Resend antes de emitir outro convite.",
+      );
+    }
+    // Acceptance by the API is not proof of arrival in the recipient's inbox.
+    return { status: "accepted", emailId, expiresAt: invite.expiresAt };
   },
 });
 
